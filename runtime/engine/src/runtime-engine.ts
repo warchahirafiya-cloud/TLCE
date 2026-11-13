@@ -29,6 +29,15 @@ export class RuntimeEngine {
       moduleId,
       registered.manifest.requestedPermissions,
     );
+    const requested = registered.manifest.requestedPermissions;
+    const unauthorized = grantedPermissions.filter((grant) => {
+      const request = requested.find((item) => item.resource === grant.resource);
+      return !request || grant.actions.some((action) => !request.actions.includes(action));
+    });
+    if (unauthorized.length) {
+      throw new Error(`Permission policy granted permissions not requested by module: ${moduleId}`);
+    }
+
     const context: ModuleContext = {
       moduleId,
       moduleVersion: registered.manifest.version,
@@ -36,9 +45,15 @@ export class RuntimeEngine {
       requestId: this.requestIdFactory(),
     };
 
-    await registered.implementation.initialize(context);
-    await registered.implementation.start();
-    this.active.add(moduleId);
+    try {
+      await registered.implementation.initialize(context);
+      await registered.implementation.start();
+      this.active.add(moduleId);
+    } catch (error) {
+      // Best-effort cleanup prevents partially initialized modules from being marked active.
+      try { await registered.implementation.stop(); } catch { /* preserve original failure */ }
+      throw error;
+    }
   }
 
   async health(moduleId: string): Promise<ModuleHealth> {
