@@ -6,7 +6,7 @@ export interface RegisteredModule {
 }
 
 const ID_PATTERN = /^[a-z][a-z0-9-]{2,63}$/;
-const VERSION_PATTERN = /^(0|[1-9]\\d*)\\.(0|[1-9]\\d*)\\.(0|[1-9]\\d*)(?:-[0-9A-Za-z.-]+)?$/;
+const VERSION_PATTERN = /^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)(?:-[0-9A-Za-z.-]+)?$/;
 
 export class ModuleRegistry {
   private readonly modules = new Map<string, RegisteredModule>();
