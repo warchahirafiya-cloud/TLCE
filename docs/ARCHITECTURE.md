@@ -22,7 +22,7 @@ Product modules depend on approved TLCE Core and Runtime Engine contracts. Core 
 - The registry enforces unique routes, same-origin asset paths, exact dependency versions and explicit capabilities.
 - Shared UI components and design tokens are versioned platform packages; module-specific composition remains inside each frontend.
 
-## 5. Module integration contract
+## 5. Personal AI Agent Hubs\n\n- Personal AI Agent Hubs is a first-class TLCE platform area with a dedicated navigation/entry card and a distinct floating launcher in the web shell.\n- The launcher is keyboard accessible, pointer draggable, edge-dockable, and opens the dedicated agent workspace panel.\n- The hub is intended to manage personal agent profiles, tool permissions, tasks, schedules and audit visibility. The current web implementation is a UI foundation only; agent execution, external integrations and persistent agent storage remain inactive until trusted backend services are connected.\n- Agent tools must use explicit, least-privilege grants and auditable execution; no agent may inherit unrestricted user or platform credentials.\n\n## 6. Module integration contract
 Every module must declare:
 - stable module identifier and version;
 - required capabilities and permissions;
@@ -31,13 +31,13 @@ Every module must declare:
 - health/readiness behavior;
 - data ownership and retention expectations.
 
-## 6. Security boundaries
+## 7. Security boundaries
 Apply least privilege, deny-by-default authorization, secret isolation, input validation, auditability, and explicit trust boundaries between modules and providers. Never commit credentials, tokens, private keys, or production secrets.
 
-## 7. Change management
+## 8. Change management
 Architecture changes are developed on feature branches, reviewed, and tested before merge to `main`. Destructive migrations, production deployments, DNS changes, paid services, and secret provisioning require separate explicit approval.
 
-## 8. Current implementation status
+## 9. Current implementation status
 This repository is the initial TLCE foundation. The architecture described here is the approved target design; cloud resources and production services are not provisioned by these documentation and contract files.
 
 
