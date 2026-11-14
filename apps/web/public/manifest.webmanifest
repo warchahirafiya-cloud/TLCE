@@ -1,0 +1,16 @@
+{
+  "id": "/",
+  "name": "The Last Cosmic Explosion",
+  "short_name": "TLCE",
+  "description": "The Last Cosmic Explosion modular platform",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#090d18",
+  "theme_color": "#101a32",
+  "categories": ["productivity", "utilities"],
+  "icons": [
+    { "src": "/icons/tlce.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any maskable" }
+  ]
+}
