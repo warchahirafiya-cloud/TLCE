@@ -79,3 +79,13 @@ test("identifies known URL shorteners without resolving their destination", () =
   assert.ok(result.findings.some((finding) => finding.code === "shortener_domain"));
   assert.equal(result.normalizedUrl, "https://bit.ly/example");
 });
+
+test("flags IP-literal destinations", () => {
+  const result = scanUrlStructure("https://192.0.2.10/login");
+  assert.ok(result.findings.some((finding) => finding.code === "ip_literal"));
+});
+
+test("flags bidirectional control characters in the supplied input", () => {
+  const result = scanUrlStructure("https://example.org/\u202Elogin");
+  assert.ok(result.findings.some((finding) => finding.code === "bidi_control"));
+});
