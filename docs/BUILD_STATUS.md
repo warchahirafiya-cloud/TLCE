@@ -13,6 +13,7 @@ Branch: feature/serverless-edge
 - Provider-neutral event envelope and event processing contract.
 - Idempotent event processor with bounded exponential retries and dead-letter sink integration contract.
 - PostgreSQL durable event deduplication adapter with atomic unique-key claims, expiring leases, completion/release guards, and durable dead-letter upserts; schema migration and unit tests added.
+- PostgreSQL transactional outbox writer and worker claim/ack/release primitives using row locks, `SKIP LOCKED`, worker leases, retry scheduling, and idempotent event IDs; schema migration and unit tests added.
 - Outbound URL syntax guard for local/private literal destinations.
 - Immutable audit record construction with metadata limits and sensitive-key rejection.
 - Automated tests for runtime lifecycle, registry integrity, gateway validation, AI Core Bridge ingress, event processing, outbound URL checks and audit records.
@@ -20,7 +21,7 @@ Branch: feature/serverless-edge
 
 ## Production gaps — explicitly not complete
 - Runtime executes module implementations in-process; no hardened process/container sandbox or dynamic loading.
-- A PostgreSQL-compatible durable idempotency and dead-letter adapter plus schema migration now exist. It is not connected to a deployed database; the deployment must inject a trusted SQL pool, apply the migration, configure backup/retention, and validate lease sizing and crash recovery.
+- PostgreSQL-compatible durable idempotency/dead-letter and transactional outbox adapters plus schema migrations now exist. They are not connected to a deployed database or broker; production must inject a trusted SQL pool and run migrations. It is not connected to a deployed database; the deployment must inject a trusted SQL pool, apply the migration, configure backup/retention, and validate lease sizing and crash recovery.
 - Outbound URL helper is only a syntax-level guard; DNS resolution/pinning, redirect revalidation and network egress controls are not implemented.
 - API gateway is an in-process router, not a production HTTP server; JWT/OIDC authentication, schema validation, quotas and rate limiting remain absent.
 - AI Core Bridge publishes events only; upstream HTTP authentication/signature verification, deployed webhook endpoint, Zapier configuration, AI provider adapter and Q.P consumer remain separate integration gates.
