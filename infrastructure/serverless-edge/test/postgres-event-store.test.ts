@@ -5,13 +5,13 @@ import type { TlceEvent } from "../contracts/events.js";
 
 class FakeSql implements SqlExecutor {
   readonly calls: Array<{ sql: string; parameters: readonly unknown[] }> = [];
-  nextRows: Array<Record<string, unknown>> = [];
-  nextRowCount = 1;
+  readonly responses: Array<{ rows: Array<Record<string, unknown>>; rowCount: number | null }> = [];
   async query<TRow extends Record<string, unknown> = Record<string, unknown>>(
     sql: string, parameters: readonly unknown[] = [],
   ): Promise<SqlQueryResult<TRow>> {
     this.calls.push({ sql, parameters });
-    return { rows: this.nextRows as TRow[], rowCount: this.nextRowCount };
+    const response = this.responses.shift() ?? { rows: [], rowCount: 1 };
+    return { rows: response.rows as TRow[], rowCount: response.rowCount };
   }
 }
 
@@ -23,7 +23,7 @@ const event: TlceEvent<{ taskId: string }> = {
 
 test("claims an event atomically using a database lease and unique key", async () => {
   const sql = new FakeSql();
-  sql.nextRows = [{ dedupe_key: "key-1" }];
+  sql.responses.push({ rows: [{ dedupe_key: "key-1" }], rowCount: 1 });
   const store = new PostgresEventStore(sql, { leaseDurationMs: 5_000 });
   assert.equal(await store.claim("key-1"), "claimed");
   assert.match(sql.calls[0].sql, /ON CONFLICT \(dedupe_key\) DO UPDATE/);
@@ -34,18 +34,17 @@ test("claims an event atomically using a database lease and unique key", async (
 test("distinguishes completed and currently leased duplicate deliveries", async () => {
   const sql = new FakeSql();
   const store = new PostgresEventStore(sql);
-  sql.nextRows = [];
-  sql.nextRowCount = 0;
-  sql.nextRows = [{ status: "completed" }];
+  sql.responses.push(
+    { rows: [], rowCount: 0 }, { rows: [{ status: "completed" }], rowCount: 1 },
+    { rows: [], rowCount: 0 }, { rows: [{ status: "in_progress" }], rowCount: 1 },
+  );
   assert.equal(await store.claim("done"), "completed");
-  sql.nextRows = [{ status: "in_progress" }];
   assert.equal(await store.claim("busy"), "in_progress");
 });
 
 test("fails closed if the durable state cannot be determined", async () => {
   const sql = new FakeSql();
-  sql.nextRows = [];
-  sql.nextRowCount = 0;
+  sql.responses.push({ rows: [], rowCount: 0 }, { rows: [], rowCount: 0 });
   const store = new PostgresEventStore(sql);
   await assert.rejects(() => store.claim("race"), /Unable to determine/);
 });
@@ -61,7 +60,7 @@ test("marks completion and releases failed claims with guarded updates", async (
 
 test("does not silently accept a missing active claim", async () => {
   const sql = new FakeSql();
-  sql.nextRowCount = 0;
+  sql.responses.push({ rows: [], rowCount: 0 }, { rows: [], rowCount: 0 });
   const store = new PostgresEventStore(sql);
   await assert.rejects(() => store.markCompleted("missing"), /active durable claim/);
   await assert.rejects(() => store.release("missing"), /active durable claim/);
@@ -78,9 +77,9 @@ test("persists dead letters with bounded failure metadata and idempotent event I
   assert.equal(failure.reason.length, 500);
 });
 
-test("rejects unsafe configuration and malformed claims", () => {
+test("rejects unsafe configuration and malformed claims", async () => {
   const sql = new FakeSql();
   assert.throws(() => new PostgresEventStore(sql, { leaseDurationMs: 10 }), /leaseDurationMs/);
   const store = new PostgresEventStore(sql);
-  return assert.rejects(() => store.claim(" "), /Invalid event deduplication key/);
+  await assert.rejects(() => store.claim(" "), /Invalid event deduplication key/);
 });
