@@ -11,3 +11,6 @@ QuestPulse is an internal product module of The Last Cosmic Explosion (TLCE). It
 - Do not copy the independent Runtime Engine into this module.
 
 The existing QuestPulse repository remains a separate technical reference until its code is deliberately reviewed and integrated. No Q.P source has been copied or modified by this scaffold.
+
+## Future frontend bundle
+The QuestPulse UI may be independently built and mounted under `/questpulse` using the TLCE MicroFrontendHost. It must request only QuestPulse capabilities and use the host service facade. No remote bundle is loaded or deployed by the current scaffold.
