@@ -29,6 +29,44 @@ function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
 }
 
+async function readBoundedBody(request: Request): Promise<string | null> {
+  if (!request.body) return null;
+
+  const reader = request.body.getReader();
+  const chunks: Uint8Array[] = [];
+  let totalBytes = 0;
+
+  try {
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      totalBytes += value.byteLength;
+      if (totalBytes > MAX_BODY_BYTES) {
+        await reader.cancel();
+        return null;
+      }
+      chunks.push(value);
+    }
+  } catch {
+    return null;
+  } finally {
+    reader.releaseLock();
+  }
+
+  const body = new Uint8Array(totalBytes);
+  let offset = 0;
+  for (const chunk of chunks) {
+    body.set(chunk, offset);
+    offset += chunk.byteLength;
+  }
+
+  try {
+    return new TextDecoder("utf-8", { fatal: true }).decode(body);
+  } catch {
+    return null;
+  }
+}
+
 function parseMessages(value: unknown): ChatMessage[] | null {
   if (!Array.isArray(value) || value.length === 0 || value.length > MAX_MESSAGES) return null;
 
@@ -42,7 +80,6 @@ function parseMessages(value: unknown): ChatMessage[] | null {
     messages.push({ role: item.role, content: item.content });
   }
 
-  // Conversations must start with a user message and alternate roles.
   if (messages[0]?.role !== "user") return null;
   for (let index = 1; index < messages.length; index += 1) {
     if (messages[index]?.role === messages[index - 1]?.role) return null;
@@ -78,18 +115,25 @@ export function createLlm7ChatHandler(
       return json({ error: "Content-Type must be application/json" }, 415);
     }
 
-    const contentLength = Number(request.headers.get("content-length") ?? "0");
-    if (Number.isFinite(contentLength) && contentLength > MAX_BODY_BYTES) {
-      return json({ error: "Request body is too large" }, 413);
+    const contentLengthHeader = request.headers.get("content-length");
+    if (contentLengthHeader !== null) {
+      if (!/^\d+$/.test(contentLengthHeader) || Number(contentLengthHeader) > MAX_BODY_BYTES) {
+        return json({ error: "Request body is too large or has an invalid length" }, 413);
+      }
     }
 
     if (!env.LLM7_API_KEY?.trim()) {
       return json({ error: "Chat service is not configured" }, 503);
     }
 
+    const rawBody = await readBoundedBody(request);
+    if (rawBody === null) {
+      return json({ error: "Request body is too large or unreadable" }, 413);
+    }
+
     let payload: unknown;
     try {
-      payload = await request.json();
+      payload = JSON.parse(rawBody) as unknown;
     } catch {
       return json({ error: "Invalid JSON body" }, 400);
     }
@@ -120,7 +164,6 @@ export function createLlm7ChatHandler(
     }
 
     if (!upstream.ok) {
-      // Do not relay provider error bodies; they may contain sensitive diagnostics.
       return json({ error: "The AI provider returned an error", providerStatus: upstream.status }, 502);
     }
 
