@@ -6,6 +6,7 @@ Branch: feature/serverless-edge
 ## Implemented foundation
 - Hierarchical TLCE parent architecture; QuestPulse is an internal module.
 - Shared module manifest, dependency, permission, lifecycle, context and health contracts.
+- Provider-neutral identity verifier boundary, post-verification claim validation, issuer/audience/expiry/nbf checks, tenant isolation and explicit capability authorization; identity tests added.
 - Runtime registry validation, dependency ordering, missing/cycle detection and defensive manifest snapshots.
 - Runtime lifecycle start/stop serialization, deny-by-default permission grants, immutable module context, health response validation and failure cleanup.
 - API gateway request/path validation, traversal and encoded separator rejection, capability checks, correlation IDs and exception-detail isolation.
@@ -26,10 +27,11 @@ Branch: feature/serverless-edge
 - Outbox dispatcher and QuestPulse worker are implemented as in-process adapters, but no long-running broker/consumer service is deployed. A PostgreSQL result-sink adapter and migration exist, but are not connected to a deployed database; no result store is active.
 - AI provider adapter, credentials, provider quotas and provider-side idempotency are not configured. An executor must honor AbortSignal; in-process timeout cannot forcibly stop a provider call that ignores cancellation.
 - Outbound URL helper is only a syntax-level guard; DNS resolution/pinning, redirect revalidation and network egress controls are not implemented.
-- API gateway is an in-process router, not a production HTTP server; JWT/OIDC authentication, schema validation, quotas and rate limiting remain absent.
+- API gateway is an in-process router, not a production HTTP server; the identity verifier contract is implemented but no OIDC/JWT provider adapter is configured or wired into a trusted HTTP edge. Schema validation, quotas and rate limiting remain absent.
 - Audit records have a safe constructor but no persistent audit sink, retention or access-control adapter.
 - No production database, cache, secrets manager, cloud provider adapters, monitoring, deployment, DNS or infrastructure provisioning.
 - QuestPulse legacy routes, schema and business rules have not been source-integrated; the original app.asar remains untouched.
 
 ## Verification
+- Identity boundary and tenant authorization added on 2026-11-14; CI run 43591514939 completed successfully (TypeScript type check and unit tests).
 Use the latest GitHub Actions run attached to the current branch HEAD as the authoritative CI status. Historical failures on earlier intermediate commits are not evidence of failure in the current HEAD. No deployment or production readiness is implied by CI success.
