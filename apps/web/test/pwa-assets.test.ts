@@ -23,3 +23,17 @@ test("app shell communicates that backend services are not active", async () => 
  assert.match(html, /QuestPulse is an internal product module/);
  assert.match(html, /Sign-in, data operations and task execution will appear after the trusted backend is activated/);
 });
+test("personal AI agent hub has a dedicated section and draggable floating launcher", async () => {
+ const html = await readFile("apps/web/public/index.html", "utf8");
+ const css = await readFile("apps/web/public/styles.css", "utf8");
+ const js = await readFile("apps/web/public/app.js", "utf8");
+ const icon = await readFile("apps/web/public/icons/personal-ai-agents.svg", "utf8");
+ assert.match(html, /id="personal-ai-agents"/);
+ assert.match(html, /data-agent-float/);
+ assert.match(html, /personal-ai-agents\.svg/);
+ assert.match(css, /agent-float-drift/);
+ assert.match(js, /pointermove/);
+ assert.match(js, /setPointerCapture/);
+ assert.match(js, /aria-expanded/);
+ assert.match(icon, /<svg/);
+});
