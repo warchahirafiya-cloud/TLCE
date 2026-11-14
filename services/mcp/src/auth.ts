@@ -1,3 +1,4 @@
+import { OAuthError, OAuthErrorCode } from "@modelcontextprotocol/server";
 import type { AuthInfo } from "@modelcontextprotocol/server";
 import type { OAuthTokenVerifier } from "@modelcontextprotocol/express";
 import type { McpConfig } from "./config.js";
@@ -9,6 +10,10 @@ interface IntrospectionPayload {
   sub?: unknown;
   scope?: unknown;
   aud?: unknown;
+}
+
+function rejectToken(): never {
+  throw new OAuthError(OAuthErrorCode.InvalidToken, "Invalid access token");
 }
 
 export function audienceMatches(aud: unknown, expected: URL): boolean {
@@ -66,9 +71,7 @@ async function readBoundedJson(response: Response, limit = 16_384): Promise<Intr
 export function createTokenVerifier(config: McpConfig): OAuthTokenVerifier {
   return {
     async verifyAccessToken(token: string): Promise<AuthInfo> {
-      if (!token || token.length > 8192 || /\s/.test(token)) {
-        throw new Error("Invalid bearer token");
-      }
+      if (!token || token.length > 8192 || /\s/.test(token)) rejectToken();
 
       const credentials = Buffer.from(
         `${config.oauthClientId}:${config.oauthClientSecret}`,
@@ -88,26 +91,25 @@ export function createTokenVerifier(config: McpConfig): OAuthTokenVerifier {
         cache: "no-store"
       });
 
-      if (!response.ok) throw new Error(`OAuth introspection failed with status ${response.status}`);
+      // An unavailable or misconfigured identity provider is an outage, not an invalid token.
+      if (!response.ok) throw new Error(`OAuth introspection unavailable (HTTP ${response.status})`);
       const payload = await readBoundedJson(response);
       const now = Math.floor(Date.now() / 1000);
       if (payload.active !== true || typeof payload.exp !== "number" || !Number.isSafeInteger(payload.exp) || payload.exp <= now) {
-        throw new Error("Inactive or expired access token");
+        rejectToken();
       }
-      if (!audienceMatches(payload.aud, config.publicUrl)) {
-        throw new Error("Access token audience does not match this MCP resource");
-      }
+      if (!audienceMatches(payload.aud, config.publicUrl)) rejectToken();
 
       const clientId = typeof payload.client_id === "string"
         ? payload.client_id
         : typeof payload.sub === "string" ? payload.sub : "";
-      if (!clientId) throw new Error("Access token has no client identity");
+      if (!clientId) rejectToken();
 
       return {
         token,
         clientId,
         scopes: parseScopes(payload.scope),
-        expiresAt: payload.exp,
+        expiresAt: payload.exp as number,
         resource: config.publicUrl
       };
     }
