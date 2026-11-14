@@ -1,5 +1,5 @@
 import type {
-  MicroFrontendContext, MicroFrontendInstance, MicroFrontendLoader,
+  MicroFrontendContext, MicroFrontendInstance, MicroFrontendLoader, MicroFrontendServices,
 } from "../../../packages/contracts/src/micro-frontend";
 import { MicroFrontendRegistry } from "./micro-frontend-registry";
 
@@ -22,8 +22,8 @@ function scopedServices(
   granted: ReadonlySet<string>,
   services: MicroFrontendContext["services"],
 ): MicroFrontendContext["services"] {
-  return Object.freeze({
-    request(input) {
+  const facade: MicroFrontendServices = {
+    async request(input: { capability: string; method: string; path: string; body?: unknown }) {
       if (!input || typeof input !== "object" || typeof input.capability !== "string" ||
           !granted.has(input.capability)) {
         throw new Error("Micro-frontend service capability denied");
@@ -36,7 +36,7 @@ function scopedServices(
       }
       return services.request({ ...input, method: input.method.toUpperCase() });
     },
-    publish(eventName, payload) {
+    publish(eventName: string, payload: unknown) {
       if (!granted.has("events.publish")) throw new Error("Micro-frontend event publish denied");
       if (typeof eventName !== "string" || !EVENT_NAME.test(eventName) ||
           !(eventName.startsWith(moduleId + ".") || eventName.startsWith("tlce."))) {
@@ -44,7 +44,7 @@ function scopedServices(
       }
       services.publish(eventName, payload);
     },
-    subscribe(eventName, handler) {
+    subscribe(eventName: string, handler: (payload: unknown) => void) {
       if (!granted.has("events.subscribe")) throw new Error("Micro-frontend event subscription denied");
       if (typeof eventName !== "string" || !EVENT_NAME.test(eventName) ||
           !(eventName.startsWith(moduleId + ".") || eventName.startsWith("tlce.")) ||
@@ -53,7 +53,8 @@ function scopedServices(
       }
       return services.subscribe(eventName, handler);
     },
-  });
+  };
+  return Object.freeze(facade);
 }
 
 export class MicroFrontendHost {
