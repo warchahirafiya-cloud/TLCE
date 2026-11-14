@@ -59,9 +59,12 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): McpConfig {
   }
 
   const allowedHosts = csv(env.MCP_ALLOWED_HOSTS, ["127.0.0.1", "localhost"]);
-  const allowedOrigins = csv(env.MCP_ALLOWED_ORIGINS, ["http://127.0.0.1:8787", "http://localhost:8787"]);
+  const allowedOrigins = csv(env.MCP_ALLOWED_ORIGINS, ["127.0.0.1", "localhost"]);
   if (!allowedHosts.includes(publicUrl.hostname)) {
     throw new Error("MCP_PUBLIC_URL hostname must be present in MCP_ALLOWED_HOSTS");
+  }
+  if (allowedOrigins.some((origin) => origin.includes("://") || origin.includes("/") || origin.includes("*"))) {
+    throw new Error("MCP_ALLOWED_ORIGINS must contain hostnames only (no scheme, path, or wildcard)");
   }
 
   const requiredScopes = csv(env.MCP_REQUIRED_SCOPES, ["mcp:connect"]);
