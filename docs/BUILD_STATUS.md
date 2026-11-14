@@ -1,7 +1,7 @@
 # TLCE Build Status
 
 Last reviewed: 2026-11-14
-Branch: feature/serverless-edge
+Branch: feature/zapier-event-bridge
 
 ## Implemented foundation
 - Hierarchical TLCE parent architecture; QuestPulse is documented as an internal module.
@@ -10,6 +10,7 @@ Branch: feature/serverless-edge
 - Runtime lifecycle start/stop serialization, deny-by-default permission grants, immutable module context, health response validation and failure cleanup.
 - API gateway request/path validation, traversal and encoded separator rejection, capability checks, correlation IDs and exception-detail isolation.
 - Provider-neutral event envelope and event processing contract.
+- Feature-branch outbound Zapier event consumer with strict event/payload allowlisting, HMAC-SHA256 request signing, Catch Hook URL validation, bounded timeout, and payload size limits; mocked transport tests pass in CI.
 - Idempotent event processor with bounded exponential retries and dead-letter sink integration contract.
 - Outbound URL syntax guard for local/private literal destinations and non-HTTP protocols.
 - Immutable audit record construction with metadata limits and sensitive-key rejection.
@@ -26,4 +27,4 @@ Branch: feature/serverless-edge
 - QuestPulse legacy routes, schema and business rules have not been source-integrated; the original app.asar remains untouched.
 
 ## Verification
-Use the latest GitHub Actions run attached to the current branch HEAD as the authoritative CI status. Historical failures on earlier intermediate commits are not evidence of failure in the current HEAD. No deployment or production readiness is implied by CI success.
+Use the latest GitHub Actions run attached to the current branch HEAD as the authoritative CI status. Historical failures on earlier intermediate commits are not evidence of failure in the current HEAD. Zapier adapter unit tests and TypeScript strict checking passed on feature branch commit `e7b0c6a`. No live Zapier connection, deployment, or production readiness is implied by CI success.
