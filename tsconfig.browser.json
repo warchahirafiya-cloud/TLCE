@@ -1,0 +1,27 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "target": "ES2022",
+    "module": "ES2022",
+    "moduleResolution": "Bundler",
+    "lib": ["ES2022", "DOM"],
+    "types": [],
+    "noEmit": false,
+    "outDir": "apps/web/public/assets/tlce",
+    "rootDir": ".",
+    "declaration": false,
+    "sourceMap": false
+  },
+  "include": [
+    "packages/contracts/src/module.ts",
+    "packages/contracts/src/micro-frontend.ts",
+    "runtime/engine/src/module-registry.ts",
+    "runtime/engine/src/runtime-engine.ts",
+    "runtime/engine/src/micro-frontend-registry.ts",
+    "runtime/engine/src/micro-frontend-host.ts",
+    "runtime/engine/src/product-branch-registry.ts",
+    "runtime/engine/src/questpulse-host.ts",
+    "modules/register-built-in-branches.ts",
+    "modules/questpulse/src/**/*.ts"
+  ]
+}

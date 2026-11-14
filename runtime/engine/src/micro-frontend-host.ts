@@ -71,7 +71,8 @@ export class MicroFrontendHost {
     if (this.active.has(id) || this.mounting.has(id)) throw new Error("Micro-frontend is already mounted or mounting");
     const manifest = this.registry.get(id);
     if (!manifest) throw new Error("Micro-frontend is not registered");
-    if (route !== manifest.route) throw new Error("Route does not match registered micro-frontend");
+    const routeOwner = this.registry.resolveRoute(route);
+    if (!routeOwner || routeOwner.id !== id) throw new Error("Route does not match registered micro-frontend");
     if (!requestId || typeof requestId !== "string") throw new Error("A request id is required");
     for (const capability of manifest.requestedCapabilities) {
       if (!grantedCapabilities.has(capability)) throw new Error("Missing required micro-frontend capability");
