@@ -89,6 +89,11 @@ ALTER TABLE integration_grants ENABLE ROW LEVEL SECURITY;
 ALTER TABLE integration_oauth_transactions ENABLE ROW LEVEL SECURITY;
 ALTER TABLE integration_audit_events ENABLE ROW LEVEL SECURITY;
 
+ALTER TABLE integration_connections FORCE ROW LEVEL SECURITY;
+ALTER TABLE integration_grants FORCE ROW LEVEL SECURITY;
+ALTER TABLE integration_oauth_transactions FORCE ROW LEVEL SECURITY;
+ALTER TABLE integration_audit_events FORCE ROW LEVEL SECURITY;
+
 DROP POLICY IF EXISTS integration_connections_tenant_policy ON integration_connections;
 CREATE POLICY integration_connections_tenant_policy ON integration_connections
   USING (tenant_id = nullif(current_setting('app.tenant_id', true), '')::uuid)
