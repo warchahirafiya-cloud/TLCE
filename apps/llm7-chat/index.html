@@ -1,0 +1,154 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#090d1b">
+  <meta name="description" content="TLCE intelligent assistant powered by LLM7">
+  <title>TLCE — Intelligence Console</title>
+  <style>
+    :root{color-scheme:dark;--bg:#090d1b;--panel:#11182b;--panel2:#151f36;--line:#273451;--text:#edf3ff;--muted:#91a1bd;--accent:#8b9cff;--accent2:#54d6c8;--danger:#ff8b9a}
+    *{box-sizing:border-box}
+    body{margin:0;min-height:100vh;background:radial-gradient(ellipse at 50% -20%,#24345e 0,transparent 55%),var(--bg);color:var(--text);font:15px/1.55 Inter,ui-sans-serif,system-ui,-apple-system,Segoe UI,sans-serif}
+    button,textarea{font:inherit}
+    .shell{width:min(980px,100% - 32px);min-height:100vh;margin:auto;display:flex;flex-direction:column;padding:28px 0 22px}
+    header{display:flex;align-items:center;justify-content:space-between;gap:16px;padding:4px 2px 22px;border-bottom:1px solid var(--line)}
+    .brand{display:flex;align-items:center;gap:12px}.mark{display:grid;place-items:center;width:42px;height:42px;border:1px solid #5268a3;border-radius:14px;background:linear-gradient(145deg,#273b70,#131c36);color:#b9c7ff;font-size:21px}
+    h1{font-size:16px;letter-spacing:.12em;margin:0}.sub{color:var(--muted);font-size:12px;margin-top:2px}
+    .status{display:flex;align-items:center;gap:8px;color:var(--muted);font-size:12px}.dot{width:7px;height:7px;border-radius:50%;background:var(--accent2);box-shadow:0 0 12px #54d6c8}
+    main{flex:1;display:flex;flex-direction:column;min-height:0}
+    .intro{text-align:center;padding:42px 12px 28px}.orb{width:54px;height:54px;border-radius:50%;margin:0 auto 15px;background:radial-gradient(circle at 35% 30%,#d5dcff,#899bff 25%,#394b89 55%,#141c38 75%);box-shadow:0 0 45px #7188ff40}
+    .intro h2{font-size:clamp(23px,4vw,32px);margin:0 0 8px;letter-spacing:-.04em}.intro p{margin:0;color:var(--muted)}
+    .suggestions{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;width:min(760px,100%);margin:0 auto 20px}
+    .suggestion{border:1px solid var(--line);border-radius:13px;background:#11182b99;color:#cbd6ed;padding:13px;text-align:left;cursor:pointer;transition:border-color .2s,transform .2s}.suggestion:hover{border-color:#667bb9;transform:translateY(-2px)}
+    .suggestion strong{display:block;font-size:13px;margin-bottom:3px}.suggestion span{color:var(--muted);font-size:12px}
+    #conversation{display:flex;flex-direction:column;gap:16px;width:min(800px,100%);margin:0 auto;padding:12px 0 24px}
+    .message{display:flex;gap:11px;align-items:flex-start;max-width:90%}.message.user{align-self:flex-end;flex-direction:row-reverse}
+    .avatar{flex:0 0 30px;height:30px;border-radius:10px;display:grid;place-items:center;background:#202d4c;color:#c3ceff;font-size:12px}
+    .user .avatar{background:#254b57;color:#a9f2e5}
+    .bubble{padding:12px 15px;border:1px solid var(--line);border-radius:4px 15px 15px 15px;background:var(--panel);white-space:pre-wrap;overflow-wrap:anywhere}
+    .user .bubble{border-radius:15px 4px 15px 15px;background:#172b3a}
+    .error{color:var(--danger)}
+    .composer{position:sticky;bottom:0;margin-top:auto;padding:14px;border:1px solid #344363;border-radius:18px;background:#11182bf2;box-shadow:0 18px 55px #0005;backdrop-filter:blur(18px)}
+    .compose-row{display:flex;gap:10px;align-items:flex-end}.compose-row textarea{flex:1;resize:vertical;min-height:48px;max-height:180px;border:0;outline:0;background:transparent;color:var(--text);padding:12px 5px}
+    .compose-row textarea::placeholder{color:#7888a6}
+    .send{border:0;border-radius:12px;background:linear-gradient(135deg,#9aa8ff,#7185e9);color:#0a1023;font-weight:700;padding:12px 19px;cursor:pointer;min-width:88px}
+    .send:disabled{opacity:.5;cursor:not-allowed}.hint{display:flex;justify-content:space-between;gap:10px;color:#7787a4;font-size:11px;padding:7px 4px 0}
+    footer{text-align:center;color:#697996;font-size:11px;padding:15px 0 0}
+    @media(max-width:620px){.shell{width:min(100% - 20px,980px);padding-top:14px}.intro{padding:34px 8px 22px}.suggestions{grid-template-columns:1fr}.suggestion{padding:11px}.message{max-width:100%}.composer{padding:10px}.send{min-width:70px;padding:11px 13px}}
+  </style>
+</head>
+<body>
+  <div class="shell">
+    <header>
+      <div class="brand"><div class="mark" aria-hidden="true">✦</div><div><h1>THE LAST COSMIC EXPLOSION</h1><div class="sub">INTELLIGENCE CONSOLE · LLM7</div></div></div>
+      <div class="status"><span class="dot"></span><span>Assistant interface</span></div>
+    </header>
+    <main>
+      <section class="intro" id="intro">
+        <div class="orb" aria-hidden="true"></div>
+        <h2>Ideas begin with a question.</h2>
+        <p>Your intelligent workspace inside the TLCE ecosystem.</p>
+      </section>
+      <section class="suggestions" id="suggestions" aria-label="Suggested prompts">
+        <button class="suggestion" data-prompt="Explain a complex idea in simple steps."><strong>Understand something</strong><span>Break down a complex topic</span></button>
+        <button class="suggestion" data-prompt="Help me design a secure software architecture."><strong>Build an architecture</strong><span>Plan a robust technical system</span></button>
+        <button class="suggestion" data-prompt="Write a concise, creative short story."><strong>Explore an idea</strong><span>Turn a thought into a story</span></button>
+      </section>
+      <section id="conversation" aria-live="polite" aria-label="Conversation"></section>
+    </main>
+    <form class="composer" id="chat-form">
+      <div class="compose-row">
+        <textarea id="prompt" rows="1" maxlength="8000" placeholder="Message the TLCE assistant…" aria-label="Your message" required></textarea>
+        <button class="send" id="send" type="submit">Send ↑</button>
+      </div>
+      <div class="hint"><span>Enter to send · Shift + Enter for a new line</span><span id="counter">0 / 8000</span></div>
+    </form>
+    <footer>LLM7 responses may be inaccurate. Do not submit passwords, API keys, or sensitive personal data.</footer>
+  </div>
+  <script type="module">
+    const form = document.querySelector("#chat-form");
+    const input = document.querySelector("#prompt");
+    const send = document.querySelector("#send");
+    const conversation = document.querySelector("#conversation");
+    const intro = document.querySelector("#intro");
+    const suggestions = document.querySelector("#suggestions");
+    const counter = document.querySelector("#counter");
+    const history = [];
+
+    function addMessage(role, content, isError = false) {
+      const row = document.createElement("article");
+      row.className = `message ${role}`;
+      const avatar = document.createElement("div");
+      avatar.className = "avatar";
+      avatar.textContent = role === "user" ? "YOU" : "✦";
+      const bubble = document.createElement("div");
+      bubble.className = `bubble${isError ? " error" : ""}`;
+      // Render provider text as text, never as HTML.
+      bubble.textContent = content;
+      row.append(avatar, bubble);
+      conversation.append(row);
+      row.scrollIntoView({ behavior: "smooth", block: "nearest" });
+      return bubble;
+    }
+
+    async function submitMessage(value) {
+      const content = value.trim();
+      if (!content || send.disabled) return;
+      intro.hidden = true;
+      suggestions.hidden = true;
+      history.push({ role: "user", content });
+      addMessage("user", content);
+      input.value = "";
+      counter.textContent = "0 / 8000";
+      send.disabled = true;
+      send.textContent = "…";
+      const pending = addMessage("assistant", "Thinking…");
+
+      try {
+        const response = await fetch("/api/llm7/chat", {
+          method: "POST",
+          headers: { "content-type": "application/json", "accept": "application/json" },
+          body: JSON.stringify({ messages: history }),
+          signal: AbortSignal.timeout(45000),
+        });
+        const data = await response.json().catch(() => ({}));
+        if (!response.ok || typeof data.reply !== "string") {
+          throw new Error(typeof data.error === "string" ? data.error : "The assistant could not respond.");
+        }
+        pending.textContent = data.reply;
+        history.push({ role: "assistant", content: data.reply });
+      } catch (error) {
+        pending.textContent = error instanceof Error ? error.message : "Connection failed. Please try again.";
+        pending.classList.add("error");
+        history.pop(); // Keep failed user turns out of the next provider request.
+      } finally {
+        send.disabled = false;
+        send.textContent = "Send ↑";
+        input.focus();
+      }
+    }
+
+    form.addEventListener("submit", (event) => {
+      event.preventDefault();
+      void submitMessage(input.value);
+    });
+    input.addEventListener("input", () => {
+      counter.textContent = `${input.value.length} / 8000`;
+    });
+    input.addEventListener("keydown", (event) => {
+      if (event.key === "Enter" && !event.shiftKey) {
+        event.preventDefault();
+        form.requestSubmit();
+      }
+    });
+    suggestions.addEventListener("click", (event) => {
+      const button = event.target.closest("button[data-prompt]");
+      if (button) {
+        input.value = button.dataset.prompt;
+        void submitMessage(input.value);
+      }
+    });
+  </script>
+</body>
+</html>
