@@ -1,0 +1,29 @@
+:root {
+  --tlce-color-bg: #090d18;
+  --tlce-color-surface: #101a32;
+  --tlce-color-surface-raised: #182744;
+  --tlce-color-text: #eef3ff;
+  --tlce-color-muted: #b9c6df;
+  --tlce-color-border: #293653;
+  --tlce-color-accent: #8eb7ff;
+  --tlce-radius-sm: 0.375rem;
+  --tlce-radius-md: 0.75rem;
+  --tlce-radius-lg: 1.25rem;
+  --tlce-space-1: 0.25rem;
+  --tlce-space-2: 0.5rem;
+  --tlce-space-3: 0.75rem;
+  --tlce-space-4: 1rem;
+  --tlce-space-6: 1.5rem;
+  --tlce-space-8: 2rem;
+  --tlce-font-body: system-ui, sans-serif;
+  --tlce-focus-ring: 0 0 0 3px color-mix(in srgb, var(--tlce-color-accent) 55%, transparent);
+}
+.tlce-component {
+  box-sizing: border-box;
+  color: var(--tlce-color-text);
+  font-family: var(--tlce-font-body);
+}
+.tlce-component :focus-visible {
+  outline: none;
+  box-shadow: var(--tlce-focus-ring);
+}
