@@ -20,6 +20,15 @@
 - [x] QuestPulse integration ownership contract and migration constraints.
 - [x] Security threat model and explicit production release gates.
 
+## QuestPulse branch integration completed on feature/questpulse-host-registry-integration
+- [x] Coordinate the module lifecycle registry and micro-frontend route registry through one parent ProductBranchRegistry.
+- [x] Register the Q.P module and `/questpulse` UI route through the built-in branch bootstrap.
+- [x] Add a static allowlisted Q.P mount adapter and host composition with startup/teardown cleanup.
+- [x] Permit and test nested routes owned by the registered branch.
+- [x] Document ownership, capability, source-migration, and production release boundaries.
+- [ ] Wire the host composition into the browser shell/router and migrate the actual Q.P UI.
+- [ ] Confirm CI on this feature branch.
+
 ## Remaining work before a production candidate
 1. Deploy the outbox dispatcher as a supervised worker process and add PostgreSQL/broker integration tests for crash recovery, redelivery, poison messages and lease renewal.
 2. Connect and integration-test the PostgreSQL task result sink; implement provider-side idempotency so external side effects cannot duplicate on retries.
