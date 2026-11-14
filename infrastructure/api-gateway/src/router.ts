@@ -9,6 +9,7 @@ function validPath(path: unknown): path is string {
     path.startsWith("/") &&
     !path.startsWith("//") &&
     !/[?#\\\\\u0000-\u001f\u007f]/.test(path) &&
+    !/%(?:2e|2f|5c)/i.test(path) &&
     !path.split("/").some((segment) => segment === "." || segment === "..");
 }
 
