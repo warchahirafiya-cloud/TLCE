@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { createQuestPulseHost } from "../src/questpulse-host.js";
+import { createTLCEHost } from "../src/questpulse-host.js";
 
 interface FakeElement {
   tagName: string;
@@ -43,7 +43,7 @@ const services = {
 };
 
 test("mounts QuestPulse under the TLCE host and tears it down cleanly", async () => {
-  const host = createQuestPulseHost({ services });
+  const host = createTLCEHost({ services });
   const root = fakeRoot();
 
   assert.equal(host.branchRegistry.get("questpulse")?.route, "/questpulse");
@@ -60,7 +60,7 @@ test("mounts QuestPulse under the TLCE host and tears it down cleanly", async ()
 });
 
 test("does not start the branch when the route is outside its namespace", async () => {
-  const host = createQuestPulseHost({ services });
+  const host = createTLCEHost({ services });
   await assert.rejects(
     host.mount(fakeRoot() as unknown as HTMLElement, "request-test-2", new Set(), "/admin"),
     /does not match registered/,
