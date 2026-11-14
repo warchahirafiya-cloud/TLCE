@@ -16,6 +16,17 @@ The following preserved HTML artifacts were available in the project Library and
 | `QuestPulse-UI-redesign.html` | Security-awareness product | Client-side URL structure scanner, suspicious scheme rejection, HTTP warning, credential-in-URL warning, Punycode/IP/shortener/long-label/encoded-string/unusual-port/bidi-character heuristics, explanatory findings and safety advice | Separate visual/product direction. Scanner is explicitly local and limited; no live reputation, DNS, TLS, phishing-feed or remote threat-intelligence lookup. |
 | `QuestPulse-vNext-security-scanner.html` | Security scanner / awareness direction | Security scanner page and educational guidance; appears related to the redesign | Prototype reference; requires full version-to-version diff before treating as canonical. |
 
+## Product decision
+
+QuestPulse will retain both directions as complementary capabilities inside one product, not as separate applications:
+
+1. **Primary discovery capability — Web3 opportunity directory:** airdrops, Telegram bots, referrals and reward apps, with explicit provenance and verification state.
+2. **Supporting trust capability — local URL structure scanner:** a separate safety capability that can be invoked before opening directory links, without fetching URLs or claiming they are safe.
+
+The directory is the primary experience because it is the repeated core product direction in the preserved prototypes. The scanner is retained as a supporting safety layer because it directly supports safer discovery and is independently represented in the redesign sources. This is an architectural decision, not proof that both prototypes shipped together.
+
+Both remain internal to QuestPulse under TLCE. No separate deployment, permissions, persistence or external integration is introduced. See the domain contracts and tests in `modules/questpulse/src/domain.ts` and `modules/questpulse/test/domain.test.ts`.
+
 ## Important scope conflict
 
 The preserved sources describe at least two materially different product directions:
