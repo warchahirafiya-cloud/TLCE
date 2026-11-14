@@ -30,6 +30,16 @@ test("rejects unsafe entrypoints, duplicate routes and malformed declarations", 
  registry.register(manifest);
  assert.throws(() => registry.register({ ...manifest, id: "other-module" }), /route already/);
 });
+test("resolves the most specific route and rejects traversal paths", () => {
+ const registry = new MicroFrontendRegistry();
+ registry.register(manifest);
+ registry.register({ ...manifest, id: "quest-pulse-settings", displayName: "QuestPulse Settings", route: "/questpulse/settings" });
+ assert.equal(registry.resolveRoute("/questpulse/tasks")?.id, manifest.id);
+ assert.equal(registry.resolveRoute("/questpulse/settings/profile")?.id, "quest-pulse-settings");
+ assert.equal(registry.resolveRoute("/questpulse-other"), undefined);
+ assert.equal(registry.resolveRoute("/%2e%2e/secret"), undefined);
+ assert.equal(registry.resolveRoute("//evil.example/path"), undefined);
+});
 test("resolves dependencies before dependent frontend and rejects missing/cyclic dependencies", () => {
  const registry = new MicroFrontendRegistry();
  registry.register({ ...manifest, id: "shared-ui", displayName: "Shared UI", route: "/shared", requestedCapabilities: [] });
