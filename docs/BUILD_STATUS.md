@@ -3,7 +3,7 @@
 Last reviewed: 2026-11-14
 Branch: feature/serverless-edge
 
-## Implemented foundation
+## Implemented foundation\n- Dedicated Personal AI Agent Hubs platform entry card, distinct SVG identity, responsive floating draggable launcher with edge docking, accessible open/close behavior and reserved workspace overview; static PWA assets are cached offline. This is UI-only and does not activate agent execution or integrations.
 - Micro-frontend contracts, manifest registry, dependency resolution and capability-gated mount/unmount host lifecycle; same-origin entrypoint and unique-route validation with dedicated tests. Remote bundle loading remains an injected adapter and is not activated.
 - Installable TLCE PWA shell with web manifest, scalable icon, service worker, offline fallback, same-origin GET-only shell caching and explicit bypass for API/auth/integration paths; static asset tests included in CI.
 - Runtime configuration parser with safe development defaults and fail-closed production requirements for PostgreSQL, OIDC, AI provider and non-debug logging; validation errors do not expose secret values.
