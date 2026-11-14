@@ -15,7 +15,7 @@
 - [x] Security threat model and explicit production release gates.
 
 ## Remaining work before a production candidate
-1. Implement and contract-test a durable idempotency store with atomic claims, leases, crash recovery and retention.
+1. Deploy and integration-test the PostgreSQL idempotency/dead-letter adapter against a managed database; validate concurrent claims, lease expiry, process crashes, retention and backup/restore.
 2. Implement durable broker/queue and dead-letter adapter; define replay and poison-message procedures.
 3. Implement DNS-aware outbound egress proxy with address pinning, redirect validation and network-level private-range blocking.
 4. Implement signed module artifacts and a hardened process/container isolation boundary before any dynamic module loading.
