@@ -39,10 +39,7 @@ test("forwards the model and conversation without exposing the API key", async (
     return Response.json({ choices: [{ message: { content: "Hello from LLM7" } }] });
   });
 
-  const response = await handler(request({
-    messages: [{ role: "user", content: "Hello" }],
-  }));
-
+  const response = await handler(request({ messages: [{ role: "user", content: "Hello" }] }));
   assert.equal(response.status, 200);
   assert.equal(forwardedUrl, "https://api.llm7.io/v1/chat/completions");
   assert.equal(forwardedAuthorization, "Bearer test-secret");
@@ -54,9 +51,7 @@ test("does not relay provider error details", async () => {
   const handler = createLlm7ChatHandler(env, async () =>
     new Response("private upstream diagnostics", { status: 401 }),
   );
-  const response = await handler(request({
-    messages: [{ role: "user", content: "Hello" }],
-  }));
+  const response = await handler(request({ messages: [{ role: "user", content: "Hello" }] }));
   const body = await response.json() as { error: string };
   assert.equal(response.status, 502);
   assert.equal(body.error, "The AI provider returned an error");
@@ -69,6 +64,34 @@ test("rejects oversized declared request bodies", async () => {
     { messages: [{ role: "user", content: "Hello" }] },
     { "content-length": String(70 * 1024) },
   ));
+  assert.equal(response.status, 413);
+});
+
+test("rejects invalid content-length headers", async () => {
+  const handler = createLlm7ChatHandler(env);
+  const response = await handler(request(
+    { messages: [{ role: "user", content: "Hello" }] },
+    { "content-length": "not-a-number" },
+  ));
+  assert.equal(response.status, 413);
+});
+
+test("enforces the body limit while streaming, even without content-length", async () => {
+  const handler = createLlm7ChatHandler(env);
+  const oversized = new Uint8Array(65 * 1024);
+  const body = new ReadableStream<Uint8Array>({
+    start(controller) {
+      controller.enqueue(oversized);
+      controller.close();
+    },
+  });
+  const response = await handler(new Request("https://tlce.test/api/llm7/chat", {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body,
+    // Node's Request implementation requires this for streaming request bodies.
+    duplex: "half",
+  } as RequestInit));
   assert.equal(response.status, 413);
 });
 
