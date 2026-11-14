@@ -53,3 +53,9 @@ The PWA is a presentation shell only. It has no sign-in, business data, task sub
 ## Release boundary
 
 Keep work on `feature/serverless-edge` until review and staging validation are complete. No merge to `main`, production deployment, DNS changes, paid infrastructure, credential provisioning or production data migration is authorized by this runbook.
+
+## Micro-frontend release checklist
+- Build each frontend as an immutable independently versioned artifact.
+- Verify bundle integrity and provenance before host registration.
+- Validate route ownership, dependencies, requested capabilities, CSS isolation and accessibility.
+- Test mount/unmount, failed loads, rollback and tenant switching.
