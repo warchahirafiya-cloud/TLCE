@@ -38,7 +38,7 @@ The configured introspection endpoint must return an RFC 7662 payload with:
 - `scope` containing `mcp:connect`
 - `aud` containing the exact `MCP_PUBLIC_URL` resource (origin and path)
 
-The verifier uses HTTP Basic client authentication, disables redirects and caching, applies a timeout, bounds the response body, and never logs access tokens. The authorization server remains an external dependency; TLCE does not mint tokens here.
+The verifier uses HTTP Basic client authentication, disables redirects and caching, applies a timeout, bounds the response body, and never logs access tokens. Invalid tokens produce an OAuth `invalid_token` challenge; identity-provider outages remain server errors.
 
 ## Security boundary
 
@@ -47,6 +47,7 @@ The verifier uses HTTP Basic client authentication, disables redirects and cachi
 - Do not add a tool until its schema, scopes, data ownership, audit event, timeout, output limits and threat model are reviewed.
 - Mutating tools must require a separate scope and an explicit approval workflow outside model discretion.
 - The current stdout audit sink is a development adapter only. Production activation requires the durable TLCE Core audit sink, retention controls and access controls.
+- The official Express MCP host applies its JSON body-parser limit; pin and verify that limit during service deployment.
 - No production deployment, secrets provisioning, OAuth provider configuration or public exposure is performed by this scaffold.
 
 ## Integration path
