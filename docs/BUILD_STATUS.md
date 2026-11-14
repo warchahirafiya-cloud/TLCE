@@ -48,4 +48,4 @@ Use the latest GitHub Actions run attached to the current branch HEAD as the aut
 - Nested routes under `/questpulse` are resolved to the registered branch; route ownership is checked by the host.
 - Unit tests added for branch registry consistency, duplicate IDs, route collisions, nested route resolution, mount, and teardown.
 - The Q.P UI is currently a small accessible mount-contract surface; the full QuestPulse site and workflows are not yet migrated.
-- The host composition API is not yet wired into the browser shell/router. No remote code loading, deployment, database migration, or production activation has occurred.
+- The static PWA shell now exposes `#/questpulse` and invokes the single TLCE host through `branch-host.js`; `npm run build:web` emits the same-origin browser modules. The full Q.P UI is not migrated. No deployment, database migration, or production activation has occurred.
