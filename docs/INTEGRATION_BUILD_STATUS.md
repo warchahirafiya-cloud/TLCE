@@ -34,3 +34,15 @@ GitHub Actions is the authoritative validation path for this branch. Record the 
 5. Add provider-specific scopes, webhook validation, contract tests and revocation handling.
 6. Review high-risk legal, healthcare, finance and advertising connectors separately.
 7. Keep all production deployment, billing, financial actions and merge-to-main decisions behind explicit approval.
+
+
+## Additional delivery — OAuth and connection lifecycle
+- Added OAuth authorization-start primitives using authorization-code + PKCE S256.
+- Added cryptographically random per-attempt state and verifier, bounded TTL, HTTPS endpoint validation, and one-time callback-state consumption.
+- Added provider adapter, secret vault and metadata-only audit sink interfaces.
+- Added a guarded connection lifecycle state machine: catalogue → review → consent → connected → health-checked → enabled; revocation is terminal.
+- Added tests for OAuth PKCE/state replay/expiry and lifecycle transition guards.
+- Fixed parameter validation ordering so invalid reserved OAuth parameters are rejected before a transaction is persisted.
+- These are framework primitives and interfaces only. Durable stores, token exchange, issuer validation, real vault/audit implementations and live provider consent are not yet implemented.
+
+Security baseline: [IETF RFC 9700](https://www.rfc-editor.org/rfc/rfc9700.html).
