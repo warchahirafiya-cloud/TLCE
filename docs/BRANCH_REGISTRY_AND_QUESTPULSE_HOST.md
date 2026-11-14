@@ -95,7 +95,7 @@ These tests are included by the existing `tsx --test runtime/engine/test/*.test.
 ## 8. Remaining gates
 
 - [ ] Confirm GitHub Actions typecheck and full test suite on this branch.
-- [ ] Connect the real TLCE web shell/router to `createTLCEHost`; the current code is a host composition API, not a production browser bootstrap.
+- [ ] Ensure every static-shell deployment runs `npm run build:web` before publishing; no deployment was performed by this change.
 - [ ] Migrate the real Q.P UI into the branch adapter after source and asset review.
 - [ ] Define and approve Q.P capabilities against actual parent APIs.
 - [ ] Add end-to-end, accessibility, and security tests in the real shell.
