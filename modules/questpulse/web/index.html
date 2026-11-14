@@ -1,0 +1,61 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#101827">
+  <meta name="description" content="QuestPulse — discover Web3 opportunities with safer link awareness.">
+  <meta name="color-scheme" content="dark light">
+  <link rel="manifest" href="./manifest.webmanifest">
+  <link rel="icon" href="./icon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="./styles.css">
+  <title>QuestPulse · TLCE</title>
+</head>
+<body>
+  <main class="shell">
+    <header class="topbar">
+      <a class="brand" href="./" aria-label="QuestPulse home">
+        <img src="./icon.svg" width="36" height="36" alt="">
+        <span>QuestPulse</span>
+      </a>
+      <span class="platform-label">A TLCE module</span>
+    </header>
+
+    <section class="hero" aria-labelledby="hero-title">
+      <p class="eyebrow">DISCOVER · VERIFY · PROTECT</p>
+      <h1 id="hero-title">Find opportunities.<br><span>Check links first.</span></h1>
+      <p class="intro">Explore Web3 opportunities with clearer source information and local link-structure checks.</p>
+      <div class="actions">
+        <button id="install-button" class="button primary" type="button" hidden>Install QuestPulse</button>
+        <span id="connection-status" class="status" role="status" aria-live="polite">Checking connection…</span>
+      </div>
+    </section>
+
+    <section class="features" aria-label="QuestPulse capabilities">
+      <article class="feature">
+        <span class="feature-mark" aria-hidden="true">01</span>
+        <h2>Opportunity directory</h2>
+        <p>Airdrops, Telegram bots, referrals and reward apps, with source and verification details.</p>
+        <span class="tag">Core capability</span>
+      </article>
+      <article class="feature">
+        <span class="feature-mark" aria-hidden="true">02</span>
+        <h2>Link awareness</h2>
+        <p>Inspect URL structure locally for selected warning signs before opening a link.</p>
+        <span class="tag">Safety capability</span>
+      </article>
+    </section>
+
+    <aside class="notice">
+      <strong>Prototype shell</strong>
+      <p>This PWA foundation does not yet contain live listings, account features or a remote reputation service. No link is certified safe by the local structural checks.</p>
+    </aside>
+
+    <footer>
+      <span>QuestPulse · The Last Cosmic Explosion</span>
+      <span id="app-version">PWA foundation · v0.1</span>
+    </footer>
+  </main>
+  <script type="module" src="./app.js"></script>
+</body>
+</html>
