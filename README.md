@@ -12,4 +12,4 @@ The installable web shell is in `apps/web/public/`; it is a static PWA foundatio
 - [Branch registry and Q.P host integration](docs/BRANCH_REGISTRY_AND_QUESTPULSE_HOST.md)
 - [Advanced serverless and edge design](docs/ADVANCED_SERVERLESS_EDGE.md)
 
-The current feature branch is an engineering foundation, not a production deployment. See the build status and integration contract for verified capabilities and outstanding gates.
+The current feature branch is an engineering foundation, not a production deployment. Run `npm run build:web` before serving or publishing the static shell so the TLCE host and QuestPulse branch modules are compiled into `apps/web/public/assets/tlce/`. See the build status and integration contract for verified capabilities and outstanding gates.
