@@ -65,3 +65,11 @@ p { color: var(--muted); line-height: 1.7; }
   .agent-float { width: 3.8rem; height: 3.8rem; border-radius: 1.2rem; }
 }
 @media (prefers-reduced-motion: reduce) { *, *::before, *::after { scroll-behavior: auto !important; animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; } }
+
+
+/* Internal branch mount surface */
+.branch-surface { margin-top: 1.5rem; padding: 1.5rem; border: 1px solid var(--line); border-radius: 1.2rem; background: var(--panel); }
+.branch-surface[hidden] { display: none; }
+.branch-surface .tlce-branch { max-width: 60rem; margin: 0 auto; }
+.branch-surface h1 { max-width: none; font-size: clamp(1.8rem, 4vw, 2.6rem); }
+.branch-surface [role="status"] { padding: .75rem 1rem; border-radius: .7rem; background: #173b4b; color: #d5f8fb; }
