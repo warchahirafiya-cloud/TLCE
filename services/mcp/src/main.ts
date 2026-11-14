@@ -1,10 +1,13 @@
 import { createMcpExpressApp } from "@modelcontextprotocol/express";
 import { loadConfig } from "./config.js";
-import { stdoutAuditSink } from "./audit.js";
+import { assertProductionAuditSink, stdoutAuditSink } from "./audit.js";
 import { createMcpApplication } from "./server.js";
 
 const config = loadConfig();
-const { auth, nodeHandler, handler } = createMcpApplication(config, stdoutAuditSink);
+const audit = stdoutAuditSink;
+assertProductionAuditSink(audit, config.nodeEnv);
+
+const { auth, nodeHandler, handler } = createMcpApplication(config, audit);
 const app = createMcpExpressApp({
   host: config.bindHost,
   allowedHosts: config.allowedHosts,
