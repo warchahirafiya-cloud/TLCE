@@ -63,6 +63,17 @@ export function createLlm7ChatHandler(
       return json({ error: "Method not allowed" }, 405);
     }
 
+    const origin = request.headers.get("origin");
+    if (origin) {
+      try {
+        if (new URL(origin).origin !== new URL(request.url).origin) {
+          return json({ error: "Cross-origin requests are not allowed" }, 403);
+        }
+      } catch {
+        return json({ error: "Invalid request origin" }, 403);
+      }
+    }
+
     if (!request.headers.get("content-type")?.toLowerCase().includes("application/json")) {
       return json({ error: "Content-Type must be application/json" }, 415);
     }
