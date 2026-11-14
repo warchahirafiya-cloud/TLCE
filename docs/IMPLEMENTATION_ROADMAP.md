@@ -33,3 +33,16 @@
 
 ## Release policy
 Remain on the feature branch until CI passes on the current head, source integration is reviewed, security gates pass and maintainers approve. Do not merge into main, deploy, alter DNS, provision paid resources or migrate production data without explicit approval.
+
+
+## Production activation gates (ordered)
+
+1. **Identity provider:** choose OIDC provider, register TLCE audiences/clients, implement and review a JWKS-backed verifier, then wire it at the trusted HTTP edge.
+2. **Runtime boundary:** choose the deployment target and implement a hardened isolated module execution boundary; do not load untrusted modules in-process.
+3. **Persistence:** provision PostgreSQL outside this repository, apply migrations 001–003, configure backups, retention, pooling and restore drills.
+4. **Workers and AI:** configure a durable worker process, provider adapter, secret storage, quotas, timeouts, idempotency and failure monitoring.
+5. **Edge security:** deploy an HTTP gateway with request schema validation, rate limiting, TLS, trusted proxy configuration, DNS/egress controls and redirect revalidation.
+6. **Audit and operations:** add persistent audit storage, alerting, dashboards, health probes, incident response and operational runbooks.
+7. **Release rehearsal:** run integration/security tests against staging, backup/restore and crash-recovery drills, then obtain explicit production deployment approval.
+
+No credentials, external infrastructure or production services are assumed to exist. Feature branch CI is not a deployment approval.
