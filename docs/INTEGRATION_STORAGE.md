@@ -28,3 +28,9 @@ Connection lifecycle writes use compare-and-set against the expected lifecycle. 
 - OAuth callback consumption must atomically match tenant, principal and browser-session hash before deleting/returning a transaction. A mismatch must not consume the valid transaction.
 - The application should hash callback state before storage and encrypt PKCE verifier bytes using a KMS-backed envelope key.
 - Lifecycle transitions into connected require fresh provider verification evidence. A state label is not proof of connectivity.
+
+
+## PostgreSQL adapter implementation
+A driver-neutral adapter now implements connection records, grant persistence, OAuth transaction persistence and audit insertion over a minimal PostgreSQL pool/client interface. Each repository operation runs inside a transaction that sets the tenant context before accessing RLS-protected tables. Connection lifecycle updates use compare-and-set. OAuth state is hashed before storage, the PKCE verifier is passed through an injected encryption adapter, and callback deletion matches tenant, principal, browser-session hash and expiry.
+
+The adapter does not bundle or provision a PostgreSQL driver, database, KMS or encryption key. Supply a trusted pool implementation and a KMS-backed verifier cipher in the server runtime. The injected provider registry remains a separate dependency. Migration execution and database integration tests are still required before production use.
