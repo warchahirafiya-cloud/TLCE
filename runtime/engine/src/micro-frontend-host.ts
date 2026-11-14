@@ -5,7 +5,18 @@ import { MicroFrontendRegistry } from "./micro-frontend-registry";
 
 const METHODS = new Set(["GET", "POST", "PUT", "PATCH", "DELETE"]);
 const EVENT_NAME = /^[a-z][a-z0-9._:-]{1,127}$/;
-const API_PATH = /^\/(?!\/)[a-zA-Z0-9._~!$&'()*+,;=:@%/?#-]*$/;
+const API_PATH = /^\/(?!\/)[a-zA-Z0-9._~!const API_PATH = /^\/(?!\/)[a-zA-Z0-9._~!$&'()*+,;=:@%/?#-]*$/;
+'()*+,;=:@%/?#-]*$/;
+
+function isSafeApiPath(path: string): boolean {
+  if (!API_PATH.test(path) || path.includes("\\")) return false;
+  try {
+    const decoded = decodeURIComponent(path.split(/[?#]/, 1)[0]);
+    return !decoded.includes("\\") && !decoded.split("/").some((part) => part === "." || part === "..");
+  } catch {
+    return false;
+  }
+}
 
 function scopedServices(
   moduleId: string,
@@ -21,8 +32,7 @@ function scopedServices(
       if (typeof input.method !== "string" || !METHODS.has(input.method.toUpperCase())) {
         throw new Error("Unsupported service method");
       }
-      if (typeof input.path !== "string" || !API_PATH.test(input.path) ||
-          input.path.includes("..") || input.path.includes("\\\\")) {
+      if (typeof input.path !== "string" || !isSafeApiPath(input.path)) {
         throw new Error("Invalid service API path");
       }
       return services.request({ ...input, method: input.method.toUpperCase() });
@@ -72,15 +82,12 @@ export class MicroFrontendHost {
       const module = await this.loader(manifest);
       if (!module || typeof module.mount !== "function") throw new Error("Invalid micro-frontend module");
       const granted = new Set(manifest.requestedCapabilities.filter((capability) => grantedCapabilities.has(capability)));
-      for (const capability of ["events.publish", "events.subscribe"]) {
-        if (grantedCapabilities.has(capability)) granted.add(capability);
-      }
       const context: MicroFrontendContext = {
         frontendId: manifest.id,
         frontendVersion: manifest.version,
         requestId,
         grantedCapabilities: granted,
-        services: scopedServices(manifest.id, grantedCapabilities, services),
+        services: scopedServices(manifest.id, granted, services),
       };
       const instance = await module.mount({ root, context, route });
       if (!instance || typeof instance.unmount !== "function") throw new Error("Micro-frontend returned an invalid instance");
