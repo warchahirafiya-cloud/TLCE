@@ -46,5 +46,5 @@ test("does not expose handler exceptions", async () => {
   });
   const response = await gateway.dispatch({ method: "GET", path: "/failure", requestId: "r" });
   assert.equal(response.status, 500);
-  assert.equal("secret internal detail" in JSON.stringify(response), false);
+  assert.equal(JSON.stringify(response).includes("secret internal detail"), false);
 });
