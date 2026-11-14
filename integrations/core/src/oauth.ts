@@ -63,6 +63,13 @@ export async function startOAuthAuthorization(
   const codeVerifier = base64Url(randomBytes(32));
   const codeChallenge = base64Url(createHash("sha256").update(codeVerifier).digest());
 
+  const extraParams = Object.entries(config.extraAuthorizationParams ?? {});
+  for (const [key] of extraParams) {
+    if (["response_type", "client_id", "redirect_uri", "scope", "state", "code_challenge", "code_challenge_method"].includes(key)) {
+      throw new Error(`Reserved OAuth authorization parameter: ${key}`);
+    }
+  }
+
   const transaction: PendingOAuthTransaction = {
     state,
     providerId: config.providerId,
@@ -82,12 +89,7 @@ export async function startOAuthAuthorization(
     code_challenge: codeChallenge,
     code_challenge_method: "S256",
   });
-  for (const [key, value] of Object.entries(config.extraAuthorizationParams ?? {})) {
-    if (["response_type", "client_id", "redirect_uri", "scope", "state", "code_challenge", "code_challenge_method"].includes(key)) {
-      throw new Error(`Reserved OAuth authorization parameter: ${key}`);
-    }
-    params.set(key, value);
-  }
+  for (const [key, value] of extraParams) params.set(key, value);
   endpoint.search = params.toString();
   return { authorizationUrl: endpoint.toString(), expiresAt: transaction.expiresAt };
 }
