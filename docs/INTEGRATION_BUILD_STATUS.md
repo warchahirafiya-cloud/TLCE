@@ -7,7 +7,7 @@ Base: `feature/mcp-infrastructure-2026-11-14`
 ## Delivered in this branch
 - External integration architecture, lifecycle, permission tiers, consent rules and security gates.
 - Deduplicated owner-nominated integration catalogue, grouped by business capability.
-- Initial machine-readable provider registry with 37 high-priority candidates.
+- Initial machine-readable provider registry with 38 high-priority candidates.
 - Typed TypeScript contracts for provider descriptors, grants, operation requests and authorization decisions.
 - Deny-by-default authorization enforcing provider enablement, tenant, principal, resource, operation, permission, expiry and revocation.
 - Separate owner confirmation gate for financial operations.
