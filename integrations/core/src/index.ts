@@ -5,3 +5,4 @@ export * from "./oauth.js";
 export * from "./adapter.js";
 export * from "./lifecycle.js";
 export * from "./gateway.js";
+export * from "./persistence.js";
