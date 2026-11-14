@@ -46,3 +46,11 @@ GitHub Actions is the authoritative validation path for this branch. Record the 
 - These are framework primitives and interfaces only. Durable stores, token exchange, issuer validation, real vault/audit implementations and live provider consent are not yet implemented.
 
 Security baseline: [IETF RFC 9700](https://www.rfc-editor.org/rfc/rfc9700.html).
+
+
+## Additional delivery — unified execution gateway
+- Added a single integration gateway that resolves provider, grant and adapter, then runs the deny-by-default policy before execution.
+- Added adapter-operation metadata checks to prevent the adapter from silently broadening operation permissions.
+- Added metadata-only audit events for denied, allowed, succeeded and failed operations, correlated by request ID.
+- Added tests covering successful execution, resource-scope denial, financial confirmation and provider execution failure.
+- GitHub Actions run #391 completed type checking and unit tests successfully for the gateway implementation. The run's final cleanup was still finishing at the time of this update.
