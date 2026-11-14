@@ -44,3 +44,35 @@ test("rejects unknown modules", async () => {
   const engine = new RuntimeEngine(new ModuleRegistry());
   await assert.rejects(() => engine.startModule("missing"), /Unknown module/);
 });
+
+test("rejects permissions that the module did not request", async () => {
+  const registry = new ModuleRegistry();
+  const module: TLCEModule = {
+    async initialize() {},
+    async start() {},
+    async health() { return { state: "ready", checkedAt: new Date(0).toISOString() }; },
+    async stop() {},
+  };
+  registry.register(manifest, module);
+  const engine = new RuntimeEngine(registry, {
+    permissionPolicy: () => [{ resource: "billing", actions: ["read"] }],
+  });
+  await assert.rejects(() => engine.startModule("quest-pulse"), /not requested/);
+  assert.equal(engine.isActive("quest-pulse"), false);
+});
+
+test("cleans up a module when startup fails", async () => {
+  const calls: string[] = [];
+  const registry = new ModuleRegistry();
+  const module: TLCEModule = {
+    async initialize() { calls.push("initialize"); },
+    async start() { calls.push("start"); throw new Error("startup failed"); },
+    async health() { return { state: "failed", checkedAt: new Date(0).toISOString() }; },
+    async stop() { calls.push("stop"); },
+  };
+  registry.register({ ...manifest, requestedPermissions: [] }, module);
+  const engine = new RuntimeEngine(registry);
+  await assert.rejects(() => engine.startModule("quest-pulse"), /startup failed/);
+  assert.deepEqual(calls, ["initialize", "start", "stop"]);
+  assert.equal(engine.isActive("quest-pulse"), false);
+});
