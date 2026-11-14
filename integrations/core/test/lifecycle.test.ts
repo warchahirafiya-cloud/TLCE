@@ -15,7 +15,7 @@ const base: ConnectionLifecycleRecord = {
 test("requires review and consent before a connection is marked connected", () => {
   const reviewed = transitionConnectionLifecycle(base, "reviewed", 2);
   const pending = transitionConnectionLifecycle(reviewed, "consent_pending", 3);
-  const connected = transitionConnectionLifecycle(pending, "connected", 4);
+  const connected = transitionConnectionLifecycle(pending, "connected", 4, { connectionVerified: true, checkedAt: 4 });
   assert.equal(connected.connectionVerified, true);
   assert.equal(connected.lifecycle, "connected");
 });
@@ -51,4 +51,14 @@ test("revocation is terminal and records its timestamp", () => {
 test("rejects skipping mandatory lifecycle stages", () => {
   assert.throws(() => transitionConnectionLifecycle(base, "connected"));
   assert.throws(() => transitionConnectionLifecycle(base, "enabled"));
+});
+
+test("does not infer provider verification from the connected state", () => {
+  const reviewed = transitionConnectionLifecycle(base, "reviewed", 2);
+  const pending = transitionConnectionLifecycle(reviewed, "consent_pending", 3);
+  assert.throws(() => transitionConnectionLifecycle(pending, "connected", 4));
+  assert.throws(() => transitionConnectionLifecycle(pending, "connected", 400_000, {
+    connectionVerified: true,
+    checkedAt: 1,
+  }));
 });
