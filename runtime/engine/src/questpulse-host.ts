@@ -52,15 +52,17 @@ export function createQuestPulseHost(options: QuestPulseHostOptions) {
           route,
         );
       } catch (error) {
-        await runtime.stopModule("questpulse");
+        try { await runtime.stopModule("questpulse"); } catch { /* preserve the mount failure */ }
         throw error;
       }
     },
 
     async unmount(): Promise<boolean> {
-      const unmounted = await frontendHost.unmount("questpulse");
-      await runtime.stopModule("questpulse");
-      return unmounted;
+      try {
+        return await frontendHost.unmount("questpulse");
+      } finally {
+        await runtime.stopModule("questpulse");
+      }
     },
   };
 }
