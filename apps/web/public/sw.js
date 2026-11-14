@@ -1,5 +1,5 @@
 const CACHE_NAME = "tlce-shell-v2";
-const SHELL_ASSETS = ["/", "/index.html", "/offline.html", "/app.js", "/manifest.webmanifest", "/icons/tlce.svg", "/icons/personal-ai-agents.svg", "/styles.css"];
+const SHELL_ASSETS = ["/", "/index.html", "/offline.html", "/app.js", "/branch-host.js", "/manifest.webmanifest", "/icons/tlce.svg", "/icons/personal-ai-agents.svg", "/styles.css"];
 
 self.addEventListener("install", (event) => {
   event.waitUntil(caches.open(CACHE_NAME).then((cache) => cache.addAll(SHELL_ASSETS)).then(() => self.skipWaiting()));
