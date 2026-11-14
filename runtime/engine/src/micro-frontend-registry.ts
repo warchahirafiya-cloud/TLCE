@@ -1,9 +1,9 @@
 import type { MicroFrontendManifest } from "../../../packages/contracts/src/micro-frontend";
 
 const ID = /^[a-z][a-z0-9-]{2,63}$/;
-const VERSION = /^(0|[1-9]\\d*)\\.(0|[1-9]\\d*)\\.(0|[1-9]\\d*)(?:-[0-9A-Za-z.-]+)?$/;
+const VERSION = /^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)(?:-[0-9A-Za-z.-]+)?$/;
 const CAPABILITY = /^[a-z][a-z0-9._:-]{1,127}$/;
-const ROUTE = /^\\/(?:[a-z0-9-]+(?:\\/[a-z0-9-]+)*)?$/;
+const ROUTE = /^\/(?:[a-z0-9-]+(?:\/[a-z0-9-]+)*)?$/;
 
 function clone(manifest: MicroFrontendManifest): MicroFrontendManifest {
   return { ...manifest, requestedCapabilities: [...manifest.requestedCapabilities], dependencies: manifest.dependencies.map((item) => ({ ...item })) };
