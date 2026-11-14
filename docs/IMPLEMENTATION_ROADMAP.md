@@ -1,6 +1,7 @@
 # TLCE Implementation Roadmap
 
 ## Completed repository foundation
+- [x] Runtime environment configuration parser with fail-closed production checks and tests; CI now discovers all core package test folders.
 - [x] Hierarchical parent-platform architecture and provider-neutral serverless/edge contracts.
 - [x] Module manifests, dependency resolver, permission declarations and lifecycle contracts.
 - [x] Runtime registry validation and defensive snapshots.
