@@ -17,7 +17,7 @@
 - [x] Security threat model and explicit production release gates.
 
 ## Remaining work before a production candidate
-1. Wire QuestPulseTaskWorker through IdempotentEventProcessor and a durable broker dispatcher/consumer process; add end-to-end redelivery and poison-message tests.
+1. Deploy the outbox dispatcher as a supervised worker process and add PostgreSQL/broker integration tests for crash recovery, redelivery, poison messages and lease renewal.
 2. Implement a durable task result sink with unique taskId upsert and provider-side idempotency; ensure external side effects cannot duplicate on retries.
 3. Deploy and integration-test PostgreSQL idempotency, dead-letter and transactional outbox adapters against a managed database; validate concurrent claims, lease expiry, process crashes, outbox redelivery, retention and backup/restore.
 4. Implement DNS-aware outbound egress proxy with address pinning, redirect validation and network-level private-range blocking.
