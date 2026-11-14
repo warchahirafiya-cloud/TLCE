@@ -1,7 +1,7 @@
 # TLCE Build Status
 
 Last reviewed: 2026-11-14
-Branch: feature/serverless-edge
+Branch: feature/questpulse-host-registry-integration
 
 ## Implemented foundation\n- Dedicated Personal AI Agent Hubs platform entry card, distinct SVG identity, responsive floating draggable launcher with edge docking, accessible open/close behavior and reserved workspace overview; static PWA assets are cached offline. This is UI-only and does not activate agent execution or integrations.
 - Micro-frontend contracts, manifest registry, dependency resolution and capability-gated mount/unmount host lifecycle; same-origin entrypoint and unique-route validation with dedicated tests. Remote bundle loading remains an injected adapter and is not activated.
@@ -38,3 +38,14 @@ Branch: feature/serverless-edge
 ## Verification
 - Identity boundary and tenant authorization added on 2026-11-14; CI run 43591514939 completed successfully (TypeScript type check and unit tests).
 Use the latest GitHub Actions run attached to the current branch HEAD as the authoritative CI status. Historical failures on earlier intermediate commits are not evidence of failure in the current HEAD. No deployment or production readiness is implied by CI success.
+
+
+## QuestPulse host integration added on feature/questpulse-host-registry-integration
+- Parent ProductBranchRegistry coordinates ModuleRegistry and MicroFrontendRegistry with manifest identity/version/API consistency checks and route-collision rejection.
+- QuestPulse module manifest and lifecycle implementation are registered through the built-in branch bootstrap.
+- QuestPulse micro-frontend manifest claims the `/questpulse` route with zero requested capabilities.
+- QuestPulse host composition statically allowlists the in-repository adapter, starts/stops the module with UI mount/unmount, and preserves cleanup on mount failure.
+- Nested routes under `/questpulse` are resolved to the registered branch; route ownership is checked by the host.
+- Unit tests added for branch registry consistency, duplicate IDs, route collisions, nested route resolution, mount, and teardown.
+- The Q.P UI is currently a small accessible mount-contract surface; the full QuestPulse site and workflows are not yet migrated.
+- The host composition API is not yet wired into the browser shell/router. No remote code loading, deployment, database migration, or production activation has occurred.
