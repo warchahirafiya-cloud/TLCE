@@ -17,7 +17,7 @@ TLCE owns the shell, branch registry, module lifecycle, identity, authorization,
 - `runtime/engine/src/questpulse-host.ts` composes the parent registries, RuntimeEngine, and MicroFrontendHost. It starts the module before mount and tears it down on unmount or mount failure.
 - The loader is a static allowlist. No arbitrary URL, remote import, or untrusted bundle is loaded.
 
-The host composition is an integration API; the production browser shell/router has not yet been wired to invoke it. The Q.P UI surface is a mount-contract placeholder, not the complete website.
+The static TLCE browser shell now routes `#/questpulse` into the parent host through `apps/web/public/branch-host.js`. The `build:web` script compiles the host adapter into same-origin assets. A deployment process must run `npm run build:web` before publishing. The Q.P UI surface remains a mount-contract placeholder, not the complete website.
 
 See [Branch Registry and QuestPulse Host Integration](BRANCH_REGISTRY_AND_QUESTPULSE_HOST.md) for the source map, behavior, tests, and release gates.
 
@@ -55,10 +55,10 @@ All data mappings require source-level field review and migration tests before a
 2. [x] Add the Q.P module manifest and lifecycle adapter.
 3. [x] Register Q.P in the parent module and micro-frontend registries.
 4. [x] Add host composition and lifecycle tests.
-5. [ ] Confirm CI on the current integration branch.
-6. [ ] Wire the host composition into the actual TLCE browser shell/router.
+5. [ ] Confirm CI typecheck, browser bundle build, and full test suite on this integration branch.
+6. [ ] Ensure the eventual static-shell deployment runs `npm run build:web`; no deployment was performed here.
 7. [ ] Review the authoritative Q.P source and map its routes, tables, auth, media, and workflows.
-8. [ ] Migrate Q.P UI and business workflows behind parent contracts; no second identity/session or social store.
+8. [ ] Migrate the full Q.P UI and business workflows behind parent contracts; no second identity/session or social store.
 9. [ ] Add end-to-end, accessibility, authorization, abuse-case, and migration dry-run tests.
 10. [ ] Obtain explicit approval before merge, deployment, production data migration, DNS changes, paid services, or secret provisioning.
 
