@@ -44,6 +44,22 @@ export class MicroFrontendRegistry {
     return item ? clone(item) : undefined;
   }
 
+  /** Resolve the most specific registered route; nested paths belong to their longest prefix. */
+  resolveRoute(pathname: string): MicroFrontendManifest | undefined {
+    if (typeof pathname !== "string" || !pathname.startsWith("/") ||
+        pathname.startsWith("//") || pathname.includes("\\\\") ||
+        pathname.includes("?") || pathname.includes("#")) return undefined;
+    let decoded: string;
+    try { decoded = decodeURIComponent(pathname); } catch { return undefined; }
+    if (decoded.includes("\\\\") || decoded.split("/").some((part) => part === "." || part === "..")) {
+      return undefined;
+    }
+    const match = [...this.entries.values()]
+      .filter((item) => decoded === item.route || decoded.startsWith(item.route + "/"))
+      .sort((a, b) => b.route.length - a.route.length)[0];
+    return match ? clone(match) : undefined;
+  }
+
   list(): ReadonlyArray<MicroFrontendManifest> {
     return [...this.entries.values()].map(clone);
   }
