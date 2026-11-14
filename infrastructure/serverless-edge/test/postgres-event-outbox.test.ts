@@ -43,6 +43,16 @@ test("claims a bounded batch with row locks and expiring worker leases", async (
   assert.match(sql.calls[0].sql, /FOR UPDATE SKIP LOCKED/);
 });
 
+test("renews only a live lease owned by the requesting worker", async () => {
+  const sql = new FakeSql();
+  sql.responses.push({ rows: [], rowCount: 1 }, { rows: [], rowCount: 0 });
+  const outbox = new PostgresEventOutbox(sql);
+  assert.equal(await outbox.renewLease("evt-1", "worker-1"), true);
+  assert.equal(await outbox.renewLease("evt-1", "other-worker"), false);
+  assert.match(sql.calls[0].sql, /lease_until = CURRENT_TIMESTAMP/);
+  assert.match(sql.calls[0].sql, /lease_owner = \$2/);
+});
+
 test("acknowledges and releases only events owned by the worker lease", async () => {
   const sql = new FakeSql();
   const outbox = new PostgresEventOutbox(sql);
