@@ -4,20 +4,21 @@ import { createTLCEHost } from "../src/questpulse-host.js";
 
 interface FakeElement {
   tagName: string;
-  attributes: Map<string, string>;
   children: FakeElement[];
   id: string;
   className: string;
   textContent: string;
   setAttribute(name: string, value: string): void;
+  getAttribute(name: string): string | null;
   append(...items: FakeElement[]): void;
 }
 function fakeElement(tagName: string): FakeElement {
   const attributes = new Map<string, string>();
   const children: FakeElement[] = [];
   return {
-    tagName, attributes, children, id: "", className: "", textContent: "",
+    tagName, children, id: "", className: "", textContent: "",
     setAttribute(name, value) { attributes.set(name, value); },
+    getAttribute(name) { return attributes.get(name) ?? null; },
     append(...items) { children.push(...items); },
   };
 }
@@ -51,7 +52,7 @@ test("mounts QuestPulse under the TLCE host and tears it down cleanly", async ()
   assert.equal(host.runtime.isActive("questpulse"), true);
   assert.equal(host.frontendHost.isMounted("questpulse"), true);
   assert.equal(root.children.length, 1);
-  assert.equal(root.children[0].attributes.get("data-tlce-branch"), "questpulse");
+  assert.equal(root.children[0].getAttribute("data-tlce-branch"), "questpulse");
 
   assert.equal(await host.unmount(), true);
   assert.equal(host.runtime.isActive("questpulse"), false);
