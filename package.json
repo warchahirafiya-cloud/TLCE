@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "typecheck": "tsc --noEmit",
-    "test": "tsx --test runtime/engine/test/*.test.ts core/*/test/*.test.ts infrastructure/api-gateway/test/*.test.ts infrastructure/serverless-edge/test/*.test.ts apps/web/test/*.test.ts packages/ui/test/*.test.ts",
+    "test": "tsx --test runtime/engine/test/*.test.ts modules/circular-economy/test/*.test.ts core/*/test/*.test.ts infrastructure/api-gateway/test/*.test.ts infrastructure/serverless-edge/test/*.test.ts apps/web/test/*.test.ts packages/ui/test/*.test.ts",
     "build:web": "tsc -p tsconfig.browser.json"
   },
   "devDependencies": {

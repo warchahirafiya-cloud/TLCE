@@ -59,3 +59,18 @@ Remain on the feature branch until CI passes on the current head, source integra
 7. **Release rehearsal:** run integration/security tests against staging, backup/restore and crash-recovery drills, then obtain explicit production deployment approval.
 
 No credentials, external infrastructure or production services are assumed to exist. Feature branch CI is not a deployment approval.
+
+
+## Circular Digital Economy branch foundation
+- [x] Add the internal `circular-economy` module manifest and reserve `/circular-economy` in the parent product-branch registry.
+- [x] Add typed digital-asset listing, provenance, license and security status contracts.
+- [x] Add a transparent weighted appraisal heuristic with confidence, blockers and explicit non-valuation disclaimer.
+- [x] Add rehabilitation-path planning and legal/security release gates.
+- [x] Add domain tests and include them in the repository test command.
+- [ ] Build the marketplace UI and partner discovery workflows.
+- [ ] Add authenticated listing intake, evidence uploads, moderation, audit trail and dispute handling.
+- [ ] Design persistence, search/matching, valuation comparables and independently reviewed pricing.
+- [ ] Add sandboxed source-code inspection and secure rehabilitation pipelines; never execute untrusted assets in the parent runtime.
+- [ ] Review jurisdictional requirements before enabling payments, escrow, regulated assets or cross-border transfers.
+- [ ] Add staging integration tests and security review before production activation.
+
