@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { createHash } from "node:crypto";
 import test from "node:test";
-import type { OAuthTransactionStore, PendingOAuthTransaction } from "../src/oauth.js";
+import type { OAuthCallbackBinding, OAuthTransactionStore, PendingOAuthTransaction } from "../src/oauth.js";
 import { consumeOAuthCallbackState, startOAuthAuthorization } from "../src/oauth.js";
 
 class MemoryTransactionStore implements OAuthTransactionStore {
@@ -10,14 +10,23 @@ class MemoryTransactionStore implements OAuthTransactionStore {
     if (this.entries.has(transaction.state)) throw new Error("duplicate state");
     this.entries.set(transaction.state, transaction);
   }
-  async consume(state: string): Promise<PendingOAuthTransaction | undefined> {
+  async consume(state: string, binding: OAuthCallbackBinding): Promise<PendingOAuthTransaction | undefined> {
     const value = this.entries.get(state);
+    if (!value || value.tenantId !== binding.tenantId ||
+        value.principalId !== binding.principalId ||
+        value.browserSessionHash !== binding.browserSessionHash) return undefined;
     this.entries.delete(state);
     return value;
   }
 }
 
+const binding = {
+  tenantId: "tenant-1",
+  principalId: "user-1",
+  browserSessionHash: "a".repeat(43),
+};
 const config = {
+  ...binding,
   providerId: "sample-provider",
   authorizationEndpoint: "https://auth.example/authorize",
   clientId: "public-client-id",
@@ -34,6 +43,9 @@ test("creates authorization URL with fresh state and PKCE S256", async () => {
   assert.equal(url.searchParams.get("code_challenge_method"), "S256");
   assert.equal(url.searchParams.get("code_challenge"), createHash("sha256").update(transaction.codeVerifier).digest("base64url"));
   assert.equal(url.searchParams.get("redirect_uri"), config.redirectUri);
+  assert.equal(transaction.tenantId, binding.tenantId);
+  assert.equal(transaction.principalId, binding.principalId);
+  assert.equal(transaction.browserSessionHash, binding.browserSessionHash);
   assert.equal(result.expiresAt, 601_000);
 });
 
@@ -50,19 +62,25 @@ test("rejects non-HTTPS endpoints and unsafe redirect URLs", async () => {
   await assert.rejects(() => startOAuthAuthorization({ ...config, redirectUri: "https://user:pass@tlce.example/callback" }, store));
 });
 
-test("callback state is one-time and expires", async () => {
+test("callback state is bound to session, one-time and expiring", async () => {
   const store = new MemoryTransactionStore();
   const result = await startOAuthAuthorization(config, store, 10_000);
   const state = new URL(result.authorizationUrl).searchParams.get("state")!;
-  const tx = await consumeOAuthCallbackState(state, store, 10_001);
+  await assert.rejects(() => consumeOAuthCallbackState(state, store, {
+    ...binding,
+    principalId: "another-user",
+  }, 10_001));
+  assert.equal(store.entries.has(state), true, "wrong session must not burn the legitimate transaction");
+  const tx = await consumeOAuthCallbackState(state, store, binding, 10_001);
   assert.equal(tx.providerId, config.providerId);
-  await assert.rejects(() => consumeOAuthCallbackState(state, store, 10_002));
+  await assert.rejects(() => consumeOAuthCallbackState(state, store, binding, 10_002));
   const expired = await startOAuthAuthorization(config, store, 20_000);
   const expiredState = new URL(expired.authorizationUrl).searchParams.get("state")!;
-  await assert.rejects(() => consumeOAuthCallbackState(expiredState, store, 620_000));
+  await assert.rejects(() => consumeOAuthCallbackState(expiredState, store, binding, 620_000));
 });
 
-test("rejects reserved parameter overrides", async () => {
+test("rejects missing tenant/session binding and reserved parameter overrides", async () => {
   const store = new MemoryTransactionStore();
+  await assert.rejects(() => startOAuthAuthorization({ ...config, browserSessionHash: "short" }, store));
   await assert.rejects(() => startOAuthAuthorization({ ...config, extraAuthorizationParams: { state: "fixed-state" } }, store));
 });
