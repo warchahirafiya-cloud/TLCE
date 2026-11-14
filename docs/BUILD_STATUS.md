@@ -4,6 +4,7 @@ Last reviewed: 2026-11-14
 Branch: feature/serverless-edge
 
 ## Implemented foundation
+- Micro-frontend contracts, manifest registry, dependency resolution and capability-gated mount/unmount host lifecycle; same-origin entrypoint and unique-route validation with dedicated tests. Remote bundle loading remains an injected adapter and is not activated.
 - Installable TLCE PWA shell with web manifest, scalable icon, service worker, offline fallback, same-origin GET-only shell caching and explicit bypass for API/auth/integration paths; static asset tests included in CI.
 - Runtime configuration parser with safe development defaults and fail-closed production requirements for PostgreSQL, OIDC, AI provider and non-debug logging; validation errors do not expose secret values.
 - Hierarchical TLCE parent architecture; QuestPulse is an internal module.
