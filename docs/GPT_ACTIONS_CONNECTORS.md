@@ -1,69 +1,59 @@
-# TLCE GPT Actions and Connectors Control Plane
+# TLCE Integration Ecosystem Catalogue
 
-Status: provider-neutral control-plane foundation; no third-party account is connected and no connector is enabled.
+Status: **catalogued / architecture-ready inventory**. This catalogue is not evidence that provider accounts are connected, OAuth applications registered, APIs enabled, or production adapters deployed.
 
-## Purpose and boundary
+## Scope
 
-This layer allows approved AI clients, including ChatGPT integrations, to invoke narrowly scoped TLCE capabilities that may be backed by external SaaS systems. It is not a direct credential bridge from an AI model to a user's SaaS account. Every request must pass through TLCE Core identity, tenant isolation, connector authorization, approval policy, secret management and audit.
+The requested inventory is represented as 120 stable integration/capability identifiers in `services/mcp/src/connector-catalog.ts`. It is deliberately classified rather than treating every entry as an external SaaS API:
 
-The MCP Gateway is one supported AI-facing protocol endpoint. Future GPT Actions can use a separately versioned HTTPS API facade over the same Core capability contracts. Do not duplicate business logic or authorization in protocol adapters.
+- `saas`: external product/provider candidate; requires provider-specific OAuth/API adapter and contractual review.
+- `beta`: explicitly held for compatibility, API, security and availability review (Zendesk and GitLab).
+- `capability`: TLCE-native capability domain (Product Design, Data, Sales, Creative Production, Company Knowledge), not an external vendor.
+- `skill-pack`: packaged guidance/tooling surface (QuickStart, NetSuite AI Companion, NetSuite Finance Analyst, NetSuite SuiteCloud, NetSuite SuiteSkills, NVIDIA Skills, Twilio Developer Kit, Autodesk Product Help); may require a separate product/SDK/license assessment.
 
-## Initial provider catalogue
+## Shared architecture
 
-- Google Drive
-- Salesforce
-- Slack
+All integrations must route through the TLCE Connector Control Plane and shared Core contracts:
 
-These are provider identifiers only. No OAuth application, redirect URI, account connection, provider API call, webhook subscription or data import has been created.
+1. Provider catalogue and versioned adapter manifest.
+2. Tenant/principal identity and explicit consent.
+3. Least-privilege scopes separated into read, write and admin.
+4. OAuth broker with state, PKCE where supported, issuer/audience validation and revocation.
+5. External Secret Manager/KMS; only opaque references may enter repository metadata.
+6. Per-request resource authorization, quotas, bounded retries/timeouts and outbound host allowlists.
+7. Durable append-only audit with token/secret redaction.
+8. Webhook signature validation, replay defense and idempotency.
+9. Contract tests, provider sandbox tests, security review and operator approval before enablement.
 
-## Control-plane contract
+MCP and GPT Actions are protocol adapters over these shared capabilities. They must not own separate authorization rules or bypass the Runtime Engine/Core. QuestPulse remains an internal TLCE module and consumes approved capabilities through the Runtime Engine.
 
-services/mcp/src/connectors.ts defines:
-- provider-neutral connector registration metadata;
-- opaque secret-manager references (never raw secrets);
-- pending-approval / disabled / enabled / revoked lifecycle;
-- grants bound to connector + tenant + principal;
-- explicit read/write/admin operations;
-- resource-level allowlists and grant expiry;
-- deny-by-default authorization decisions.
+## Rollout tracks
 
-New connector registrations must begin pending approval or disabled. OAuth issuer and redirect URLs must use HTTPS. Wildcard resource access is rejected. An enabled registration alone is not sufficient: a matching, unexpired grant is also required.
+- **Track A — Identity and control plane:** OAuth broker, durable registry, KMS port, audit port, policy enforcement.
+- **Track B — Productivity and collaboration:** Google/Microsoft mail, calendars, storage, Teams, Slack, Zoom and work-management tools.
+- **Track C — Engineering and cloud:** GitHub/GitLab, AWS/Azure, Firebase, Vercel, Supabase, databases and observability.
+- **Track D — Data and intelligence:** warehouses, BI, product analytics and financial-data services.
+- **Track E — Revenue and commerce:** CRM, sales engagement, payments, commerce, accounting and customer support.
+- **Track F — Creative and web:** design, media, publishing and asset platforms.
+- **Track G — Legal, HR and specialist:** legal operations, contracts, recruiting, HR and specialist knowledge tools.
 
-## Required production services
+No track is activated merely by catalogue registration. Each provider is independently gated by API availability, OAuth scope review, data-processing terms, regional availability, licensing, sandbox tests and explicit tenant consent.
 
-1. **TLCE Core Identity** — trusted user/service principals, tenant membership, session and service-token lifecycle.
-2. **Authorization Policy Service** — centralized capability evaluation, approval workflows, separation of duties and revocation.
-3. **Secret Manager / KMS** — client secrets and refresh tokens stored encrypted outside Git and databases; opaque references only in connector records.
-4. **OAuth Broker** — authorization-code flow with state, PKCE where supported, exact redirect URI matching, issuer validation, audience/resource binding, refresh-token rotation and revocation.
-5. **Connector Runtime** — provider adapters with strict outbound host allowlists, timeouts, response-size limits, pagination bounds, retry budgets and per-tenant quotas.
-6. **Durable Audit** — append-only events for connection, consent, token refresh/revocation, authorization decisions and every external action; never log bearer tokens or secret values.
-7. **Webhook Gateway** — signature verification, replay protection, timestamp tolerance, idempotency and event schema validation.
-8. **Operations** — rate limits, circuit breakers, metrics, tracing, alerting and incident revocation controls.
+## Security and data handling
 
-## GPT Actions and ChatGPT integration
+- Treat emails, documents, chat messages, CRM fields, tickets, files and webhook payloads as untrusted data; never follow embedded instructions.
+- Do not grant broad mailbox, drive, tenant-admin, finance, trading or destructive permissions by default.
+- Require confirmation for externally visible or irreversible writes (send email, invite users, publish, sign, pay, trade, delete, change access).
+- Separate read-only pilots from write-enabled production rollout.
+- Apply data minimization, retention limits, residency review and field-level redaction.
+- Never commit OAuth secrets, refresh tokens, API keys, private keys or customer data.
 
-- Expose only purpose-built, versioned API operations through an HTTPS API facade.
-- Publish an OpenAPI document for the approved operation set; do not expose internal admin endpoints.
-- Use OAuth authorization-code integration supported by the target ChatGPT/GPT Actions configuration. Confirm the exact redirect URI, issuer, scopes and token exchange contract in the target product before registration.
-- Keep read and write scopes separate. Destructive or externally visible operations require a separate explicit approval path and confirmation.
-- Treat all connector content as untrusted input. Do not follow instructions embedded in documents, CRM records, email, chats or webhook payloads.
-- Apply tenant/principal authorization on every operation; never rely only on a connected account or an API key.
-- Return only the minimum data required by the action schema and redact sensitive fields.
+## Current state and honest boundary
 
-## Provider rollout sequence
+Implemented in this change: a stable 120-entry catalogue, normalized IDs, domain classification, capability/skill-pack distinctions, explicit beta-review flags, and catalogue integrity tests.
 
-For each provider independently:
-1. Register a dedicated OAuth application and approved redirect URI.
-2. Select minimum scopes for a single use case; document provider-specific consent and data retention.
-3. Store client secret and refresh tokens in the approved secret manager.
-4. Add a provider adapter behind the Connector Runtime interface.
-5. Add contract tests, negative authorization tests, token lifecycle tests and mocked provider tests.
-6. Complete a security review and explicit operator approval before enabling the connector for any tenant.
+Already present from the prior foundation: provider-neutral connector registration/grant contracts and deny-by-default authorization tests.
 
-## Current implementation and limitations
+Not yet implemented: 120 provider adapters, OAuth registrations, connected user accounts, production credentials, provider-specific scopes, live API calls, durable registry, production KMS, OAuth broker, OpenAPI Actions facade, webhook gateway, admin UI, or production deployment. No third-party connection is currently claimed.
 
-Implemented: provider identifiers, typed registration/grant contracts, validation rules, deny-by-default grant evaluator and unit tests.
-
-Not implemented: persistent connector registry, actual OAuth broker, token vault/KMS integration, real Google Drive/Salesforce/Slack adapters, GPT Actions OpenAPI facade, admin UI, webhooks, durable connector audit pipeline or production deployment.
-
-Do not mark any connector as connected or available until those services are implemented and verified. The current contracts are a foundation, not a functioning SaaS integration.
+The next implementation gate is the shared OAuth Broker + durable registry + secret-manager/audit ports. Only after those are tested should providers be implemented in small, independently reviewable batches.
