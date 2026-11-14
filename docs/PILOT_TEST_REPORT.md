@@ -3,7 +3,9 @@
 Date: 2026-11-14
 Branch: `pilot/qa-hardening-2026-11-14`
 Base: `main`
-Status: IN PROGRESS — NOT APPROVED FOR EXTERNAL PILOT
+Verified CI HEAD: `c7100d14110ce3d51f70d583554d50387d3833a5`
+CI run: [TLCE CI #106](https://github.com/warchahirafiya-cloud/TLCE/actions/runs/43581885173)
+Status: FOUNDATION CHECKS PASS — NOT APPROVED FOR EXTERNAL PILOT
 
 ## Scope protection
 
@@ -22,28 +24,36 @@ Status: IN PROGRESS — NOT APPROVED FOR EXTERNAL PILOT
 6. Included the Q.P module in strict TypeScript checking and the automated test command.
 7. Added and maintained the pilot plan, case register, build status and report.
 
-## Verification status
+## Verified CI results
+
+The GitHub Actions run for the exact HEAD above completed successfully.
 
 | Check | Result |
 |---|---|
-| Pilot branch isolated from main | PASS |
-| Changes committed to pilot branch | PASS |
-| Original app.asar untouched | PASS — no app.asar write performed |
-| QuestPulse manifest/lifecycle scaffold created | PASS — code committed, tests not yet executed |
-| Q.P permissions default to zero | PASS — manifest and adapter enforce this |
-| npm typecheck | NOT RUN — awaiting CI execution |
-| npm test | NOT RUN — awaiting CI execution |
-| Legacy Q.P route/schema/business-rule mapping | BLOCKED — original source review still required |
-| Deployed route authentication | BLOCKED — deployment adapter not present |
+| Dependency installation | PASS |
+| TypeScript strict typecheck | PASS |
+| Automated unit tests | PASS — 52 passed, 0 failed |
+| QuestPulse scaffold tests | PASS — 6 tests |
+| LLM7 request-hardening tests | PASS |
+| Original app.asar untouched | PASS |
+| main branch untouched | PASS |
+
+Non-blocking runner warning: GitHub Actions emitted a Node.js 20 deprecation notice for the currently referenced checkout/setup actions. It did not fail this run and should be addressed in a separate workflow maintenance change.
+
+## Remaining blockers
+
+| Area | Status |
+|---|---|
+| QuestPulse legacy routes/schema/business-rule mapping | BLOCKED — source review still required |
+| QuestPulse legacy behavior and user-flow regression | BLOCKED — not integrated |
+| LLM7 trusted authentication on deployed route | BLOCKED — deployment adapter not present |
 | Rate limiting/provider quotas | BLOCKED — edge integration not present |
+| Durable event store and dead-letter persistence | BLOCKED |
+| DNS-aware egress controls | BLOCKED |
+| Runtime sandboxing | BLOCKED |
+| Persistent audit sink and operational monitoring | BLOCKED |
 | Production security review | NOT RUN |
-
-## Known production blockers
-
-Trusted identity/authentication, rate limiting, durable event storage and DLQ, DNS-aware egress controls, module sandboxing, persistent audit sink, observability and deployment infrastructure remain missing. LLM7 must not be publicly exposed before trusted identity and rate-limit middleware are mounted.
-
-QuestPulse remains an internal module scaffold. Its legacy behavior has not been integrated, and no feature parity is claimed.
 
 ## Decision
 
-Do not expose the pilot publicly and do not claim production readiness. Verify the exact branch HEAD in CI, complete QuestPulse source mapping and regression work, and close or formally accept all security blockers before a go/no-go decision.
+The engineering foundation and current automated checks pass. This is not production certification and does not authorize public exposure. Continue with source mapping and controlled integration of QuestPulse, then repeat regression and security testing before a go/no-go decision.
