@@ -64,7 +64,6 @@ export function createMcpApplication(config: McpConfig, audit: AuditSink) {
     return server;
   }, {
     legacy: "reject",
-    maxRequestBodySize: config.maxRequestBytes,
     responseMode: "auto"
   });
 
