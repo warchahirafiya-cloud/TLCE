@@ -1,0 +1,60 @@
+import test from "node:test";
+import assert from "node:assert/strict";
+import { createQuestPulseHost } from "../src/questpulse-host.js";
+
+function fakeElement(tagName: string) {
+  const attributes = new Map<string, string>();
+  const children: ReturnType<typeof fakeElement>[] = [];
+  return {
+    tagName,
+    attributes,
+    children,
+    id: "",
+    className: "",
+    textContent: "",
+    setAttribute(name: string, value: string) { attributes.set(name, value); },
+    append(...items: ReturnType<typeof fakeElement>[]) { children.push(...items); },
+  };
+}
+
+function fakeRoot(): HTMLElement {
+  const documentRef = { createElement: (tag: string) => fakeElement(tag) };
+  const root = {
+    ownerDocument: documentRef,
+    children: [] as ReturnType<typeof fakeElement>[],
+    replaceChildren(...items: ReturnType<typeof fakeElement>[]) { this.children = items; },
+  };
+  return root as unknown as HTMLElement;
+}
+
+const services = {
+  async request() { throw new Error("No Q.P capabilities are enabled in this integration phase"); },
+  publish() { throw new Error("No Q.P event capabilities are enabled in this integration phase"); },
+  subscribe() { throw new Error("No Q.P event capabilities are enabled in this integration phase"); },
+};
+
+test("mounts QuestPulse under the TLCE host and tears it down cleanly", async () => {
+  const host = createQuestPulseHost({ services });
+  const root = fakeRoot();
+
+  assert.equal(host.branchRegistry.get("questpulse")?.route, "/questpulse");
+  await host.mount(root, "request-test-1", new Set(), "/questpulse/offers");
+  assert.equal(host.runtime.isActive("questpulse"), true);
+  assert.equal(host.frontendHost.isMounted("questpulse"), true);
+  assert.equal(root.children.length, 1);
+  assert.equal(root.children[0].attributes.get("data-tlce-branch"), "questpulse");
+
+  assert.equal(await host.unmount(), true);
+  assert.equal(host.runtime.isActive("questpulse"), false);
+  assert.equal(host.frontendHost.isMounted("questpulse"), false);
+  assert.equal(root.children.length, 0);
+});
+
+test("does not start the branch when the route is outside its namespace", async () => {
+  const host = createQuestPulseHost({ services });
+  await assert.rejects(
+    host.mount(fakeRoot(), "request-test-2", new Set(), "/admin"),
+    /does not match registered/,
+  );
+  assert.equal(host.runtime.isActive("questpulse"), false);
+});
