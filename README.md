@@ -7,6 +7,7 @@ The installable web shell is in `apps/web/public/`; it is a static PWA foundatio
 - [Build status](docs/BUILD_STATUS.md)
 - [Implementation roadmap](docs/IMPLEMENTATION_ROADMAP.md)
 - [Operations and release runbook](docs/OPERATIONS_RUNBOOK.md)
+- [Micro-Frontend architecture](docs/MICRO_FRONTENDS.md)
 - [QuestPulse integration contract](docs/QUESTPULSE_INTEGRATION.md)
 - [Advanced serverless and edge design](docs/ADVANCED_SERVERLESS_EDGE.md)
 
