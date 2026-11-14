@@ -5,7 +5,7 @@ Status vocabulary: PASS / FAIL / BLOCKED / NOT RUN
 
 | ID | Area | Test | Expected result | Status |
 |---|---|---|---|---|
-| BUILD-01 | Build | Install locked project dependencies | Install completes reproducibly | NOT RUN |
+| BUILD-01 | Build | Install project dependencies | Install completes | NOT RUN |
 | BUILD-02 | TypeScript | Run `npm run typecheck` | No type errors | NOT RUN |
 | BUILD-03 | Unit suite | Run `npm test` | All tests pass on same HEAD | NOT RUN |
 | RT-01 | Runtime | Reject malformed module manifests | Invalid manifest is rejected | NOT RUN |
@@ -32,8 +32,11 @@ Status vocabulary: PASS / FAIL / BLOCKED / NOT RUN
 | LLM-08 | LLM7 | Missing server-side API key | 503 response; no provider call | NOT RUN |
 | LLM-09 | LLM7 | Anonymous request against deployed route | Trusted edge authentication rejects request | BLOCKED |
 | QP-01 | QuestPulse | Inventory legacy routes, schema and business rules | Traceable source map | BLOCKED |
-| QP-02 | QuestPulse | Mount Q.P as internal TLCE module | Module contract and lifecycle tests pass | BLOCKED |
-| QP-03 | QuestPulse | Regression of key user flows | Existing behavior preserved | BLOCKED |
+| QP-02 | QuestPulse | Register Q.P through TLCE Runtime Engine | Module lifecycle and health contract work | NOT RUN |
+| QP-03 | QuestPulse | Legacy user-flow regression | Existing behavior preserved after reviewed migration | BLOCKED |
+| QP-04 | QuestPulse | Inspect manifest permissions | No unreviewed capabilities are requested | NOT RUN |
+| QP-05 | QuestPulse | Supply mismatched module identity | Initialization is rejected | NOT RUN |
+| QP-06 | QuestPulse | Attempt start before initialization | Start is rejected | NOT RUN |
 | OPS-01 | Operations | Per-user/IP rate limits and provider quotas | Edge controls verified | BLOCKED |
 | OPS-02 | Operations | Production secrets and spending limits | Managed secret store and provider limits verified | BLOCKED |
 
