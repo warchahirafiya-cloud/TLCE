@@ -41,3 +41,42 @@ test("rejects malformed semantic versions", () => {
     /Invalid module version/,
   );
 });
+
+
+test("resolves dependencies before the requested module", () => {
+  const registry = new ModuleRegistry();
+  const dependency = { ...manifest, id: "tlce-core", displayName: "TLCE Core" };
+  const application = {
+    ...manifest,
+    id: "quest-pulse",
+    dependencies: [{ moduleId: "tlce-core", versionRange: "1.0.0" }],
+  };
+  registry.register(application, implementation);
+  registry.register(dependency, implementation);
+  assert.deepEqual(
+    registry.resolveStartOrder("quest-pulse").map((item) => item.manifest.id),
+    ["tlce-core", "quest-pulse"],
+  );
+});
+
+test("rejects missing dependencies and dependency cycles", () => {
+  const missingRegistry = new ModuleRegistry();
+  missingRegistry.register({
+    ...manifest,
+    dependencies: [{ moduleId: "tlce-core", versionRange: "*" }],
+  }, implementation);
+  assert.throws(() => missingRegistry.resolveStartOrder("quest-pulse"), /Missing module dependency/);
+
+  const cyclicRegistry = new ModuleRegistry();
+  cyclicRegistry.register({
+    ...manifest,
+    dependencies: [{ moduleId: "tlce-core", versionRange: "*" }],
+  }, implementation);
+  cyclicRegistry.register({
+    ...manifest,
+    id: "tlce-core",
+    displayName: "TLCE Core",
+    dependencies: [{ moduleId: "quest-pulse", versionRange: "*" }],
+  }, implementation);
+  assert.throws(() => cyclicRegistry.resolveStartOrder("quest-pulse"), /dependency cycle/);
+});
