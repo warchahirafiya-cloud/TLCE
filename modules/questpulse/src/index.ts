@@ -41,4 +41,3 @@ export class QuestPulseModule implements TLCEModule {
   }
 }
 
-export const questPulseModule = new QuestPulseModule();
