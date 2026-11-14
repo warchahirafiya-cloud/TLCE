@@ -98,7 +98,7 @@ Therefore this document does not claim that a production webhook endpoint exists
 ## 8. Rollout stages
 
 - Stage A — contract and threat review (completed as documentation).
-- Stage B — typed, allowlisted Zapier adapter and mocked transport tests (implemented on `feature/zapier-event-bridge`; CI verification pending).
+- Stage B — typed, allowlisted Zapier adapter and mocked transport tests (implemented on `feature/zapier-event-bridge`; TypeScript and unit-test CI passed on commit `4752651`).
 - Stage C — configure a staging Catch Hook manually in the user's Zapier account and store its URL as a secret; verify end-to-end using synthetic data.
 - Stage D — add durable delivery, replay protection, monitoring, and dead-letter handling.
 - Stage E — separate production Zap, credentials, data review, and explicit release approval.
