@@ -5,8 +5,7 @@ import { MicroFrontendRegistry } from "./micro-frontend-registry";
 
 const METHODS = new Set(["GET", "POST", "PUT", "PATCH", "DELETE"]);
 const EVENT_NAME = /^[a-z][a-z0-9._:-]{1,127}$/;
-const API_PATH = /^\/(?!\/)[a-zA-Z0-9._~!const API_PATH = /^\/(?!\/)[a-zA-Z0-9._~!$&'()*+,;=:@%/?#-]*$/;
-'()*+,;=:@%/?#-]*$/;
+const API_PATH = /^\/(?!\/)[a-zA-Z0-9._~!$&'()*+,;=:@%/?#-]*$/;
 
 function isSafeApiPath(path: string): boolean {
   if (!API_PATH.test(path) || path.includes("\\")) return false;
