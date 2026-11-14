@@ -77,7 +77,7 @@ test("rejects malformed metadata, schema versions, and oversized payloads", asyn
   await assert.rejects(() => consumer.handle({ ...baseEvent, producerModule: " " }), /producerModule/);
   await assert.rejects(() => consumer.handle({ ...baseEvent, idempotencyKey: "" }), /idempotencyKey/);
   await assert.rejects(() => consumer.handle({ ...baseEvent, schemaVersion: 2 }), /schema version/);
-  await assert.rejects(() => consumer.handle({ ...baseEvent, payload: { submissionRef: "x".repeat(9_000), status: "pending" } }), /200/);
+  await assert.rejects(() => consumer.handle({ ...baseEvent, payload: { submissionRef: "x".repeat(9_000), status: "pending" } }), /submissionRef/);
 });
 
 test("rejects invalid required payload values", async () => {
