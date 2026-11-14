@@ -73,3 +73,9 @@ test("absence of structural indicators is not labelled safe", () => {
   assert.equal(result.findings.length, 0);
   assert.equal(result.limitation, "local_structure_only_not_a_reputation_or_safety_verdict");
 });
+
+test("identifies known URL shorteners without resolving their destination", () => {
+  const result = scanUrlStructure("https://bit.ly/example");
+  assert.ok(result.findings.some((finding) => finding.code === "shortener_domain"));
+  assert.equal(result.normalizedUrl, "https://bit.ly/example");
+});
