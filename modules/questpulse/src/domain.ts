@@ -90,6 +90,7 @@ export interface UrlFinding {
     | "punycode_hostname"
     | "ip_literal"
     | "unusual_port"
+    | "shortener_domain"
     | "bidi_control";
   severity: "info" | "warning" | "high";
   message: string;
@@ -152,7 +153,7 @@ export function scanUrlStructure(raw: string): UrlStructureScan {
     add("unusual_port", "warning", "The URL uses a non-default port.");
   }
   if (commonShorteners.has(hostname)) {
-    add("unusual_port", "info", "The hostname is a URL-shortening service; the final destination is not checked.");
+    add("shortener_domain", "info", "The hostname is a URL-shortening service; the final destination is not checked.");
   }
 
   return {
