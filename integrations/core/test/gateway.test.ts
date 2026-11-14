@@ -68,6 +68,7 @@ test("executes allowed operation and writes audit trail", async () => {
   assert.deepEqual(result, { operation: "items.read", ok: true });
   assert.equal(state.executions, 1);
   assert.deepEqual(state.events.map((event) => event.outcome), ["allowed", "succeeded"]);
+  assert.notEqual(state.events[0].eventId, state.events[1].eventId);
 });
 
 test("denies out-of-scope requests before adapter execution", async () => {
