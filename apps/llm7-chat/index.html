@@ -97,6 +97,8 @@
       if (!content || send.disabled) return;
       intro.hidden = true;
       suggestions.hidden = true;
+      // Keep the provider context within the proxy's 20-message limit.
+      while (history.length > 18) history.splice(0, 2);
       history.push({ role: "user", content });
       addMessage("user", content);
       input.value = "";
@@ -117,7 +119,7 @@
           throw new Error(typeof data.error === "string" ? data.error : "The assistant could not respond.");
         }
         pending.textContent = data.reply;
-        history.push({ role: "assistant", content: data.reply });
+        history.push({ role: "assistant", content: data.reply.slice(0, 8000) });
       } catch (error) {
         pending.textContent = error instanceof Error ? error.message : "Connection failed. Please try again.";
         pending.classList.add("error");
