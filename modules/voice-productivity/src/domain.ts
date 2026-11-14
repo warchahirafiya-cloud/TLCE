@@ -5,7 +5,7 @@ export interface VoiceCapture { transcript: string; language?: string; capturedA
 export interface TaskDraft { id: string; title: string; kind: TaskKind; status: "draft"; requiresApproval: true; }
 export interface ProjectDraft { id: string; title: string; summary: string; sourceTranscript: string; tasks: TaskDraft[]; status: "draft"; requiresApproval: true; }
 export interface ProductivityDraft { intent: ProductivityIntent; normalizedIdea: string; project: ProjectDraft | null; tasks: TaskDraft[]; requiresApproval: true; executionEnabled: false; }
-const cleanText = (value: string): string => value.trim().replace(/\\s+/g, " ");
+const cleanText = (value: string): string => value.trim().replace(/\s+/g, " ");
 /** Creates suggestions only; the caller supplies a transcript, classified intent and stable IDs. */
 export function createProductivityDraft(capture: VoiceCapture, intent: ProductivityIntent, ids: { projectId: string; taskIds: string[] }): ProductivityDraft {
   const transcript = cleanText(capture.transcript);
