@@ -1,9 +1,10 @@
 # TLCE Build Status
 
 Last reviewed: 2026-11-14
-Working branch: `pilot/qa-hardening-2026-11-14`
-Previously verified CI HEAD: `31d3cd0dc6f1f1a59d2caca01e6f1e725f656614`
-Previously verified CI: [TLCE CI #109 — success](https://github.com/warchahirafiya-cloud/TLCE/actions/runs/43581946145)
+Working branch: `feature/mcp-infrastructure-2026-11-14`
+Latest verified CI HEAD: `636d1f0d5496c2642c6edf48e536886322b82847`
+TLCE CI: [run #345 — success](https://github.com/warchahirafiya-cloud/TLCE/actions/runs/43598082779)
+MCP Gateway CI: [run #3 — success](https://github.com/warchahirafiya-cloud/TLCE/actions/runs/43598082796)
 Parent application: The Last Cosmic Explosion (TLCE)
 Internal module: QuestPulse (Q.P)
 
@@ -23,16 +24,23 @@ Internal module: QuestPulse (Q.P)
 - QuestPulse initial domain contracts: opportunity shape/validation and local URL-structure heuristics with explicit non-verdict limitations.
 - QuestPulse Smart PWA foundation: responsive static shell, relative-scope web manifest, install-prompt support where browser-supported, SVG icon, and versioned same-origin static-shell cache allowlist with offline navigation fallback.
 - PWA contract tests added to the existing QuestPulse test glob.
-- CI workflow includes `pilot/**` push validation and strict TypeScript/unit-test commands.
+- **MCP Gateway scaffold:** isolated Node.js service under `services/mcp`, official MCP TypeScript SDK v2, TypeScript 6+ isolated from root TLCE TypeScript 5.7, modern protocol revision `2026-07-28`, and legacy protocol rejection.
+- **MCP security baseline:** RFC 7662 token introspection, expiry and resource-audience validation, required endpoint and tool scopes, Host/Origin validation, loopback-first binding, and no write-capable tools.
+- **MCP audit baseline:** metadata-only audit contract with stdout development sink; durable TLCE Core audit integration remains a production gate.
+- MCP isolated CI workflow: dependency audit, typecheck, tests and build.
+- GitHub Actions updated in the working branch to current Node 24-compatible action releases.
+- CI workflow includes `pilot/**` and feature-branch validation.
 - QuestPulse source inventory begun from preserved HTML prototypes; see [source inventory](QUESTPULSE_SOURCE_INVENTORY.md).
 
-## Verified validation
+## Verified validation at latest MCP scaffold CI HEAD
 
-- Dependency installation: passed.
-- TypeScript strict typecheck: passed.
-- Automated test suite: 52 passed, 0 failed, 0 skipped.
-- These results apply only to the exact previously verified CI HEAD above (run #109). The newer PWA commits have not yet been confirmed by a completed CI run.
-- PWA tests are authored but browser-level installation and offline smoke tests remain pending.
+- Root TLCE CI: passed at `636d1f0d5496c2642c6edf48e536886322b82847`.
+- MCP dependency installation: passed.
+- MCP `npm audit --audit-level=high`: passed, 0 reported vulnerabilities.
+- MCP TypeScript strict typecheck: passed.
+- MCP unit tests: 6 passed, 0 failed, 0 skipped.
+- MCP TypeScript build: passed.
+- These checks validate the scaffold and repository branch only; they are not production certification.
 
 ## QuestPulse Smart PWA boundary
 
@@ -51,10 +59,15 @@ The Q.P scaffold is a technical integration boundary only. It does not yet conta
 - Outbound URL helper is only a syntax-level guard; DNS resolution/pinning, redirect revalidation and network egress controls are not implemented.
 - API gateway is an in-process router, not a production HTTP server; JWT/OIDC authentication, schema validation, quotas and rate limiting remain absent.
 - Audit records have a safe constructor but no persistent audit sink, retention or access-control adapter.
+- **MCP:** actual TLCE Core OAuth issuer/introspection integration and RFC 9728 protected-resource metadata are not yet configured.
+- **MCP:** replace stdout audit with durable append-only TLCE Core audit storage and retention/access controls.
+- **MCP:** add ingress rate limiting, quotas, TLS deployment configuration, monitoring, metrics, distributed tracing and alerts.
+- **MCP:** generate and commit the npm lockfile; use reproducible `npm ci` installations.
+- **MCP:** add protocol conformance, authorization-negative, DNS-rebinding, load and failure-mode tests before production.
 - No production database, cache, secrets manager, cloud provider adapters, monitoring, deployment, DNS or infrastructure provisioning.
 - QuestPulse source mapping, product-scope reconciliation, schema migration, legacy behavior integration and regression parity remain outstanding.
 - Smart PWA production activation still requires HTTPS hosting, target-device/browser install and offline checks, and explicit deployment approval.
 
 ## Release position
 
-Engineering foundation checks pass at the previously verified CI revision; this is not production certification. Do not expose the pilot publicly or merge to `main` until source integration, security gates and operational requirements are independently reviewed and approved.
+The MCP Gateway is a validated engineering scaffold, not a deployed service. Do not expose it publicly or merge it to `main` until identity integration, durable audit, ingress controls, reproducible dependency installation, protocol/security/load testing, and operational requirements are independently reviewed and approved.
