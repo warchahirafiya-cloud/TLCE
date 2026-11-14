@@ -71,3 +71,12 @@ test("rejects oversized declared request bodies", async () => {
   ));
   assert.equal(response.status, 413);
 });
+
+test("rejects cross-origin browser requests", async () => {
+  const handler = createLlm7ChatHandler(env);
+  const response = await handler(request(
+    { messages: [{ role: "user", content: "Hello" }] },
+    { origin: "https://attacker.example" },
+  ));
+  assert.equal(response.status, 403);
+});
