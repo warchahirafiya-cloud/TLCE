@@ -60,10 +60,13 @@ test("rejects event types outside the explicit allowlist before network access",
   assert.equal(calls, 0);
 });
 
-test("rejects unexpected required payload values", async () => {
+test("rejects invalid required payload values", async () => {
   const consumer = makeConsumer(async () => new Response("ok"));
   await assert.rejects(
-    () => consumer.handle({ ...baseEvent, payload: { submissionRef: "sub-1", status: "pending", email: "x" } as never }),
+    () => consumer.handle({
+      ...baseEvent,
+      payload: { submissionRef: "sub-1", status: "draft", email: "x" } as never,
+    }),
     /Invalid submission-received status/,
   );
 });
