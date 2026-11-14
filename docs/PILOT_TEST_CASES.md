@@ -1,8 +1,9 @@
 # TLCE Pilot Test Cases
 
 Date: 2026-11-14
-Verified CI HEAD: `c7100d14110ce3d51f70d583554d50387d3833a5`
-CI run: [TLCE CI #106](https://github.com/warchahirafiya-cloud/TLCE/actions/runs/43581885173)
+Working branch: `pilot/qa-hardening-2026-11-14`
+Verified CI HEAD: `31d3cd0dc6f1f1a59d2caca01e6f1e725f656614`
+CI run: [TLCE CI #109](https://github.com/warchahirafiya-cloud/TLCE/actions/runs/43581946145)
 Status vocabulary: PASS / FAIL / BLOCKED / NOT RUN
 
 | ID | Area | Test | Expected result | Status |
@@ -33,7 +34,7 @@ Status vocabulary: PASS / FAIL / BLOCKED / NOT RUN
 | LLM-07 | LLM7 | Provider error/invalid response | Safe 502 response; provider details not leaked | PASS |
 | LLM-08 | LLM7 | Missing server-side API key | 503 response; no provider call | NOT RUN |
 | LLM-09 | LLM7 | Anonymous request against deployed route | Trusted edge authentication rejects request | BLOCKED |
-| QP-01 | QuestPulse | Inventory legacy routes, schema and business rules | Traceable source map | BLOCKED |
+| QP-01 | QuestPulse | Inventory preserved product prototypes and reconcile scope | Source inventory with explicit provenance and unresolved conflicts | PASS — initial inventory only |
 | QP-02 | QuestPulse | Register Q.P through TLCE Runtime Engine | Module lifecycle and health contract work | PASS |
 | QP-03 | QuestPulse | Legacy user-flow regression | Existing behavior preserved after reviewed migration | BLOCKED |
 | QP-04 | QuestPulse | Inspect manifest permissions | No unreviewed capabilities are requested | PASS |
@@ -44,4 +45,4 @@ Status vocabulary: PASS / FAIL / BLOCKED / NOT RUN
 
 ## Evidence
 
-The CI run completed successfully on the exact verified HEAD. The job log reports 52 tests passed, zero failed, zero skipped. Cases marked BLOCKED require production adapters or reviewed legacy source and are not covered by this CI result.
+CI run #109 completed successfully on the exact HEAD listed above. The job log reports 52 tests passed, zero failed, zero skipped. The source inventory PASS is limited to cataloguing preserved prototypes; it does not imply feature migration or product-scope approval. Cases marked BLOCKED require production adapters, reviewed legacy source, or explicit product decisions and are not covered by this CI result.
