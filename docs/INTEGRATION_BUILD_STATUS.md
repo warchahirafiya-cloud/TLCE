@@ -64,3 +64,10 @@ Security baseline: [IETF RFC 9700](https://www.rfc-editor.org/rfc/rfc9700.html).
 - Connection lifecycle now requires fresh explicit verification evidence before the connected state can be entered. Verification is no longer inferred from the lifecycle label.
 - Audit events receive distinct cryptographically random identifiers to avoid collisions between allowed/succeeded/failed events for one operation.
 - PostgreSQL and KMS adapters remain unimplemented; migration is reference source only and has not been applied to a live database.
+
+
+## Additional delivery — PostgreSQL repository adapter
+- Implemented driver-neutral PostgreSQL adapters for connection records, grants, OAuth transaction storage and audit insertion.
+- Every repository operation establishes a transaction-local tenant context before touching RLS-protected tables.
+- Connection lifecycle updates use compare-and-set; OAuth state hashes are stored instead of raw state, PKCE verifier bytes pass through an injected cipher, and callback consumption binds tenant/principal/session/expiry in one DELETE ... RETURNING operation.
+- The database pool, KMS-backed verifier cipher, database provisioning, migration execution and live database integration tests remain deployment-specific and are not present in this repository.
