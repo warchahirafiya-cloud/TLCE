@@ -8,6 +8,17 @@ export interface RegisteredModule {
 const ID_PATTERN = /^[a-z][a-z0-9-]{2,63}$/;
 const VERSION_PATTERN = /^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)(?:-[0-9A-Za-z.-]+)?$/;
 
+function cloneManifest(manifest: ModuleManifest): ModuleManifest {
+  return {
+    ...manifest,
+    dependencies: manifest.dependencies.map((dependency) => ({ ...dependency })),
+    requestedPermissions: manifest.requestedPermissions.map((permission) => ({
+      resource: permission.resource,
+      actions: [...permission.actions],
+    })),
+  };
+}
+
 export class ModuleRegistry {
   private readonly modules = new Map<string, RegisteredModule>();
 
@@ -16,24 +27,23 @@ export class ModuleRegistry {
     if (this.modules.has(manifest.id)) {
       throw new Error(`Module already registered: ${manifest.id}`);
     }
-    // Store a defensive copy so callers cannot mutate registered dependency or permission policy.
-    const snapshot: ModuleManifest = {
-      ...manifest,
-      dependencies: manifest.dependencies.map((dependency) => ({ ...dependency })),
-      requestedPermissions: manifest.requestedPermissions.map((permission) => ({
-        resource: permission.resource,
-        actions: [...permission.actions],
-      })),
-    };
-    this.modules.set(manifest.id, { manifest: snapshot, implementation });
+    this.modules.set(manifest.id, {
+      manifest: cloneManifest(manifest),
+      implementation,
+    });
   }
 
+  /** Return a defensive manifest snapshot; callers cannot mutate registry policy. */
   get(moduleId: string): RegisteredModule | undefined {
-    return this.modules.get(moduleId);
+    const record = this.modules.get(moduleId);
+    return record ? { manifest: cloneManifest(record.manifest), implementation: record.implementation } : undefined;
   }
 
   list(): ReadonlyArray<RegisteredModule> {
-    return [...this.modules.values()];
+    return [...this.modules.values()].map((record) => ({
+      manifest: cloneManifest(record.manifest),
+      implementation: record.implementation,
+    }));
   }
 
   /** Resolve dependencies before dependents; fail closed on missing, incompatible, or cyclic edges. */
@@ -64,7 +74,10 @@ export class ModuleRegistry {
       }
       visiting.delete(id);
       visited.add(id);
-      ordered.push(record);
+      ordered.push({
+        manifest: cloneManifest(record.manifest),
+        implementation: record.implementation,
+      });
     };
 
     visit(moduleId);
@@ -73,24 +86,41 @@ export class ModuleRegistry {
 
   private validate(manifest: ModuleManifest): void {
     if (!manifest || typeof manifest !== "object") throw new Error("Invalid module manifest");
-    if (!ID_PATTERN.test(manifest.id)) throw new Error("Invalid module id");
-    if (!VERSION_PATTERN.test(manifest.version)) throw new Error("Invalid module version");
-    if (!manifest.displayName?.trim()) throw new Error("Module displayName is required");
-    if (!manifest.apiVersion?.trim()) throw new Error("Module apiVersion is required");
-    if (!manifest.entrypoint?.trim()) throw new Error("Module entrypoint is required");
+    if (typeof manifest.id !== "string" || !ID_PATTERN.test(manifest.id)) throw new Error("Invalid module id");
+    if (typeof manifest.version !== "string" || !VERSION_PATTERN.test(manifest.version)) throw new Error("Invalid module version");
+    if (typeof manifest.displayName !== "string" || !manifest.displayName.trim()) throw new Error("Module displayName is required");
+    if (typeof manifest.apiVersion !== "string" || !manifest.apiVersion.trim()) throw new Error("Module apiVersion is required");
+    if (typeof manifest.entrypoint !== "string" || !manifest.entrypoint.trim()) throw new Error("Module entrypoint is required");
     if (!Array.isArray(manifest.dependencies) || !Array.isArray(manifest.requestedPermissions)) {
       throw new Error("Module dependencies and requestedPermissions must be arrays");
     }
+
+    const dependencyIds = new Set<string>();
     for (const dependency of manifest.dependencies) {
-      if (!ID_PATTERN.test(dependency.moduleId) ||
+      if (!dependency || typeof dependency.moduleId !== "string" ||
+          !ID_PATTERN.test(dependency.moduleId) ||
+          typeof dependency.versionRange !== "string" ||
           (dependency.versionRange !== "*" && !VERSION_PATTERN.test(dependency.versionRange))) {
         throw new Error("Invalid module dependency declaration");
       }
+      if (dependency.moduleId === manifest.id || dependencyIds.has(dependency.moduleId)) {
+        throw new Error("Self or duplicate module dependency is not allowed");
+      }
+      dependencyIds.add(dependency.moduleId);
     }
+
+    const resources = new Set<string>();
     for (const permission of manifest.requestedPermissions) {
-      if (!permission.resource.trim() || !Array.isArray(permission.actions) ||
-          permission.actions.some((action) => !action.trim())) {
+      if (!permission || typeof permission.resource !== "string" ||
+          !permission.resource.trim() || !Array.isArray(permission.actions) ||
+          permission.actions.length === 0 ||
+          permission.actions.some((action) => typeof action !== "string" || !action.trim())) {
         throw new Error("Invalid requested permission");
+      }
+      if (resources.has(permission.resource)) throw new Error("Duplicate permission resource");
+      resources.add(permission.resource);
+      if (new Set(permission.actions).size !== permission.actions.length) {
+        throw new Error("Duplicate permission action");
       }
     }
   }

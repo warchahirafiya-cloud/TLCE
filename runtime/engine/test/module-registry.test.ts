@@ -42,7 +42,6 @@ test("rejects malformed semantic versions", () => {
   );
 });
 
-
 test("resolves dependencies before the requested module", () => {
   const registry = new ModuleRegistry();
   const dependency = { ...manifest, id: "tlce-core", displayName: "TLCE Core" };
@@ -79,4 +78,36 @@ test("rejects missing dependencies and dependency cycles", () => {
     dependencies: [{ moduleId: "quest-pulse", versionRange: "*" }],
   }, implementation);
   assert.throws(() => cyclicRegistry.resolveStartOrder("quest-pulse"), /dependency cycle/);
+});
+
+test("registry reads cannot mutate stored manifest or permission policy", () => {
+  const registry = new ModuleRegistry();
+  const source = {
+    ...manifest,
+    requestedPermissions: [{ resource: "profile", actions: ["read"] }],
+  };
+  registry.register(source, implementation);
+  source.requestedPermissions[0].actions.push("delete");
+  const returned = registry.get("quest-pulse")!;
+  returned.manifest.requestedPermissions[0].actions.push("write");
+  returned.manifest.displayName = "tampered";
+  assert.deepEqual(registry.get("quest-pulse")?.manifest.requestedPermissions, [
+    { resource: "profile", actions: ["read"] },
+  ]);
+  assert.equal(registry.get("quest-pulse")?.manifest.displayName, "QuestPulse");
+});
+
+test("rejects duplicate permission resources and self-dependencies", () => {
+  const registry = new ModuleRegistry();
+  assert.throws(() => registry.register({
+    ...manifest,
+    requestedPermissions: [
+      { resource: "profile", actions: ["read"] },
+      { resource: "profile", actions: ["write"] },
+    ],
+  }, implementation), /Duplicate permission resource/);
+  assert.throws(() => registry.register({
+    ...manifest,
+    dependencies: [{ moduleId: "quest-pulse", versionRange: "*" }],
+  }, implementation), /Self or duplicate/);
 });
