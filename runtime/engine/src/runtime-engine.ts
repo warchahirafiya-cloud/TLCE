@@ -21,15 +21,19 @@ export class RuntimeEngine {
   }
 
   async startModule(moduleId: string): Promise<void> {
+    const startOrder = this.registry.resolveStartOrder(moduleId);
+    for (const registered of startOrder) {
+      await this.startSingleModule(registered.manifest.id);
+    }
+  }
+
+  private async startSingleModule(moduleId: string): Promise<void> {
     const registered = this.registry.get(moduleId);
     if (!registered) throw new Error(`Unknown module: ${moduleId}`);
     if (this.active.has(moduleId)) return;
 
-    const grantedPermissions = this.permissionPolicy(
-      moduleId,
-      registered.manifest.requestedPermissions,
-    );
     const requested = registered.manifest.requestedPermissions;
+    const grantedPermissions = this.permissionPolicy(moduleId, requested);
     const unauthorized = grantedPermissions.filter((grant) => {
       const request = requested.find((item) => item.resource === grant.resource);
       return !request || grant.actions.some((action) => !request.actions.includes(action));
@@ -50,7 +54,6 @@ export class RuntimeEngine {
       await registered.implementation.start();
       this.active.add(moduleId);
     } catch (error) {
-      // Best-effort cleanup prevents partially initialized modules from being marked active.
       try { await registered.implementation.stop(); } catch { /* preserve original failure */ }
       throw error;
     }
