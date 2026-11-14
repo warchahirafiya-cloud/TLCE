@@ -1,7 +1,7 @@
 import { createHash } from "node:crypto";
-import type { IntegrationGrant, IntegrationLifecycle, ProviderDescriptor } from "./contracts.js";
-import type { IntegrationAuditSink, SecretReference } from "./adapter.js";
-import type { OAuthCallbackBinding, OAuthTransactionStore, PendingOAuthTransaction } from "./oauth.js";
+import type { IntegrationGrant, IntegrationLifecycle, ProviderDescriptor } from "../../core/src/contracts.js";
+import type { IntegrationAuditSink } from "../../core/src/adapter.js";
+import type { OAuthCallbackBinding, OAuthTransactionStore, PendingOAuthTransaction } from "../../core/src/oauth.js";
 import type {
   DurableIntegrationAuditRecord,
   IntegrationConnectionRepository,
@@ -9,7 +9,7 @@ import type {
   IntegrationPersistence,
   PersistedIntegrationConnection,
   ProviderRegistryRepository,
-} from "./persistence.js";
+} from "../../core/src/persistence.js";
 
 export interface PgQueryResult<Row extends Record<string, unknown> = Record<string, unknown>> {
   readonly rows: readonly Row[];
