@@ -26,5 +26,7 @@ jobs:
         run: npm install
       - name: Type check
         run: npm run typecheck
+      - name: Build browser host bundle
+        run: npm run build:web
       - name: Unit tests
         run: npm test
