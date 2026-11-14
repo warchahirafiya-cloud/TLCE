@@ -4,6 +4,7 @@
   const floatButton = document.querySelector("[data-agent-float]");
   const openButton = document.querySelector("[data-agent-open]");
   const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  let suppressNextClick = false;
 
   const setAgentPanel = (open) => {
     if (!details || !floatButton) return;
@@ -11,7 +12,8 @@
     floatButton.setAttribute("aria-expanded", String(open));
     if (open) details.scrollIntoView({ behavior: reducedMotion ? "auto" : "smooth", block: "nearest" });
   };
-  floatButton?.addEventListener("click", () => {
+  floatButton?.addEventListener("click", (event) => {
+    if (suppressNextClick) { event.preventDefault(); suppressNextClick = false; return; }
     setAgentPanel(floatButton.getAttribute("aria-expanded") !== "true");
   });
   openButton?.addEventListener("click", () => setAgentPanel(true));
@@ -53,6 +55,7 @@
     const finishDrag = (event) => {
       if (pointerId !== event.pointerId) return;
       if (dragged) {
+        suppressNextClick = true;
         const rect = floatButton.getBoundingClientRect();
         const dockLeft = rect.left + rect.width / 2 < window.innerWidth / 2;
         floatButton.style.left = dockLeft ? "8px" : "auto";
