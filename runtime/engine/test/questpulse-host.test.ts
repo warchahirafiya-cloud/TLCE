@@ -2,18 +2,23 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { createQuestPulseHost } from "../src/questpulse-host.js";
 
-function fakeElement(tagName: string) {
+interface FakeElement {
+  tagName: string;
+  attributes: Map<string, string>;
+  children: FakeElement[];
+  id: string;
+  className: string;
+  textContent: string;
+  setAttribute(name: string, value: string): void;
+  append(...items: FakeElement[]): void;
+}
+function fakeElement(tagName: string): FakeElement {
   const attributes = new Map<string, string>();
-  const children: ReturnType<typeof fakeElement>[] = [];
+  const children: FakeElement[] = [];
   return {
-    tagName,
-    attributes,
-    children,
-    id: "",
-    className: "",
-    textContent: "",
-    setAttribute(name: string, value: string) { attributes.set(name, value); },
-    append(...items: ReturnType<typeof fakeElement>[]) { children.push(...items); },
+    tagName, attributes, children, id: "", className: "", textContent: "",
+    setAttribute(name, value) { attributes.set(name, value); },
+    append(...items) { children.push(...items); },
   };
 }
 
