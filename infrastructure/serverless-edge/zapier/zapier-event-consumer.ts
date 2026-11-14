@@ -100,12 +100,14 @@ export class ZapierEventConsumer implements EventConsumer {
   private readonly timeoutMs: number;
   private readonly fetchImpl: typeof fetch;
   private readonly now: () => Date;
+  private readonly signingSecret: string;
 
   constructor(config: ZapierDeliveryConfig) {
     this.hookUrl = validateHookUrl(config.hookUrl);
     if (!config.signingSecret || config.signingSecret.length < 32) {
       throw new Error("Zapier signing secret must contain at least 32 characters");
     }
+    this.signingSecret = config.signingSecret;
     this.timeoutMs = config.timeoutMs ?? 5_000;
     if (!Number.isSafeInteger(this.timeoutMs) || this.timeoutMs < 250 || this.timeoutMs > 30_000) {
       throw new Error("timeoutMs must be an integer between 250 and 30000");
@@ -147,7 +149,7 @@ export class ZapierEventConsumer implements EventConsumer {
     if (Buffer.byteLength(body, "utf8") > 8_192) throw new Error("Zapier event payload exceeds 8 KiB");
 
     const timestamp = String(Math.floor(this.now().getTime() / 1000));
-    const signature = createHmac("sha256", this.config.signingSecret)
+    const signature = createHmac("sha256", this.signingSecret)
       .update(`${timestamp}.${body}`)
       .digest("hex");
 
