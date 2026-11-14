@@ -8,22 +8,14 @@ import { trustCyberShieldMicroFrontendManifest } from "./trust-cybershield/src/m
 import { questPulseManifest } from "./questpulse/src/manifest.js";
 import { QuestPulseModule } from "./questpulse/src/index.js";
 import { questPulseMicroFrontendManifest } from "./questpulse/src/micro-frontend-manifest.js";
+import { voiceProductivityManifest } from "./voice-productivity/src/manifest.js";
+import { VoiceProductivityModule } from "./voice-productivity/src/index.js";
+import { voiceProductivityMicroFrontendManifest } from "./voice-productivity/src/micro-frontend-manifest.js";
 
 /** Single composition point for built-in product branches hosted by TLCE. */
 export function registerBuiltInProductBranches(registry: ProductBranchRegistry): void {
-  registry.register({
-    moduleManifest: questPulseManifest,
-    frontendManifest: questPulseMicroFrontendManifest,
-    implementation: new QuestPulseModule(),
-  });
-  registry.register({
-    moduleManifest: trustCyberShieldManifest,
-    frontendManifest: trustCyberShieldMicroFrontendManifest,
-    implementation: new TrustCyberShieldModule(),
-  });
-  registry.register({
-    moduleManifest: circularEconomyManifest,
-    frontendManifest: circularEconomyMicroFrontendManifest,
-    implementation: new CircularEconomyModule(),
-  });
+  registry.register({ moduleManifest: questPulseManifest, frontendManifest: questPulseMicroFrontendManifest, implementation: new QuestPulseModule() });
+  registry.register({ moduleManifest: trustCyberShieldManifest, frontendManifest: trustCyberShieldMicroFrontendManifest, implementation: new TrustCyberShieldModule() });
+  registry.register({ moduleManifest: circularEconomyManifest, frontendManifest: circularEconomyMicroFrontendManifest, implementation: new CircularEconomyModule() });
+  registry.register({ moduleManifest: voiceProductivityManifest, frontendManifest: voiceProductivityMicroFrontendManifest, implementation: new VoiceProductivityModule() });
 }

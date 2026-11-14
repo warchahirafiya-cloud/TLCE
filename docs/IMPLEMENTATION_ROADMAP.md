@@ -91,3 +91,16 @@ No credentials, external infrastructure or production services are assumed to ex
 - [ ] Add authentication, audit logging, retention controls, incident response and independent security review.
 - [ ] Run CI and integration tests before considering any production activation.
 
+
+
+## Voice-First Productivity branch foundation
+- [x] Add internal voice-productivity module manifest and reserve /voice.
+- [x] Add provider-neutral transcript, intent, project and task draft contracts.
+- [x] Add approval-required draft generation with execution disabled by default.
+- [x] Add deterministic domain tests and module documentation.
+- [ ] Build accessible voice-first UI with explicit microphone consent and push-to-talk.
+- [ ] Add replaceable speech-to-text and text-to-speech adapters; evaluate Arabic and dialect quality.
+- [ ] Add intent extraction, editable transcript review and confirmation prompts.
+- [ ] Add identity-bound project/task persistence, audit history and retention controls.
+- [ ] Route only approved tasks into internal TLCE branches.
+- [ ] Complete privacy, prompt-injection, security, latency and cost tests; confirm CI before release.
