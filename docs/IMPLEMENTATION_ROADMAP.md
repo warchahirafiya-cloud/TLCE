@@ -74,3 +74,20 @@ No credentials, external infrastructure or production services are assumed to ex
 - [ ] Review jurisdictional requirements before enabling payments, escrow, regulated assets or cross-border transfers.
 - [ ] Add staging integration tests and security review before production activation.
 
+
+
+## Trust & CyberShield branch foundation
+- [x] Add internal `trust-cybershield` module and reserve the parent route `/trust`.
+- [x] Add offline URL pre-check heuristics for unsafe schemes, embedded credentials, local/private host literals, shorteners, punycode and HTTP.
+- [x] Add smart-contract evidence triage for source verification, proxy/owner powers and unrestricted approvals.
+- [x] Add free/discount/reward offer red-flag checks, including secret phrase and upfront-fee requests.
+- [x] Add DNS snapshot comparison for record mismatches and expected DNSSEC/DMARC posture.
+- [x] Add deterministic tests and document limitations and security boundaries.
+- [ ] Build accessible user-facing security dashboard and reporting workflow.
+- [ ] Integrate reputable URL/domain threat-intelligence feeds with privacy controls and source attribution.
+- [ ] Implement isolated, SSRF-resistant live URL inspection only after security review.
+- [ ] Add chain-specific read-only RPC adapters, verified-source retrieval and transaction simulation in isolated infrastructure.
+- [ ] Add read-only DNS monitoring, consent-based alerts and safe rollback workflow; no automatic DNS changes.
+- [ ] Add authentication, audit logging, retention controls, incident response and independent security review.
+- [ ] Run CI and integration tests before considering any production activation.
+
