@@ -1,4 +1,4 @@
-import type { TlceEvent, EventConsumer } from "./events";
+import type { TlceEvent, EventConsumer } from "../contracts/events.js";
 
 export type EventClaimResult = "claimed" | "completed" | "in_progress";
 
