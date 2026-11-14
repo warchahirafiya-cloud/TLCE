@@ -29,7 +29,7 @@ export interface OAuthTransactionStore {
   /** Must atomically reject duplicate state values. */
   put(transaction: PendingOAuthTransaction): Promise<void>;
   /** Must atomically return-and-delete a transaction to prevent replay. */
-  consume(state: string): Promise<PendingOAuthTransaction | undefined>;
+  consume(state: string, binding: OAuthCallbackBinding): Promise<PendingOAuthTransaction | undefined>;
 }
 
 export interface OAuthStartResult {
@@ -121,13 +121,8 @@ export async function consumeOAuthCallbackState(
   now = Date.now(),
 ): Promise<PendingOAuthTransaction> {
   if (!state || state.length > 256) throw new Error("Invalid OAuth state");
-  const transaction = await store.consume(state);
-  if (!transaction) throw new Error("Unknown or already-used OAuth state");
+  const transaction = await store.consume(state, binding);
+  if (!transaction) throw new Error("Unknown, expired, replayed, or incorrectly bound OAuth state");
   if (transaction.expiresAt <= now) throw new Error("OAuth state expired");
-  if (transaction.tenantId !== binding.tenantId ||
-      transaction.principalId !== binding.principalId ||
-      transaction.browserSessionHash !== binding.browserSessionHash) {
-    throw new Error("OAuth callback session binding mismatch");
-  }
   return transaction;
 }
