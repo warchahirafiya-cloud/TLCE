@@ -1,30 +1,30 @@
 # TLCE Implementation Roadmap
 
-## Foundation — implemented on feature/serverless-edge
-- [x] Establish public parent repository and feature branch.
-- [x] Define hierarchical architecture and serverless/edge target.
-- [x] Add provider-neutral infrastructure contracts.
-- [x] Add shared module manifest contracts.
-- [x] Add deny-by-default authorization helper.
-- [x] Add initial module registry and runtime lifecycle API.
-- [x] Establish QuestPulse internal-module boundary documentation.
-- [x] Validate manifest identifiers, versions, dependency declarations, and permission declarations.
-- [x] Resolve dependency start order and reject missing dependencies and cycles.
-- [x] Return defensive manifest snapshots from the registry.
-- [x] Reject runtime permission grants outside the module's declared request.
-- [x] Coalesce concurrent startup requests for the same module.
-- [x] Add automated tests for registry integrity, permission enforcement, lifecycle behavior, and concurrent startup.
+## Completed repository foundation
+- [x] Hierarchical parent-platform architecture and provider-neutral serverless/edge contracts.
+- [x] Module manifests, dependency resolver, permission declarations and lifecycle contracts.
+- [x] Runtime registry validation and defensive snapshots.
+- [x] Serialized module startup and shutdown; deny-by-default grants and immutable context.
+- [x] Health report validation and startup failure cleanup.
+- [x] API gateway request/path validation, capability checks and error isolation.
+- [x] Idempotent event processor with bounded retries and dead-letter sink interface.
+- [x] Outbound URL syntax guard for local/private literal targets.
+- [x] Audit record constructor with secret-bearing metadata rejection.
+- [x] Automated tests for implemented contracts and security boundaries.
+- [x] QuestPulse integration ownership contract and migration constraints.
+- [x] Security threat model and explicit production release gates.
 
-## Remaining engineering gates
-1. Add module configuration schema validation and signed/verified module metadata.
-2. Add audit events, structured telemetry, and trace propagation.
-3. Add adapter contract tests and reference adapters for cache, event publishing, and serverless execution.
-4. Design durable event delivery, idempotency storage, retry policy, and dead-letter handling.
-5. Add a hardened module isolation model before loading untrusted module code.
-6. Complete the QuestPulse integration mapping and migrate its domain behavior through TLCE Core contracts without duplicating identity or social services.
-7. Perform a documented security review and threat model.
-8. Add production-grade authentication, request validation, rate limiting, and gateway hardening.
-9. Evaluate provider adapters in a non-production environment after explicit approval.
+## Remaining work before a production candidate
+1. Implement and contract-test a durable idempotency store with atomic claims, leases, crash recovery and retention.
+2. Implement durable broker/queue and dead-letter adapter; define replay and poison-message procedures.
+3. Implement DNS-aware outbound egress proxy with address pinning, redirect validation and network-level private-range blocking.
+4. Implement signed module artifacts and a hardened process/container isolation boundary before any dynamic module loading.
+5. Implement production authentication (OIDC/JWT verification), schema validation, rate limiting, quotas and tenant isolation at the gateway.
+6. Implement persistent audit sink, audit access controls, encryption, retention and operational alerts.
+7. Implement configuration schema validation, secret injection, structured telemetry, traces and SLOs.
+8. Obtain and review authoritative QuestPulse source; map legacy routes/tables and write field-level migration and contract tests.
+9. Complete integration, threat-model review, abuse-case tests, SBOM/dependency/secret scans and independent security review.
+10. Evaluate staging deployment and rollback only after explicit approval.
 
 ## Release policy
-All work remains on a feature branch until tests, security review, and maintainer review pass. No production deployment, DNS mutation, paid cloud resource, or secret provisioning is implied by this roadmap. The main branch is not modified by this work.
+Remain on the feature branch until CI passes on the current head, source integration is reviewed, security gates pass and maintainers approve. Do not merge into main, deploy, alter DNS, provision paid resources or migrate production data without explicit approval.
