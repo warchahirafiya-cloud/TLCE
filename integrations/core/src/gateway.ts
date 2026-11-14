@@ -1,3 +1,4 @@
+import { randomUUID } from "node:crypto";
 import type {
   IntegrationGrant,
   OperationRequest,
@@ -42,7 +43,6 @@ export class IntegrationGateway {
 
     const decision = authorizeIntegrationOperation(provider, grant, request);
     const baseAudit = {
-      eventId: `${request.correlationId}:${request.operation}`,
       occurredAt: request.now ?? Date.now(),
       correlationId: request.correlationId,
       tenantId: request.tenantId,
@@ -51,35 +51,26 @@ export class IntegrationGateway {
       operation: request.operation,
     };
 
+    const writeAudit = (outcome: "allowed" | "denied" | "succeeded" | "failed", reason?: string) =>
+      this.dependencies.audit.append({ ...baseAudit, eventId: randomUUID(), outcome, ...(reason ? { reason } : {}) });
+
     if (!decision.allowed) {
-      await this.dependencies.audit.append({
-        ...baseAudit,
-        outcome: "denied",
-        reason: decision.reason,
-      });
+      await writeAudit("denied", decision.reason);
       throw new IntegrationAuthorizationError(decision.reason);
     }
     if (!adapter || adapter.providerId !== request.providerId) {
-      await this.dependencies.audit.append({
-        ...baseAudit,
-        outcome: "denied",
-        reason: "adapter_unavailable",
-      });
+      await writeAudit("denied", "adapter_unavailable");
       throw new IntegrationAuthorizationError("adapter_unavailable");
     }
 
     const operation = adapter.operations.find((item) => item.name === request.operation);
     if (!operation || operation.permission !== request.permission ||
         (operation.financial && request.ownerConfirmed !== true)) {
-      await this.dependencies.audit.append({
-        ...baseAudit,
-        outcome: "denied",
-        reason: "adapter_operation_policy_mismatch",
-      });
+      await writeAudit("denied", "adapter_operation_policy_mismatch");
       throw new IntegrationAuthorizationError("adapter_operation_policy_mismatch");
     }
 
-    await this.dependencies.audit.append({ ...baseAudit, outcome: "allowed" });
+    await writeAudit("allowed");
     const context: ProviderOperationContext = {
       tenantId: request.tenantId,
       principalId: request.principalId,
@@ -89,14 +80,10 @@ export class IntegrationGateway {
 
     try {
       const result = await adapter.execute(request.operation, request.input, context);
-      await this.dependencies.audit.append({ ...baseAudit, outcome: "succeeded" });
+      await writeAudit("succeeded");
       return result as T;
     } catch (error) {
-      await this.dependencies.audit.append({
-        ...baseAudit,
-        outcome: "failed",
-        reason: error instanceof Error ? error.name : "unknown_error",
-      });
+      await writeAudit("failed", error instanceof Error ? error.name : "unknown_error");
       throw error;
     }
   }
