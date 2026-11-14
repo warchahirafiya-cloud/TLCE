@@ -62,7 +62,7 @@ test("mounts QuestPulse under the TLCE host and tears it down cleanly", async ()
 test("does not start the branch when the route is outside its namespace", async () => {
   const host = createQuestPulseHost({ services });
   await assert.rejects(
-    host.mount(fakeRoot(), "request-test-2", new Set(), "/admin"),
+    host.mount(fakeRoot() as unknown as HTMLElement, "request-test-2", new Set(), "/admin"),
     /does not match registered/,
   );
   assert.equal(host.runtime.isActive("questpulse"), false);
