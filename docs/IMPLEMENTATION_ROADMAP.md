@@ -11,6 +11,7 @@
 - [x] Idempotent event processor with bounded retries and dead-letter sink interface.
 - [x] PostgreSQL durable deduplication/dead-letter adapter and transactional outbox adapter with migrations and tests.
 - [x] QuestPulse task worker contract with provider-neutral executor injection, execution timeout/cancellation, bounded JSON input/output and result persistence contract.
+- [x] PostgreSQL first-write-wins task result sink with taskId uniqueness, bounded serialization and migration.
 - [x] Outbound URL syntax guard for local/private literal targets.
 - [x] Automated tests for implemented contracts and security boundaries.
 - [x] QuestPulse integration ownership contract and migration constraints.
@@ -18,7 +19,7 @@
 
 ## Remaining work before a production candidate
 1. Deploy the outbox dispatcher as a supervised worker process and add PostgreSQL/broker integration tests for crash recovery, redelivery, poison messages and lease renewal.
-2. Implement a durable task result sink with unique taskId upsert and provider-side idempotency; ensure external side effects cannot duplicate on retries.
+2. Connect and integration-test the PostgreSQL task result sink; implement provider-side idempotency so external side effects cannot duplicate on retries.
 3. Deploy and integration-test PostgreSQL idempotency, dead-letter and transactional outbox adapters against a managed database; validate concurrent claims, lease expiry, process crashes, outbox redelivery, retention and backup/restore.
 4. Implement DNS-aware outbound egress proxy with address pinning, redirect validation and network-level private-range blocking.
 5. Implement signed module artifacts and a hardened process/container isolation boundary before any dynamic module loading.
