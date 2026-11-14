@@ -10,6 +10,11 @@ export interface ConnectionLifecycleRecord {
   readonly revokedAt?: number;
 }
 
+export interface ConnectionVerificationEvidence {
+  readonly connectionVerified: true;
+  readonly checkedAt: number;
+}
+
 const transitions: Readonly<Record<IntegrationLifecycle, readonly IntegrationLifecycle[]>> = {
   catalogued: ["reviewed"],
   reviewed: ["consent_pending", "disconnected"],
@@ -21,18 +26,28 @@ const transitions: Readonly<Record<IntegrationLifecycle, readonly IntegrationLif
   revoked: [],
 };
 
+/** Applies a lifecycle transition. Verification is evidence-driven, never inferred from the state name. */
 export function transitionConnectionLifecycle(
   current: ConnectionLifecycleRecord,
   next: IntegrationLifecycle,
   now = Date.now(),
+  verification?: ConnectionVerificationEvidence,
 ): ConnectionLifecycleRecord {
   if (!transitions[current.lifecycle].includes(next)) {
     throw new Error(`Invalid connection lifecycle transition: ${current.lifecycle} -> ${next}`);
   }
-  const connectionVerified = next === "connected" ||
-    next === "health_checked" || next === "enabled"
-      ? current.connectionVerified || next === "connected"
-      : false;
+
+  let connectionVerified = current.connectionVerified;
+  if (next === "connected") {
+    if (!verification || verification.connectionVerified !== true) {
+      throw new Error("Provider verification evidence is required before marking connected");
+    }
+    if (verification.checkedAt > now || now - verification.checkedAt > 5 * 60 * 1000) {
+      throw new Error("Provider verification evidence is stale or from the future");
+    }
+    connectionVerified = true;
+  }
+  if (next === "disconnected" || next === "revoked") connectionVerified = false;
   if ((next === "health_checked" || next === "enabled") && !connectionVerified) {
     throw new Error("A verified provider connection is required");
   }
