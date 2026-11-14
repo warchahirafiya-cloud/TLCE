@@ -31,3 +31,8 @@ Do not import provider SDKs outside `providers/`. Keep secrets out of this repos
 - Defaults bound execution to 30 seconds, input to 16 KiB and output to 32 KiB. The executor receives an AbortSignal and must honor cancellation.
 - The PostgreSQL result sink uses `ON CONFLICT (task_id) DO NOTHING` (first-write-wins) so redelivery cannot overwrite a saved result; provider-side effects must also be idempotent because event delivery is at-least-once.
 - The dispatcher and worker are code-level adapters only; no supervised worker process, deployed broker, AI provider or database connection is configured. The PostgreSQL result-sink adapter is implemented but not deployed. See `docs/QUESTPULSE_TASK_WORKER.md` for wiring and release gates.
+
+## Runtime configuration
+- `core/config/src/runtime-config.ts` parses injected environment values and rejects incomplete production configuration.
+- `core/config/test/runtime-config.test.ts` covers defaults, malformed values, missing production dependencies and secret-safe errors.
+- Configuration validation does not connect external services or start a listener; inject credentials from a managed secret store at runtime.
