@@ -21,6 +21,7 @@ export class RuntimeEngine {
   }
 
   async startModule(moduleId: string): Promise<void> {
+    if (!this.registry.get(moduleId)) throw new Error(`Unknown module: ${moduleId}`);
     const startOrder = this.registry.resolveStartOrder(moduleId);
     for (const registered of startOrder) {
       await this.startSingleModule(registered.manifest.id);
