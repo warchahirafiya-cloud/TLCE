@@ -110,9 +110,9 @@ test("reports lost lease when ownership is rejected during release", async () =>
   queue.renewResult = false;
   queue.release = async () => { throw new Error("lease lost"); };
   const dispatcher = new OutboxEventDispatcher(
-    queue, makeProcessor(), { async handle() { await new Promise((resolve) => setTimeout(resolve, 150)); throw new Error("handler failure"); } },
+    queue, makeProcessor(), { async handle() { await new Promise((resolve) => setTimeout(resolve, 150)); } },
     "worker-1", { heartbeatMs: 100 },
   );
   const report = await dispatcher.dispatchOnce();
-  assert.ok(["released", "lease_lost"].includes(report.outcomes[0].status));
+  assert.equal(report.outcomes[0].status, "lease_lost");
 });
