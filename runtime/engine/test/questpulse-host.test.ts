@@ -22,14 +22,18 @@ function fakeElement(tagName: string): FakeElement {
   };
 }
 
-function fakeRoot(): HTMLElement {
+interface FakeRoot {
+  ownerDocument: { createElement(tag: string): FakeElement };
+  children: FakeElement[];
+  replaceChildren(...items: FakeElement[]): void;
+}
+function fakeRoot(): FakeRoot {
   const documentRef = { createElement: (tag: string) => fakeElement(tag) };
-  const root = {
+  return {
     ownerDocument: documentRef,
-    children: [] as ReturnType<typeof fakeElement>[],
-    replaceChildren(...items: ReturnType<typeof fakeElement>[]) { this.children = items; },
+    children: [],
+    replaceChildren(...items) { this.children = items; },
   };
-  return root as unknown as HTMLElement;
 }
 
 const services = {
@@ -43,7 +47,7 @@ test("mounts QuestPulse under the TLCE host and tears it down cleanly", async ()
   const root = fakeRoot();
 
   assert.equal(host.branchRegistry.get("questpulse")?.route, "/questpulse");
-  await host.mount(root, "request-test-1", new Set(), "/questpulse/offers");
+  await host.mount(root as unknown as HTMLElement, "request-test-1", new Set(), "/questpulse/offers");
   assert.equal(host.runtime.isActive("questpulse"), true);
   assert.equal(host.frontendHost.isMounted("questpulse"), true);
   assert.equal(root.children.length, 1);
