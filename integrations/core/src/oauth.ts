@@ -2,6 +2,10 @@ import { createHash, randomBytes } from "node:crypto";
 
 export interface OAuthProviderConfig {
   readonly providerId: string;
+  readonly tenantId: string;
+  readonly principalId: string;
+  /** SHA-256 hash of the authenticated browser session identifier, base64url encoded. */
+  readonly browserSessionHash: string;
   readonly authorizationEndpoint: string;
   readonly clientId: string;
   readonly redirectUri: string;
@@ -12,6 +16,9 @@ export interface OAuthProviderConfig {
 export interface PendingOAuthTransaction {
   readonly state: string;
   readonly providerId: string;
+  readonly tenantId: string;
+  readonly principalId: string;
+  readonly browserSessionHash: string;
   readonly codeVerifier: string;
   readonly redirectUri: string;
   readonly createdAt: number;
@@ -53,6 +60,9 @@ export async function startOAuthAuthorization(
     throw new Error("Invalid provider ID");
   }
   if (!config.clientId.trim()) throw new Error("OAuth client ID is required");
+  if (!config.tenantId.trim() || !config.principalId.trim()) throw new Error("Authenticated tenant and principal are required");
+  if (!/^[A-Za-z0-9_-]{43}$/.test(config.browserSessionHash)) throw new Error("A SHA-256 browser session hash is required");
+  if (config.scopes.length === 0 || config.scopes.some((scope) => !scope.trim() || /[\\s\\u0000-\\u001f]/.test(scope))) throw new Error("OAuth scopes must be non-empty tokens");
   if (ttlMs < 60_000 || ttlMs > 15 * 60_000) {
     throw new Error("OAuth transaction TTL must be between 1 and 15 minutes");
   }
@@ -73,6 +83,9 @@ export async function startOAuthAuthorization(
   const transaction: PendingOAuthTransaction = {
     state,
     providerId: config.providerId,
+    tenantId: config.tenantId,
+    principalId: config.principalId,
+    browserSessionHash: config.browserSessionHash,
     codeVerifier,
     redirectUri: redirect.toString(),
     createdAt: now,
@@ -95,14 +108,26 @@ export async function startOAuthAuthorization(
 }
 
 /** Consumes one callback state exactly once and rejects expired transactions. */
+export interface OAuthCallbackBinding {
+  readonly tenantId: string;
+  readonly principalId: string;
+  readonly browserSessionHash: string;
+}
+
 export async function consumeOAuthCallbackState(
   state: string,
   store: OAuthTransactionStore,
+  binding: OAuthCallbackBinding,
   now = Date.now(),
 ): Promise<PendingOAuthTransaction> {
   if (!state || state.length > 256) throw new Error("Invalid OAuth state");
   const transaction = await store.consume(state);
   if (!transaction) throw new Error("Unknown or already-used OAuth state");
   if (transaction.expiresAt <= now) throw new Error("OAuth state expired");
+  if (transaction.tenantId !== binding.tenantId ||
+      transaction.principalId !== binding.principalId ||
+      transaction.browserSessionHash !== binding.browserSessionHash) {
+    throw new Error("OAuth callback session binding mismatch");
+  }
   return transaction;
 }
