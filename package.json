@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "typecheck": "tsc --noEmit",
-    "test": "tsx --test runtime/engine/test/*.test.ts core/identity/test/*.test.ts infrastructure/api-gateway/test/*.test.ts infrastructure/serverless-edge/test/*.test.ts"
+    "test": "tsx --test runtime/engine/test/*.test.ts core/identity/test/*.test.ts infrastructure/api-gateway/test/*.test.ts infrastructure/serverless-edge/test/*.test.ts core/audit/test/*.test.ts"
   },
   "devDependencies": {
     "@types/node": "^22.0.0",
