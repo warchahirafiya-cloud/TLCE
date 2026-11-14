@@ -1,6 +1,7 @@
 # TLCE Implementation Roadmap
 
 ## Completed repository foundation
+- [x] Micro-frontend manifest contracts, registry, dependency ordering, host lifecycle, capability checks and tests.
 - [x] Installable PWA shell, manifest, offline fallback, conservative service-worker cache boundaries and asset contract tests.
 - [x] Runtime environment configuration parser with fail-closed production checks and tests; CI now discovers all core package test folders.
 - [x] Hierarchical parent-platform architecture and provider-neutral serverless/edge contracts.
