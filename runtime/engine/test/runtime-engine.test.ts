@@ -76,3 +76,40 @@ test("cleans up a module when startup fails", async () => {
   assert.deepEqual(calls, ["initialize", "start", "stop"]);
   assert.equal(engine.isActive("quest-pulse"), false);
 });
+
+test("coalesces concurrent starts into one lifecycle execution", async () => {
+  let initializeCount = 0;
+  let startCount = 0;
+  let releaseStart!: () => void;
+  const gate = new Promise<void>((resolve) => { releaseStart = resolve; });
+  const registry = new ModuleRegistry();
+  registry.register({ ...manifest, requestedPermissions: [] }, {
+    async initialize() { initializeCount += 1; },
+    async start() { startCount += 1; await gate; },
+    async health() { return { state: "ready", checkedAt: new Date(0).toISOString() }; },
+    async stop() {},
+  });
+  const engine = new RuntimeEngine(registry);
+  const first = engine.startModule("quest-pulse");
+  const second = engine.startModule("quest-pulse");
+  await Promise.resolve();
+  releaseStart();
+  await Promise.all([first, second]);
+  assert.equal(initializeCount, 1);
+  assert.equal(startCount, 1);
+  assert.equal(engine.isActive("quest-pulse"), true);
+});
+
+test("rejects duplicate or empty permission grants", async () => {
+  const registry = new ModuleRegistry();
+  registry.register(manifest, {
+    async initialize() {},
+    async start() {},
+    async health() { return { state: "ready", checkedAt: new Date(0).toISOString() }; },
+    async stop() {},
+  });
+  const engine = new RuntimeEngine(registry, {
+    permissionPolicy: () => [{ resource: "profile", actions: ["read", "read"] }],
+  });
+  await assert.rejects(() => engine.startModule("quest-pulse"), /not requested/);
+});
