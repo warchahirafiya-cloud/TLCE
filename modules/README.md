@@ -2,6 +2,9 @@
 
 All product modules are children of TLCE. They register with the shared Runtime Engine and consume versioned Core contracts; they do not own platform infrastructure.
 
+## Independent frontend boundary
+Each product UI can ship as its own versioned micro-frontend bundle and route, mounted by the TLCE host. The host retains identity, authorization and shared service ownership. Frontends communicate through versioned APIs/events and must not import one another's private implementation.
+
 ## Module boundary
 - Keep module business logic and module-owned data inside its directory.
 - Request only the exact resource/action permissions required.
