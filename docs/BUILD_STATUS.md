@@ -13,7 +13,8 @@ Branch: feature/serverless-edge
 - Provider-neutral event envelope and event processing contract.
 - Idempotent event processor with bounded exponential retries and dead-letter sink integration contract.
 - PostgreSQL durable event deduplication adapter with atomic unique-key claims, expiring leases, completion/release guards, and durable dead-letter upserts; schema migration and unit tests added.
-- PostgreSQL transactional outbox writer and worker claim/ack/release primitives using row locks, SKIP LOCKED, worker leases, retry scheduling, and idempotent event IDs; schema migration and unit tests added.
+- PostgreSQL transactional outbox writer and worker claim/ack/release/lease-renewal primitives using row locks, SKIP LOCKED, worker leases, retry scheduling, and idempotent event IDs; schema migration and unit tests added.
+- Outbox dispatcher that claims batches, renews leases during active processing, routes events through IdempotentEventProcessor and QuestPulseTaskWorker, acknowledges completed/duplicate/dead-lettered events, and releases retryable or lease-lost deliveries; dispatcher tests added.
 - QuestPulse task worker for versioned task events, provider-neutral AI executor injection, abort-signal timeout, JSON input/output limits and result-sink persistence contract.
 - Automated tests for runtime lifecycle, registry integrity, gateway validation, AI Core Bridge ingress, event processing, PostgreSQL adapters, QuestPulse worker, outbound URL checks and audit records.
 - CI workflow runs TypeScript strict checking and unit tests.
@@ -21,7 +22,7 @@ Branch: feature/serverless-edge
 ## Production gaps — explicitly not complete
 - Runtime executes module implementations in-process; no hardened process/container sandbox or dynamic loading.
 - PostgreSQL-compatible durable idempotency/dead-letter and transactional outbox adapters plus schema migrations exist, but are not connected to a deployed database or broker. Production must inject a trusted SQL pool, apply migrations, configure backups/retention, and validate lease sizing and crash recovery.
-- QuestPulse worker is an in-process consumer adapter only. No broker dispatcher/consumer process or durable result sink is deployed; the worker must be wired through IdempotentEventProcessor.
+- Outbox dispatcher and QuestPulse worker are implemented as in-process adapters, but no long-running broker/consumer service is deployed. A durable result sink is still an injected contract, not a deployed database implementation.
 - AI provider adapter, credentials, provider quotas and provider-side idempotency are not configured. An executor must honor AbortSignal; in-process timeout cannot forcibly stop a provider call that ignores cancellation.
 - Outbound URL helper is only a syntax-level guard; DNS resolution/pinning, redirect revalidation and network egress controls are not implemented.
 - API gateway is an in-process router, not a production HTTP server; JWT/OIDC authentication, schema validation, quotas and rate limiting remain absent.
