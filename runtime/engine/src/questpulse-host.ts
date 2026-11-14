@@ -7,12 +7,16 @@ import { MicroFrontendRegistry } from "./micro-frontend-registry.js";
 import { MicroFrontendHost } from "./micro-frontend-host.js";
 import { ProductBranchRegistry } from "./product-branch-registry.js";
 
-export interface QuestPulseHostOptions {
+export interface TLCEHostOptions {
   /** Parent-owned, authorization-aware service facade. */
   services: MicroFrontendContext["services"];
 }
 
-export function createQuestPulseHost(options: QuestPulseHostOptions) {
+/**
+ * Creates the single TLCE parent host with built-in branches registered.
+ * Instantiate once at application bootstrap; branches do not create runtimes.
+ */
+export function createTLCEHost(options: TLCEHostOptions) {
   const moduleRegistry = new ModuleRegistry();
   const frontendRegistry = new MicroFrontendRegistry();
   const branchRegistry = new ProductBranchRegistry(moduleRegistry, frontendRegistry);
