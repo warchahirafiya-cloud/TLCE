@@ -1,4 +1,5 @@
-import type { AuthInfo, OAuthTokenVerifier } from "@modelcontextprotocol/server";
+import type { AuthInfo } from "@modelcontextprotocol/server";
+import type { OAuthTokenVerifier } from "@modelcontextprotocol/express";
 import type { McpConfig } from "./config.js";
 
 interface IntrospectionPayload {
