@@ -21,3 +21,10 @@ Connection lifecycle writes use compare-and-set against the expected lifecycle. 
 4. Provision a KMS-backed secret vault and append-only audit role.
 5. Add migration tests against the selected PostgreSQL version, RLS cross-tenant tests, concurrency tests and backup/restore verification.
 6. Security-review connection creation, tenant identity propagation, privilege boundaries and audit retention before enabling any external provider.
+
+
+## Security refinements
+- Row-level security is both enabled and forced on tenant-owned tables.
+- OAuth callback consumption must atomically match tenant, principal and browser-session hash before deleting/returning a transaction. A mismatch must not consume the valid transaction.
+- The application should hash callback state before storage and encrypt PKCE verifier bytes using a KMS-backed envelope key.
+- Lifecycle transitions into connected require fresh provider verification evidence. A state label is not proof of connectivity.
