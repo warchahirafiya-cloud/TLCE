@@ -2,7 +2,7 @@
 
 TLCE is the parent platform for a modular, hierarchical application ecosystem. Its runtime engine is an independent platform layer; QuestPulse (Q.P) is an internal product branch/module, not a separate parent application.
 
-Architecture and implementation work is maintained on dedicated feature branches. Start here:
+The installable web shell is in `apps/web/public/`; it is a static PWA foundation and does not imply backend activation. Architecture and implementation work is maintained on dedicated feature branches. Start here:
 - [Architecture](docs/ARCHITECTURE.md)
 - [Build status](docs/BUILD_STATUS.md)
 - [Implementation roadmap](docs/IMPLEMENTATION_ROADMAP.md)
