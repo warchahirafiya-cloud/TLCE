@@ -5,6 +5,7 @@ on:
     branches:
       - main
       - feature/**
+      - pilot/**
   pull_request:
     branches:
       - main
