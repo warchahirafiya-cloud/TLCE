@@ -10,7 +10,7 @@ export function loadRuntimeConfig(env: Readonly<Record<string, string | undefine
  if (!["development", "test", "production"].includes(modeValue)) errors.push("TLCE_MODE must be development, test, or production");
  const mode = (["development", "test", "production"].includes(modeValue) ? modeValue : "development") as RuntimeMode;
  const rawPort = optionalString(env, "PORT") ?? "3000"; const port = Number(rawPort);
- if (!/^\\d+$/.test(rawPort) || !Number.isInteger(port) || port < 1 || port > 65535) errors.push("PORT must be an integer between 1 and 65535");
+ if (!/^[0-9]+$/.test(rawPort) || !Number.isInteger(port) || port < 1 || port > 65535) errors.push("PORT must be an integer between 1 and 65535");
  const levelValue = optionalString(env, "LOG_LEVEL") ?? (mode === "production" ? "info" : "debug");
  if (!["debug", "info", "warn", "error"].includes(levelValue)) errors.push("LOG_LEVEL must be debug, info, warn, or error");
  const databaseUrl = optionalString(env, "DATABASE_URL");
