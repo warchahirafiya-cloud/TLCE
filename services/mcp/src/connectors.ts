@@ -59,7 +59,7 @@ export function validateConnectorRegistration(input: ConnectorRegistration): voi
   if (input.oauthIssuer.protocol !== "https:" || input.redirectUri.protocol !== "https:") {
     throw new Error("Connector OAuth issuer and redirect URI must use HTTPS");
   }
-  if (input.requestedScopes.length === 0 || input.requestedScopes.some((scope) => !/^[\\x21-\\x7E]{1,128}$/.test(scope))) {
+  if (input.requestedScopes.length === 0 || input.requestedScopes.some((scope) => !/^[\x21-\x7E]{1,128}$/.test(scope))) {
     throw new Error("Connector scopes must be explicit printable tokens");
   }
 }
