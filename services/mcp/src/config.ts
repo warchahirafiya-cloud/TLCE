@@ -13,7 +13,6 @@ export interface McpConfig {
   readonly requiredScopes: string[];
   readonly healthScope: string;
   readonly introspectionTimeoutMs: number;
-  readonly maxRequestBytes: number;
 }
 
 function required(env: NodeJS.ProcessEnv, key: string): string {
@@ -80,7 +79,6 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): McpConfig {
     oauthClientSecret: required(env, "MCP_OAUTH_CLIENT_SECRET"),
     requiredScopes,
     healthScope: env.MCP_HEALTH_SCOPE?.trim() || "tlce:health:read",
-    introspectionTimeoutMs: integer(env, "MCP_INTROSPECTION_TIMEOUT_MS", 3000, 250, 10000),
-    maxRequestBytes: integer(env, "MCP_MAX_REQUEST_BYTES", 1_048_576, 1024, 4_194_304)
+    introspectionTimeoutMs: integer(env, "MCP_INTROSPECTION_TIMEOUT_MS", 3000, 250, 10000)
   });
 }
