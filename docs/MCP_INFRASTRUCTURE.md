@@ -19,7 +19,7 @@ The MCP Gateway is a TLCE infrastructure service. It is not a second application
 - Per-tool scope enforcement for `tlce.health.read`.
 - One read-only health tool. No arbitrary filesystem, shell, network fetch, database, write, or Q.P domain tools.
 - Request-body parsing limits inherited from the official Express MCP host; verify the effective parser limit before production.
-- Metadata-only audit event contract and stdout development sink.
+- Metadata-only audit event contract with an explicit `durable` capability flag; stdout is marked non-durable and is rejected at production startup.
 - Environment-based configuration; no secrets are committed.
 - Isolated CI for dependency audit, strict typecheck, unit tests and build.
 
@@ -35,7 +35,7 @@ The MCP Gateway is a TLCE infrastructure service. It is not a second application
 
 ## Validation
 
-Latest verified branch head at initial scaffold validation: `636d1f0d5496c2642c6edf48e536886322b82847`.
+Latest scaffold CI verification before the audit hardening changes: `7e6145a3e06a284672faf1f05cca82aa5f9359fc`. Audit hardening changes are on the feature branch and require a fresh CI run.
 
 - MCP CI: passed — dependency install, `npm audit` (0 reported vulnerabilities), strict TypeScript check, 6 unit tests, production TypeScript build.
 - TLCE root CI: passed at the same commit.
@@ -45,7 +45,7 @@ Latest verified branch head at initial scaffold validation: `636d1f0d5496c2642c6
 
 - Connect the actual TLCE Core identity provider and confirm its RFC 7662 introspection response contract.
 - Publish RFC 9728 protected-resource metadata and bind it to the approved authorization-server issuer metadata.
-- Replace the stdout audit sink with TLCE Core's durable, append-only, access-controlled audit sink and retention policy.
+- Implement and inject the actual TLCE Core durable, append-only, access-controlled audit adapter and retention policy. The production startup guard now refuses to run with the stdout development sink.
 - Add ingress rate limiting, quotas, TLS configuration, request-size enforcement, metrics, tracing, alerting and operational dashboards.
 - Generate and commit the npm lockfile; use reproducible `npm ci` installs and dependency provenance controls.
 - Add MCP protocol conformance tests, negative authorization tests, host/origin tests, load tests and failure-mode tests.
