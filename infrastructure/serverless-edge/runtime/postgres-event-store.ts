@@ -17,7 +17,6 @@ export interface SqlExecutor {
 export interface PostgresEventStoreOptions {
   /** Must exceed the normal maximum consumer execution time. Expired claims can be reclaimed. */
   leaseDurationMs?: number;
-  now?: () => Date;
 }
 
 /**
@@ -27,11 +26,9 @@ export interface PostgresEventStoreOptions {
  */
 export class PostgresEventStore implements EventDeduplicationStore, DeadLetterSink {
   private readonly leaseDurationMs: number;
-  private readonly now: () => Date;
 
   constructor(private readonly sql: SqlExecutor, options: PostgresEventStoreOptions = {}) {
     this.leaseDurationMs = options.leaseDurationMs ?? 60_000;
-    this.now = options.now ?? (() => new Date());
     if (!Number.isSafeInteger(this.leaseDurationMs) ||
         this.leaseDurationMs < 1_000 || this.leaseDurationMs > 86_400_000) {
       throw new Error("leaseDurationMs must be between 1000 and 86400000");
