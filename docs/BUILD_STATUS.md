@@ -4,6 +4,7 @@ Last reviewed: 2026-11-14
 Branch: feature/serverless-edge
 
 ## Implemented foundation
+- Runtime configuration parser with safe development defaults and fail-closed production requirements for PostgreSQL, OIDC, AI provider and non-debug logging; validation errors do not expose secret values.
 - Hierarchical TLCE parent architecture; QuestPulse is an internal module.
 - Shared module manifest, dependency, permission, lifecycle, context and health contracts.
 - Provider-neutral identity verifier boundary, post-verification claim validation, issuer/audience/expiry/nbf checks, tenant isolation and explicit capability authorization; identity tests added.
@@ -29,7 +30,7 @@ Branch: feature/serverless-edge
 - Outbound URL helper is only a syntax-level guard; DNS resolution/pinning, redirect revalidation and network egress controls are not implemented.
 - API gateway is an in-process router, not a production HTTP server; the identity verifier contract is implemented but no OIDC/JWT provider adapter is configured or wired into a trusted HTTP edge. Schema validation, quotas and rate limiting remain absent.
 - Audit records have a safe constructor but no persistent audit sink, retention or access-control adapter.
-- No production database, cache, secrets manager, cloud provider adapters, monitoring, deployment, DNS or infrastructure provisioning.
+- No production database, cache, secrets manager, cloud provider adapters, monitoring, deployment, DNS or infrastructure provisioning. Runtime config validation is a code-level preflight only and does not establish external connectivity.
 - QuestPulse legacy routes, schema and business rules have not been source-integrated; the original app.asar remains untouched.
 
 ## Verification
