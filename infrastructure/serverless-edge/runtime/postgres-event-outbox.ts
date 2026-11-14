@@ -98,6 +98,18 @@ export class PostgresEventOutbox implements EventPublisher {
     }));
   }
 
+  async renewLease(eventId: string, workerId: string): Promise<boolean> {
+    const result = await this.sql.query(
+      `UPDATE tlce_event_outbox
+       SET lease_until = CURRENT_TIMESTAMP + ($3 * INTERVAL '1 millisecond'),
+           updated_at = CURRENT_TIMESTAMP
+       WHERE event_id = $1 AND status = 'in_progress' AND lease_owner = $2
+         AND lease_until > CURRENT_TIMESTAMP`,
+      [eventId, workerId, this.leaseDurationMs],
+    );
+    return result.rowCount === 1;
+  }
+
   async markPublished(eventId: string, workerId: string): Promise<void> {
     const result = await this.sql.query(
       `UPDATE tlce_event_outbox
