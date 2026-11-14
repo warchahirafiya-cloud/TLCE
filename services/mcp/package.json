@@ -5,7 +5,7 @@
   "type": "module",
   "engines": { "node": ">=22.0.0" },
   "scripts": {
-    "dev": "tsx watch src/main.ts",
+    "dev": "node --env-file=.env --import tsx --watch src/main.ts",
     "start": "node dist/main.js",
     "build": "tsc -p tsconfig.json",
     "typecheck": "tsc -p tsconfig.json --noEmit",
