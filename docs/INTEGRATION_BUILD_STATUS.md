@@ -54,3 +54,13 @@ Security baseline: [IETF RFC 9700](https://www.rfc-editor.org/rfc/rfc9700.html).
 - Added metadata-only audit events for denied, allowed, succeeded and failed operations, correlated by request ID.
 - Added tests covering successful execution, resource-scope denial, financial confirmation and provider execution failure.
 - GitHub Actions run #391 completed type checking and unit tests successfully for the gateway implementation. The run's final cleanup was still finishing at the time of this update.
+
+
+## Additional delivery — durable persistence boundaries and security hardening
+- Added tenant-scoped repository contracts for connections, grants, provider registry and OAuth transactions, including compare-and-set lifecycle transitions.
+- Added PostgreSQL reference migration for tenant-owned connections, grants, OAuth transaction metadata and audit events.
+- Enabled and forced row-level security on tenant-owned tables; documented trusted transaction-local tenant identity requirements.
+- OAuth start now binds every transaction to an authenticated tenant, principal and hashed browser session. Callback state is atomically consumed only for the matching binding; mismatched sessions do not burn the legitimate transaction.
+- Connection lifecycle now requires fresh explicit verification evidence before the connected state can be entered. Verification is no longer inferred from the lifecycle label.
+- Audit events receive distinct cryptographically random identifiers to avoid collisions between allowed/succeeded/failed events for one operation.
+- PostgreSQL and KMS adapters remain unimplemented; migration is reference source only and has not been applied to a live database.
