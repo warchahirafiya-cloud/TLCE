@@ -133,7 +133,7 @@ export const CONNECTOR_CATALOG: readonly ConnectorCatalogEntry[] = [
   { id: "guru", name: "Guru", domain: "knowledge", kind: "saas", lifecycle: catalogued },
 ] as const;
 export const CONNECTOR_CATALOG_BY_ID: ReadonlyMap<string, ConnectorCatalogEntry> =
-  new Map(CONNECTOR_CATALOG.map((entry) => [entry.id, entry]));
+  new Map<string, ConnectorCatalogEntry>(CONNECTOR_CATALOG.map((entry): [string, ConnectorCatalogEntry] => [entry.id, entry]));
 export function getConnectorCatalogEntry(id: string): ConnectorCatalogEntry | undefined {
   return CONNECTOR_CATALOG_BY_ID.get(id);
 }
