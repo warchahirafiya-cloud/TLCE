@@ -71,3 +71,9 @@ Security baseline: [IETF RFC 9700](https://www.rfc-editor.org/rfc/rfc9700.html).
 - Every repository operation establishes a transaction-local tenant context before touching RLS-protected tables.
 - Connection lifecycle updates use compare-and-set; OAuth state hashes are stored instead of raw state, PKCE verifier bytes pass through an injected cipher, and callback consumption binds tenant/principal/session/expiry in one DELETE ... RETURNING operation.
 - The database pool, KMS-backed verifier cipher, database provisioning, migration execution and live database integration tests remain deployment-specific and are not present in this repository.
+
+
+## Validation checkpoint
+- GitHub Actions run #415 passed type checking and the full unit-test suite for PostgreSQL adapter commit `dc5cba36b9760bc6103447f6c600b1560daa5022`.
+- Run: https://github.com/warchahirafiya-cloud/TLCE/actions/runs/43603070223
+- Later documentation-only commits may trigger their own validation run; check the branch's latest run before treating the newest head as validated.
