@@ -1,11 +1,19 @@
 # QuestPulse Integration Contract
 
-Status: design baseline; implementation pending source review.
+Status: internal module scaffold connected to the TLCE in-process registry; product/legacy integration pending authoritative source review and CI verification.
 
 ## Product boundary
 QuestPulse (Q.P) is an internal TLCE product module. It must not become a second parent application, own a separate user identity provider, or deploy a duplicate copy of the TLCE Runtime Engine.
 
 The module is registered and operated by the TLCE Runtime Engine. Shared identity, authorization, social capabilities, notifications, audit policy, and platform configuration remain owned by TLCE Core services.
+
+## Current code integration
+- `modules/questpulse/src/manifest.ts` declares the Q.P module identity and currently requests no permissions.
+- `modules/questpulse/src/index.ts` implements the shared lifecycle contract.
+- `modules/questpulse/src/register.ts` registers a Q.P implementation with the existing `ModuleRegistry`.
+- The host `RuntimeEngine` remains responsible for initialization, startup, health and shutdown.
+- Integration tests cover registration, lifecycle and duplicate-registration rejection.
+- This is an in-process integration adapter. No production application bootstrap or deployment is connected yet.
 
 ## Known legacy reference surface
 The previously reviewed Q.P technical reference contains an experimental Node.js/Express + SQLite API with the following data areas:
@@ -14,7 +22,7 @@ The previously reviewed Q.P technical reference contains an experimental Node.js
 - posts
 - media
 
-This list is a discovery baseline, not approval to preserve the legacy schema or copy its implementation. The original app.asar and source artifacts remain protected and must not be modified as part of this integration.
+This list is a discovery baseline, not approval to preserve the legacy schema or copy its implementation. The original `app.asar` and source artifacts remain protected and must not be modified as part of this integration.
 
 ## Target ownership and migration rules
 
@@ -50,14 +58,15 @@ The module must not access another module's database directly. Cross-module comm
 - Apply rate limits, audit trails, and abuse controls to externally reachable actions.
 - Do not load untrusted module code until a hardened isolation model is implemented.
 
-## Integration gates
-1. Identify and review the authoritative Q.P source repository and current entrypoints.
-2. Inventory routes, database tables, migrations, authentication flows, external integrations, and secrets usage.
-3. Produce a field-level mapping and compatibility plan against TLCE Core contracts.
-4. Implement the module adapter on a feature branch with no destructive data migration.
-5. Add contract, authorization, abuse-case, and migration dry-run tests.
-6. Run security review and maintainer review.
-7. Obtain explicit approval before any production data migration, deployment, DNS change, paid service, or secret provisioning.
+## Remaining integration gates
+1. Run CI and pass strict typecheck and all tests on the feature branch.
+2. Identify and review the authoritative Q.P source repository and current entrypoints.
+3. Inventory routes, database tables, migrations, authentication flows, external integrations, and secrets usage.
+4. Produce a field-level mapping and compatibility plan against TLCE Core contracts.
+5. Implement reviewed Q.P feature adapters on a feature branch with no destructive data migration.
+6. Add contract, authorization, abuse-case, and migration dry-run tests.
+7. Run security review and maintainer review.
+8. Obtain explicit approval before any production data migration, deployment, DNS change, paid service, or secret provisioning.
 
 ## Current decision
-The TLCE repository currently contains the Q.P module boundary and this integration contract only. The legacy Q.P implementation has not been copied, executed, deployed, or modified. Real integration remains blocked until its authoritative source tree and dependencies are available for review.
+The Q.P module has a code-level adapter to TLCE's in-process registry/runtime. This is not production bootstrap integration and does not include the legacy Q.P feature set. The legacy implementation has not been copied, executed, deployed, or modified. Real product integration remains pending source review, CI verification and the gates above.
