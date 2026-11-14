@@ -86,6 +86,8 @@ The next source-integration task is a route, data, auth, media, and workflow map
 - Q.P module lifecycle startup and shutdown through TLCE RuntimeEngine.
 - Q.P UI mount and unmount.
 - Host rejection of a route outside the Q.P namespace.
+- Route resolver rejection of encoded traversal, malformed encoding, query strings, and backslashes.
+- Manifest rejection of backslash-containing entrypoints.
 - Cleanup of the module lifecycle when mount fails.
 
 These tests are included by the existing `tsx --test runtime/engine/test/*.test.ts` command. Their pass/fail status must be confirmed by CI on this branch before merge.
