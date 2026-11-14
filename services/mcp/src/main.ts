@@ -4,7 +4,7 @@ import { stdoutAuditSink } from "./audit.js";
 import { createMcpApplication } from "./server.js";
 
 const config = loadConfig();
-const { nodeHandler, handler } = createMcpApplication(config, stdoutAuditSink);
+const { auth, nodeHandler, handler } = createMcpApplication(config, stdoutAuditSink);
 const app = createMcpExpressApp({
   host: config.bindHost,
   allowedHosts: config.allowedHosts,
@@ -12,14 +12,8 @@ const app = createMcpExpressApp({
 });
 
 app.disable("x-powered-by");
-app.all("/mcp", async (req, res, next) => {
-  try {
-    await new Promise<void>((resolve, reject) => {
-      nodeHandler(req, res, req.body).then(resolve, reject);
-    });
-  } catch (error) {
-    next(error);
-  }
+app.all("/mcp", auth, (req, res, next) => {
+  void nodeHandler(req, res, req.body).catch(next);
 });
 
 const server = app.listen(config.port, config.bindHost, () => {
