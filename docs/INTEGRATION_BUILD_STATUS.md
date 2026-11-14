@@ -77,3 +77,11 @@ Security baseline: [IETF RFC 9700](https://www.rfc-editor.org/rfc/rfc9700.html).
 - GitHub Actions run #415 passed type checking and the full unit-test suite for PostgreSQL adapter commit `dc5cba36b9760bc6103447f6c600b1560daa5022`.
 - Run: https://github.com/warchahirafiya-cloud/TLCE/actions/runs/43603070223
 - Later documentation-only commits may trigger their own validation run; check the branch's latest run before treating the newest head as validated.
+
+
+## Latest CI checkpoint — PostgreSQL adapter tests
+- Added fake-pool contract tests for tenant context setup, invalid tenant rejection, OAuth callback DELETE binding, transaction rollback/release and audit insertion.
+- Added the PostgreSQL storage test suite to the root CI test command.
+- GitHub Actions run #418 passed type checking and all 96 unit tests (96 passed, 0 failed).
+- Run: https://github.com/warchahirafiya-cloud/TLCE/actions/runs/43603145509
+- Validated code SHA: `26921cf25d867cbf27c7ded51f8a1da747df6a15`.
