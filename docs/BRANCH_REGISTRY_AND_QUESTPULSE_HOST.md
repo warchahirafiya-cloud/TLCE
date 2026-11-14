@@ -45,7 +45,7 @@ Route resolution uses the most-specific registered route. The host now accepts n
 
 ## 4. Q.P host composition
 
-The `createQuestPulseHost` composition root:
+The `createTLCEHost` composition root:
 
 1. Creates the parent module and micro-frontend registries.
 2. Registers the built-in Q.P branch through the single branch bootstrap.
@@ -95,7 +95,7 @@ These tests are included by the existing `tsx --test runtime/engine/test/*.test.
 ## 8. Remaining gates
 
 - [ ] Confirm GitHub Actions typecheck and full test suite on this branch.
-- [ ] Connect the real TLCE web shell/router to `createQuestPulseHost`; the current code is a host composition API, not a production browser bootstrap.
+- [ ] Connect the real TLCE web shell/router to `createTLCEHost`; the current code is a host composition API, not a production browser bootstrap.
 - [ ] Migrate the real Q.P UI into the branch adapter after source and asset review.
 - [ ] Define and approve Q.P capabilities against actual parent APIs.
 - [ ] Add end-to-end, accessibility, and security tests in the real shell.
