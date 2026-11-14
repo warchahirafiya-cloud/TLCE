@@ -1,7 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { IdempotentEventProcessor, type EventDeduplicationStore, type EventClaimResult } from "../src/event-processor";
-import type { TlceEvent, EventConsumer } from "../src/events";
+import { IdempotentEventProcessor, type EventDeduplicationStore, type EventClaimResult } from "../runtime/event-processor.js";
+import type { TlceEvent, EventConsumer } from "../contracts/events.js";
 
 class MemoryStore implements EventDeduplicationStore {
   readonly values = new Map<string, "in_progress" | "completed">();
