@@ -58,18 +58,20 @@ test("host scopes API access to granted capabilities and validates methods and p
  await host.mount(manifest.id, {} as HTMLElement, "r1", new Set(["questpulse.tasks.read"]), services, manifest.route);
  await assert.rejects(exposed!.request({ capability: "admin.users.delete", method: "GET", path: "/users" }), /denied/);
  await assert.rejects(exposed!.request({ capability: "questpulse.tasks.read", method: "TRACE", path: "/tasks" }), /method/);
- await assert.rejects(exposed!.request({ capability: "questpulse.tasks.read", method: "GET", path: "/../secret" }), /path/);
+ await assert.rejects(exposed!.request({ capability: "questpulse.tasks.read", method: "GET", path: "/%2e%2e/secret" }), /path/);
+ await assert.rejects(exposed!.request({ capability: "questpulse.tasks.read", method: "GET", path: "/%ZZ" }), /path/);
  await exposed!.request({ capability: "questpulse.tasks.read", method: "get", path: "/tasks" });
  assert.deepEqual(calls, [{ capability: "questpulse.tasks.read", method: "GET", path: "/tasks" }]);
 });
 test("host restricts event namespaces and requires event capabilities", async () => {
- const registry = new MicroFrontendRegistry(); registry.register(manifest);
+ const eventManifest = { ...manifest, requestedCapabilities: ["questpulse.tasks.read", "events.publish", "events.subscribe"] };
+ const registry = new MicroFrontendRegistry(); registry.register(eventManifest);
  const { services, calls } = serviceHarness();
  let exposed: MicroFrontendServices | undefined;
  const host = new MicroFrontendHost(registry, async () => ({ mount: async ({ context }) => {
   exposed = context.services; return { unmount() {} };
  } }));
- await host.mount(manifest.id, {} as HTMLElement, "r1", new Set(["questpulse.tasks.read", "events.publish", "events.subscribe"]), services, manifest.route);
+ await host.mount(eventManifest.id, {} as HTMLElement, "r1", new Set(["questpulse.tasks.read", "events.publish", "events.subscribe"]), services, eventManifest.route);
  assert.throws(() => exposed!.publish("other-module.secret", {}), /namespace/);
  exposed!.publish("quest-pulse-ui.task.updated", { id: "1" });
  assert.deepEqual(calls, [{ name: "quest-pulse-ui.task.updated", payload: { id: "1" } }]);
