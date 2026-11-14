@@ -26,8 +26,9 @@
 - [x] Add a static allowlisted Q.P mount adapter and host composition with startup/teardown cleanup.
 - [x] Permit and test nested routes owned by the registered branch.
 - [x] Document ownership, capability, source-migration, and production release boundaries.
-- [ ] Wire the host composition into the browser shell/router and migrate the actual Q.P UI.
-- [ ] Confirm CI on this feature branch.
+- [x] Wire the static TLCE shell's `#/questpulse` route to the single parent host and add a browser bundle build.
+- [ ] Confirm CI typecheck, browser build, and tests on this feature branch.
+- [ ] Ensure the deployment pipeline runs `npm run build:web` before publishing and migrate the actual Q.P UI.
 
 ## Remaining work before a production candidate
 1. Deploy the outbox dispatcher as a supervised worker process and add PostgreSQL/broker integration tests for crash recovery, redelivery, poison messages and lease renewal.
