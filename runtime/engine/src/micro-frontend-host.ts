@@ -1,10 +1,55 @@
 import type {
-  MicroFrontendContext, MicroFrontendInstance, MicroFrontendLoader, MicroFrontendManifest,
+  MicroFrontendContext, MicroFrontendInstance, MicroFrontendLoader,
 } from "../../../packages/contracts/src/micro-frontend";
 import { MicroFrontendRegistry } from "./micro-frontend-registry";
 
+const METHODS = new Set(["GET", "POST", "PUT", "PATCH", "DELETE"]);
+const EVENT_NAME = /^[a-z][a-z0-9._:-]{1,127}$/;
+const API_PATH = /^\/(?!\/)[a-zA-Z0-9._~!$&'()*+,;=:@%/?#-]*$/;
+
+function scopedServices(
+  moduleId: string,
+  granted: ReadonlySet<string>,
+  services: MicroFrontendContext["services"],
+): MicroFrontendContext["services"] {
+  return Object.freeze({
+    request(input) {
+      if (!input || typeof input !== "object" || typeof input.capability !== "string" ||
+          !granted.has(input.capability)) {
+        throw new Error("Micro-frontend service capability denied");
+      }
+      if (typeof input.method !== "string" || !METHODS.has(input.method.toUpperCase())) {
+        throw new Error("Unsupported service method");
+      }
+      if (typeof input.path !== "string" || !API_PATH.test(input.path) ||
+          input.path.includes("..") || input.path.includes("\\\\")) {
+        throw new Error("Invalid service API path");
+      }
+      return services.request({ ...input, method: input.method.toUpperCase() });
+    },
+    publish(eventName, payload) {
+      if (!granted.has("events.publish")) throw new Error("Micro-frontend event publish denied");
+      if (typeof eventName !== "string" || !EVENT_NAME.test(eventName) ||
+          !(eventName.startsWith(moduleId + ".") || eventName.startsWith("tlce."))) {
+        throw new Error("Micro-frontend event namespace denied");
+      }
+      services.publish(eventName, payload);
+    },
+    subscribe(eventName, handler) {
+      if (!granted.has("events.subscribe")) throw new Error("Micro-frontend event subscription denied");
+      if (typeof eventName !== "string" || !EVENT_NAME.test(eventName) ||
+          !(eventName.startsWith(moduleId + ".") || eventName.startsWith("tlce.")) ||
+          typeof handler !== "function") {
+        throw new Error("Micro-frontend event subscription denied");
+      }
+      return services.subscribe(eventName, handler);
+    },
+  });
+}
+
 export class MicroFrontendHost {
   private readonly active = new Map<string, MicroFrontendInstance>();
+  private readonly mounting = new Set<string>();
 
   constructor(
     private readonly registry: MicroFrontendRegistry,
@@ -13,26 +58,36 @@ export class MicroFrontendHost {
 
   async mount(id: string, root: HTMLElement, requestId: string, grantedCapabilities: ReadonlySet<string>,
     services: MicroFrontendContext["services"], route: string): Promise<void> {
-    if (this.active.has(id)) throw new Error("Micro-frontend is already mounted");
+    if (this.active.has(id) || this.mounting.has(id)) throw new Error("Micro-frontend is already mounted or mounting");
     const manifest = this.registry.get(id);
     if (!manifest) throw new Error("Micro-frontend is not registered");
     if (route !== manifest.route) throw new Error("Route does not match registered micro-frontend");
+    if (!requestId || typeof requestId !== "string") throw new Error("A request id is required");
     for (const capability of manifest.requestedCapabilities) {
       if (!grantedCapabilities.has(capability)) throw new Error("Missing required micro-frontend capability");
     }
     this.registry.resolveStartOrder(id);
-    const module = await this.loader(manifest);
-    if (!module || typeof module.mount !== "function") throw new Error("Invalid micro-frontend module");
-    const context: MicroFrontendContext = {
-      frontendId: manifest.id,
-      frontendVersion: manifest.version,
-      requestId,
-      grantedCapabilities: new Set(manifest.requestedCapabilities.filter((capability) => grantedCapabilities.has(capability))),
-      services,
-    };
-    const instance = await module.mount({ root, context, route });
-    if (!instance || typeof instance.unmount !== "function") throw new Error("Micro-frontend returned an invalid instance");
-    this.active.set(id, instance);
+    this.mounting.add(id);
+    try {
+      const module = await this.loader(manifest);
+      if (!module || typeof module.mount !== "function") throw new Error("Invalid micro-frontend module");
+      const granted = new Set(manifest.requestedCapabilities.filter((capability) => grantedCapabilities.has(capability)));
+      for (const capability of ["events.publish", "events.subscribe"]) {
+        if (grantedCapabilities.has(capability)) granted.add(capability);
+      }
+      const context: MicroFrontendContext = {
+        frontendId: manifest.id,
+        frontendVersion: manifest.version,
+        requestId,
+        grantedCapabilities: granted,
+        services: scopedServices(manifest.id, grantedCapabilities, services),
+      };
+      const instance = await module.mount({ root, context, route });
+      if (!instance || typeof instance.unmount !== "function") throw new Error("Micro-frontend returned an invalid instance");
+      this.active.set(id, instance);
+    } finally {
+      this.mounting.delete(id);
+    }
   }
 
   async unmount(id: string): Promise<boolean> {
@@ -53,4 +108,5 @@ export class MicroFrontendHost {
   }
 
   isMounted(id: string): boolean { return this.active.has(id); }
+  isMounting(id: string): boolean { return this.mounting.has(id); }
 }
