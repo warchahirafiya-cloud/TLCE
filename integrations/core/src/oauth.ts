@@ -62,7 +62,7 @@ export async function startOAuthAuthorization(
   if (!config.clientId.trim()) throw new Error("OAuth client ID is required");
   if (!config.tenantId.trim() || !config.principalId.trim()) throw new Error("Authenticated tenant and principal are required");
   if (!/^[A-Za-z0-9_-]{43}$/.test(config.browserSessionHash)) throw new Error("A SHA-256 browser session hash is required");
-  if (config.scopes.length === 0 || config.scopes.some((scope) => !scope.trim() || /[\\s\\u0000-\\u001f]/.test(scope))) throw new Error("OAuth scopes must be non-empty tokens");
+  if (config.scopes.length === 0 || config.scopes.some((scope) => !scope.trim() || /[\s\u0000-\u001f]/.test(scope))) throw new Error("OAuth scopes must be non-empty tokens");
   if (ttlMs < 60_000 || ttlMs > 15 * 60_000) {
     throw new Error("OAuth transaction TTL must be between 1 and 15 minutes");
   }
