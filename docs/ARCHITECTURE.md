@@ -31,3 +31,7 @@ Architecture changes are developed on feature branches, reviewed, and tested bef
 
 ## 7. Current implementation status
 This repository is the initial TLCE foundation. The architecture described here is the approved target design; cloud resources and production services are not provisioned by these documentation and contract files.
+
+## 8. Public and private interface boundary
+
+The public website and private developer/operator console are separate experiences within the same TLCE platform. The GitHub Pages deployment of `apps/web` is public static content and must contain no secrets, private records, admin controls protected only by client-side logic, or privileged write endpoints. The developer console is a future private control-plane capability backed by TLCE Identity and server-side deny-by-default authorization, least-privilege roles, MFA, and audit logging. It must be deployed outside the public Pages artifact. See [Public and Developer Interface Boundary](PUBLIC_DEVELOPER_INTERFACE_BOUNDARY.md).
