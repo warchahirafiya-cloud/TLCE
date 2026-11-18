@@ -56,6 +56,14 @@ TLCE currently has a module/runtime foundation and a QuestPulse host adapter. Th
 
 The TLCE repository's build-status, roadmap, and threat-model documents identify important production capabilities that are not yet implemented, including production authentication, persistent data adapters, durable event storage, persistent audit storage, hardened module isolation, and DNS-aware outbound egress controls. Passing the current TypeScript and unit-test workflow is not a production-readiness claim.
 
+
+### Current TLCE web-shell state
+
+- The inspected TLCE `main` tree does not contain an `apps/web/` application or a browser-host build script. Its `package.json` currently exposes TypeScript typecheck and unit-test scripts only.
+- Draft PR #5 contains a static PWA shell under `apps/web/public/`, a `build:web` script, and a QuestPulse mount-contract placeholder. It remains open/draft and targets `feature/serverless-edge`, not `main`.
+- PR #5's own documentation says its Q.P UI is only a minimal mount surface; the existing Q.P website and business workflows are not embedded. Its branch cannot be treated as the current main web application or as an integrated Q.P RC.
+- The current main host adapter and PR #5's more extensive branch-host implementation are different code states. Porting the shell requires a deliberate reconciliation against current main, not merging the stacked draft branch blindly.
+
 ## 4. Non-negotiable integration rules
 
 The standalone Q.P API must not be copied wholesale into TLCE.
