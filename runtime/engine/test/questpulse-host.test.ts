@@ -113,3 +113,28 @@ test("does not start the branch when the route is outside its namespace", async 
 
   assert.equal(host.runtime.isActive("questpulse"), false);
 });
+
+
+test("rejects an invalid request id before starting the module", async () => {
+  const host = createTLCEHost({ services });
+  await assert.rejects(
+    host.mount(fakeRoot() as unknown as HTMLElement, " ", new Set(), "/questpulse"),
+    /request id is required/i,
+  );
+  assert.equal(host.runtime.isActive("questpulse"), false);
+});
+
+test("serializes concurrent host mounts without stopping the successful mount", async () => {
+  const host = createTLCEHost({ services });
+  const root = fakeRoot() as unknown as HTMLElement;
+  const first = host.mount(root, "request-one", new Set(), "/questpulse");
+  await assert.rejects(
+    host.mount(fakeRoot() as unknown as HTMLElement, "request-two", new Set(), "/questpulse"),
+    /already mounted or mounting/i,
+  );
+  await first;
+  assert.equal(host.frontendHost.isMounted("questpulse"), true);
+  assert.equal(host.runtime.isActive("questpulse"), true);
+  assert.equal(await host.unmount(), true);
+  assert.equal(host.runtime.isActive("questpulse"), false);
+});
