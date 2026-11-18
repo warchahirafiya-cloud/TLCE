@@ -1,153 +1,70 @@
-import type { ModuleContext, ModuleHealth, ModuleManifest, TLCEModule } from "../../../packages/contracts/src/module";
-import { ModuleRegistry } from "./module-registry";
-import { RuntimeEngine } from "./runtime-engine";
-
-export interface QuestPulseHostServices {
-  request(...args: unknown[]): Promise<unknown>;
-  publish(...args: unknown[]): unknown;
-  subscribe(...args: unknown[]): unknown;
-}
+import type { MicroFrontendContext, MicroFrontendLoader } from "../../../packages/contracts/src/micro-frontend.js";
+import { registerBuiltInProductBranches } from "../../../modules/register-built-in-branches.js";
+import { questPulseMicroFrontend } from "../../../modules/questpulse/src/micro-frontend.js";
+import { ModuleRegistry } from "./module-registry.js";
+import { RuntimeEngine } from "./runtime-engine.js";
+import { MicroFrontendRegistry } from "./micro-frontend-registry.js";
+import { MicroFrontendHost } from "./micro-frontend-host.js";
+import { ProductBranchRegistry } from "./product-branch-registry.js";
 
 export interface TLCEHostOptions {
-  services: QuestPulseHostServices;
+  /** Parent-owned, authorization-aware service facade. */
+  services: MicroFrontendContext["services"];
 }
 
-export interface TLCEBranch {
-  id: string;
-  route: string;
-  manifest: ModuleManifest;
-}
-
-const QUESTPULSE_MANIFEST: ModuleManifest = {
-  id: "questpulse",
-  displayName: "QuestPulse",
-  version: "0.1.0",
-  description: "QuestPulse product branch hosted inside the TLCE runtime.",
-  apiVersion: "1",
-  entrypoint: "./modules/questpulse",
-  dependencies: [],
-  requestedPermissions: [],
-};
-
-function createQuestPulseModule(_services: QuestPulseHostServices): TLCEModule {
-  let initialized = false;
-  let active = false;
-
-  return {
-    async initialize(_context: ModuleContext): Promise<void> {
-      initialized = true;
-    },
-    async start(): Promise<void> {
-      if (!initialized) throw new Error("QuestPulse must be initialized before start");
-      active = true;
-    },
-    async health(): Promise<ModuleHealth> {
-      return {
-        state: active ? "ready" : initialized ? "initialized" : "registered",
-        checkedAt: new Date().toISOString(),
-      };
-    },
-    async stop(): Promise<void> {
-      active = false;
-    },
-  };
-}
-
-function createBranchRegistry() {
-  const branches = new Map<string, TLCEBranch>([
-    ["questpulse", {
-      id: "questpulse",
-      route: "/questpulse",
-      manifest: { ...QUESTPULSE_MANIFEST },
-    }],
-  ]);
-
-  return {
-    get(branchId: string): TLCEBranch | undefined {
-      const branch = branches.get(branchId);
-      return branch ? { ...branch, manifest: { ...branch.manifest } } : undefined;
-    },
-    list(): ReadonlyArray<TLCEBranch> {
-      return [...branches.values()].map((branch) => ({
-        ...branch,
-        manifest: { ...branch.manifest },
-      }));
-    },
-  };
-}
-
-function createFrontendHost() {
-  const mounted = new Map<string, HTMLElement>();
-
-  return {
-    mount(root: HTMLElement, branchId: string): void {
-      if (mounted.has(branchId)) return;
-      const element = root.ownerDocument.createElement("section");
-      element.setAttribute("data-tlce-branch", branchId);
-      element.setAttribute("aria-label", "QuestPulse module host");
-      root.replaceChildren(element);
-      mounted.set(branchId, root);
-    },
-    unmount(branchId: string): boolean {
-      const root = mounted.get(branchId);
-      if (!root) return false;
-      root.replaceChildren();
-      mounted.delete(branchId);
-      return true;
-    },
-    isMounted(branchId: string): boolean {
-      return mounted.has(branchId);
-    },
-  };
-}
-
+/** Creates the single TLCE parent host with built-in branches registered. */
 export function createTLCEHost(options: TLCEHostOptions) {
-  const branchRegistry = createBranchRegistry();
-  const registry = new ModuleRegistry();
-  registry.register(QUESTPULSE_MANIFEST, createQuestPulseModule(options.services));
+  const moduleRegistry = new ModuleRegistry();
+  const frontendRegistry = new MicroFrontendRegistry();
+  const branchRegistry = new ProductBranchRegistry(moduleRegistry, frontendRegistry);
+  registerBuiltInProductBranches(branchRegistry);
 
-  const runtime = new RuntimeEngine(registry);
-  const frontendHost = createFrontendHost();
-  let mountedBranch: string | undefined;
+  const runtime = new RuntimeEngine(moduleRegistry);
+  const loader: MicroFrontendLoader = async (manifest) => {
+    if (manifest.id !== "questpulse" || manifest.version !== "0.1.0") {
+      throw new Error("No approved in-process loader exists for this product branch");
+    }
+    return questPulseMicroFrontend;
+  };
+  const frontendHost = new MicroFrontendHost(frontendRegistry, loader);
 
   return {
     branchRegistry,
+    moduleRegistry,
+    frontendRegistry,
     runtime,
     frontendHost,
 
     async mount(
       root: HTMLElement,
       requestId: string,
-      _capabilities: ReadonlySet<string>,
-      route: string,
+      grantedCapabilities: ReadonlySet<string>,
+      route = "/questpulse",
     ): Promise<void> {
-      const branch = branchRegistry.get("questpulse");
-      if (!branch || !(route === branch.route || route.startsWith(`${branch.route}/`))) {
-        throw new Error(`Route ${route} does not match registered QuestPulse namespace`);
+      if (!requestId || typeof requestId !== "string" || !requestId.trim()) {
+        throw new Error("A request id is required");
       }
-      if (mountedBranch && mountedBranch !== branch.id) {
-        throw new Error(`Another TLCE branch is already mounted: ${mountedBranch}`);
+      const owner = branchRegistry.resolveRoute(route);
+      if (!owner || owner.id !== "questpulse") {
+        throw new Error("Route does not match registered QuestPulse namespace");
       }
-      if (frontendHost.isMounted(branch.id)) return;
-
-      await runtime.startModule(branch.id);
+      await runtime.startModule("questpulse");
       try {
-        frontendHost.mount(root, branch.id);
-        mountedBranch = branch.id;
+        await frontendHost.mount(
+          "questpulse", root, requestId, grantedCapabilities, options.services, route,
+        );
       } catch (error) {
-        await runtime.stopModule(branch.id);
+        try { await runtime.stopModule("questpulse"); } catch { /* preserve mount failure */ }
         throw error;
       }
-      void requestId;
     },
 
     async unmount(): Promise<boolean> {
-      if (!mountedBranch) return false;
-      const branchId = mountedBranch;
-      const didUnmount = frontendHost.unmount(branchId);
-      await runtime.stopModule(branchId);
-      mountedBranch = undefined;
-      return didUnmount;
+      try {
+        return await frontendHost.unmount("questpulse");
+      } finally {
+        await runtime.stopModule("questpulse");
+      }
     },
   };
 }
