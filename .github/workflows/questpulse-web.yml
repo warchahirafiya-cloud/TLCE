@@ -6,7 +6,7 @@ on:
       - "apps/web/**"
       - ".github/workflows/questpulse-web.yml"
   push:
-    branches: ["feature/**"]
+    branches: ["main", "feature/**"]
     paths:
       - "apps/web/**"
       - ".github/workflows/questpulse-web.yml"
