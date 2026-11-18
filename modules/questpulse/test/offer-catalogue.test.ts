@@ -106,7 +106,7 @@ test("rejects unknown and non-candidate source registrations", () => {
 test("rejects duplicate candidate IDs and duplicate canonical offer URLs", () => {
   const errors = validateCandidateInbox([
     candidate(),
-    candidate({ id: "candidate-2", url: "https://offers.example/deal/" }),
+    candidate({ id: "candidate-1", url: "https://offers.example/deal/" }),
   ], sources);
   assert.ok(errors.some(error => error.includes("duplicate ID")));
   assert.ok(errors.some(error => error.includes("duplicates another candidate offer URL")));
