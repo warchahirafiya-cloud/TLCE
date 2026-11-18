@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="dark light">
+  <title>TLCE | لوحة المطوّر</title>
+  <link rel="stylesheet" href="./console.css">
+  <script type="module" src="./console.js"></script>
+</head>
+<body>
+  <main class="shell">
+    <header class="topbar">
+      <div class="brand"><span class="mark">TLCE</span><div><strong>The Last Cosmic Explosion</strong><small>Developer Control Plane</small></div></div>
+      <span id="connection" class="status" role="status">جارٍ التحقق من الجلسة…</span>
+    </header>
+    <section id="signed-out" class="panel auth-panel" hidden>
+      <div class="eyebrow">PRIVATE OPERATOR ACCESS</div>
+      <h1>لوحة المطوّر الخاصة</h1>
+      <p>هذه مساحة تشغيل داخلية لمن لديهم صلاحية معتمدة في هوية TLCE. لا تستخدم حساب QuestPulse منفصلاً.</p>
+      <a class="primary" href="/auth/login">الدخول عبر هوية TLCE</a>
+      <p class="muted">يتولى الخادم المصادقة والتحقق من الصلاحيات. لا توجد كلمة مرور محفوظة في هذه الصفحة.</p>
+    </section>
+    <section id="signed-in" hidden>
+      <div class="welcome">
+        <div><div class="eyebrow">TLCE CONTROL PLANE</div><h1>مركز التحكم</h1><p>مرحباً، <strong id="operator-name">—</strong></p></div>
+        <button id="logout" class="secondary" type="button">تسجيل الخروج</button>
+      </div>
+      <div class="role-row"><span>الأدوار المعتمدة</span><div id="operator-roles"></div></div>
+      <div class="grid">
+        <article class="metric"><span>الوحدات المسجلة</span><strong id="registered">—</strong></article>
+        <article class="metric"><span>جاهزة</span><strong id="ready">—</strong></article>
+        <article class="metric"><span>متدهورة</span><strong id="degraded">—</strong></article>
+        <article class="metric"><span>فاشلة</span><strong id="failed">—</strong></article>
+      </div>
+      <section class="panel">
+        <div class="section-head"><div><div class="eyebrow">MODULE REGISTRY</div><h2>وحدات TLCE</h2></div><span class="muted">حسب نطاق صلاحيتك</span></div>
+        <div class="table-wrap"><table><thead><tr><th>الوحدة</th><th>المعرّف</th><th>الإصدار</th><th>الحالة</th></tr></thead><tbody id="module-rows"><tr><td colspan="4">جارٍ التحميل…</td></tr></tbody></table></div>
+      </section>
+      <p class="notice">هذه النسخة للقراءة فقط. كل طلب محمي يُفحص في الخادم وتُسجّل قراءاته في سجل التدقيق. إخفاء العناصر في المتصفح ليس آلية صلاحيات.</p>
+    </section>
+    <section id="error" class="panel error-panel" hidden><h2>تعذر الاتصال بخدمات TLCE</h2><p id="error-message">لم يتمكن التطبيق من تحميل بيانات لوحة التحكم.</p><button id="retry" class="secondary" type="button">إعادة المحاولة</button></section>
+    <footer>TLCE Core Identity · Server-authorized · Private console</footer>
+  </main>
+</body>
+</html>
