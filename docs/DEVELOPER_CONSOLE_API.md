@@ -8,14 +8,26 @@ The browser is an untrusted client. The API server must authenticate the session
 
 The current `DeveloperConsoleService` is a server-side read service, not an HTTP listener or an authentication provider. Every call requires a server-verified operator context. It writes an audit event before returning protected data and fails closed if audit persistence fails.
 
-## Authentication and session
+## Identity provider integration
 
-- `GET /auth/login`: begin OIDC Authorization Code flow with PKCE and state/nonce validation.
-- `GET /auth/callback`: validate issuer, audience, signature, nonce, state and authorization-code exchange server-side; resolve TLCE roles and module scopes from a trusted server-side mapping.
+GitHub is an external sign-in provider only. GitHub account ownership does not grant a TLCE role.
+
+- Implement the GitHub OAuth authorization-code flow in a trusted server adapter. Validate a one-time `state`, exact registered redirect URI, authorization-code exchange, and use PKCE only where supported by the selected GitHub OAuth integration.
+- Keep the OAuth client secret in runtime secret storage. Never place it in browser code, Git, or GitHub Pages.
+- After code exchange, call GitHub's authenticated user API from the server and use its stable numeric account `id` as the external account key. Do not use `login`, display name, email, or avatar as the identity key.
+- Resolve that external account ID against an explicit, pre-existing TLCE account-link record. Unknown accounts are denied; do not auto-provision operators or infer roles from GitHub organization membership.
+- Resolve TLCE subject, roles, module scope and MFA/assurance requirements from TLCE's server-side identity and policy stores.
+- GitHub OAuth is OAuth 2.0, not an OIDC identity-token flow. Do not treat GitHub OAuth access tokens as OIDC ID tokens or apply OIDC issuer/audience/JWKS checks to them.
+- A future standards-based OIDC provider may use the separate OIDC flow below, with issuer, audience, signature, nonce and PKCE validation as required by that provider.
+
+The `core/identity/src/external-identity.ts` resolver accepts only a provider-verified stable account identifier and an existing TLCE link. It does not perform the OAuth exchange, verify GitHub responses, create users, or assign roles.
+
+## Session
+
 - Session cookie: `__Host-tlce_session`, Secure, HttpOnly, Path=/, SameSite=Lax, short-lived and rotated after authentication/privilege changes.
 - `GET /api/tlce/control-plane/session`: return `{ authenticated: true, operator: { displayName, roles }, csrfToken }` or HTTP 401. Do not return session IDs, access tokens, refresh tokens or internal permission grants.
 - `POST /auth/logout`: require a valid CSRF token, revoke the server-side session, clear the cookie and return HTTP 204.
-- MFA must be enforced by the identity provider for privileged roles. The API must verify the required authentication assurance level before granting those roles.
+- MFA must be enforced for privileged roles by a provider and assurance mechanism that TLCE can verify. A GitHub login alone must not satisfy TLCE's privileged-role MFA requirement unless a separately verified assurance signal is available.
 
 ## Read endpoints
 
@@ -24,6 +36,7 @@ All endpoints require a valid session cookie. The server resolves the operator c
 ### `GET /api/tlce/control-plane/overview`
 
 Requires `control-plane.overview:read`. Returns only aggregate counts:
+
 ```json
 {
   "registeredModules": 0,
@@ -36,6 +49,7 @@ Requires `control-plane.overview:read`. Returns only aggregate counts:
 ### `GET /api/tlce/control-plane/modules`
 
 Requires `modules.registry:read`. Returns only modules inside the operator's server-side `allowedModuleIds` scope:
+
 ```json
 {
   "modules": [
@@ -67,13 +81,14 @@ The first UI release only uses overview and registry read permissions. The wider
 ## Mandatory server controls
 
 - Enforce TLS and trusted proxy configuration.
-- Use OIDC Authorization Code + PKCE, state/nonce validation, issuer/audience restrictions and maintained JWT/JWKS verification.
+- For OIDC providers, use Authorization Code + PKCE, state/nonce validation, issuer/audience restrictions and maintained JWT/JWKS verification.
+- For GitHub OAuth, use server-side OAuth code exchange, state validation, exact redirect URI matching and provider API identity verification; do not pretend it is OIDC.
 - Store opaque sessions server-side; rotate and revoke them; enforce idle and absolute expiry.
 - Apply CSRF protection to every state-changing request and Origin/Referer validation as defense in depth.
 - Apply per-session and per-IP rate limits, strict input schemas, request size limits and safe error responses.
-- Derive roles and module scope from server-side policy, never from client claims without an explicit trusted mapping.
+- Derive roles and module scope from server-side policy, never from browser input or untrusted provider profile fields.
 - Audit privileged reads and all writes. If the audit sink is unavailable, fail closed.
-- Keep credentials in managed runtime secrets. Never commit OIDC client secrets or signing keys.
+- Keep credentials in managed runtime secrets. Never commit OAuth client secrets, signing keys or session secrets.
 - Deploy this UI and API on a protected server-side host, separate from GitHub Pages.
 
 ## Deployment boundary
