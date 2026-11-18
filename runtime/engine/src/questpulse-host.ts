@@ -27,6 +27,7 @@ export function createTLCEHost(options: TLCEHostOptions) {
     return questPulseMicroFrontend;
   };
   const frontendHost = new MicroFrontendHost(frontendRegistry, loader);
+  let mountInFlight = false;
 
   return {
     branchRegistry,
@@ -48,14 +49,23 @@ export function createTLCEHost(options: TLCEHostOptions) {
       if (!owner || owner.id !== "questpulse") {
         throw new Error("Route does not match registered QuestPulse namespace");
       }
-      await runtime.startModule("questpulse");
+      if (mountInFlight || frontendHost.isMounted("questpulse")) {
+        throw new Error("QuestPulse is already mounted or mounting");
+      }
+
+      // Lock before starting the module so concurrent mounts cannot stop a
+      // lifecycle that another request is in the process of mounting.
+      mountInFlight = true;
       try {
+        await runtime.startModule("questpulse");
         await frontendHost.mount(
           "questpulse", root, requestId, grantedCapabilities, options.services, route,
         );
       } catch (error) {
         try { await runtime.stopModule("questpulse"); } catch { /* preserve mount failure */ }
         throw error;
+      } finally {
+        mountInFlight = false;
       }
     },
 
