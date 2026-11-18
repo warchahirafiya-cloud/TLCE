@@ -1,0 +1,22 @@
+{
+  "name": "The Last Cosmic Explosion",
+  "image": "mcr.microsoft.com/devcontainers/javascript-node:1-22-bookworm",
+  "remoteUser": "node",
+  "forwardPorts": [4173],
+  "portsAttributes": {
+    "4173": {
+      "label": "QuestPulse web preview",
+      "onAutoForward": "openBrowser"
+    }
+  },
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "dbaeumer.vscode-eslint",
+        "esbenp.prettier-vscode",
+        "ms-vscode.vscode-typescript-next"
+      ]
+    }
+  },
+  "postCreateCommand": "npm install --no-audit --no-fund"
+}
