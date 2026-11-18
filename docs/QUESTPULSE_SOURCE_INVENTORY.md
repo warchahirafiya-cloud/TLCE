@@ -43,8 +43,9 @@ The API is a prototype and is not deployed by GitHub Pages. The repository's API
 
 - The package exposes `npm run test:api`, covering the security and validation helper test files.
 - The inspected default-branch tree contains two API test files: `server/tests/security.test.js` and `server/tests/validation.test.js`.
-- GitHub Actions run `44296661261` for commit `a1aba165123516b471dd6d318381fb1896fcdd9f` completed successfully. Its checks include the static Pages build/deployment and repository build workflow.
-- This proves the inspected static-site workflow succeeded. It does not prove that the Node.js API is deployed or operational.
+- GitHub Actions run `44296661261` for commit `a1aba165123516b471dd6d318381fb1896fcdd9f` completed successfully as the GitHub Pages build/deployment workflow. Its check runs are `build`, `deploy`, and `report-build-status`.
+- The separate `questpulse-quality.yml` workflow is configured to run dependency audit, JavaScript syntax checks, API helper tests, and website/catalogue validators. Those checks were not present in the inspected commit's check-run list, so this audit does **not** claim that the API tests or dependency audit passed on that SHA.
+- This proves the inspected static Pages deployment workflow succeeded. It does not prove that the Node.js API is deployed or operational.
 
 Documented API gaps include email verification, password reset, legal-entity ownership verification, malware scanning, image/video transcoding, backup/restore automation, audit-log UI, and multi-instance object storage. Full HTTP lifecycle, authorization, moderation, upload-abuse, and concurrency integration coverage remains to be established.
 
