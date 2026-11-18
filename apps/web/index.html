@@ -1,0 +1,87 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="theme-color" content="#10182b">
+  <meta name="description" content="QuestPulse داخل The Last Cosmic Explosion: دليل للعروض والمكافآت بعد التحقق من الشروط والأهلية.">
+  <title>QuestPulse | The Last Cosmic Explosion</title>
+  <link rel="stylesheet" href="./styles.css">
+  <script type="module" src="./questpulse.js"></script>
+</head>
+<body>
+  <a class="skip-link" href="#main">انتقل إلى المحتوى</a>
+  <header class="site-header">
+    <div class="header-inner">
+      <a class="brand" href="#home" aria-label="QuestPulse الصفحة الرئيسية"><span class="brand-mark">Q</span><span>Quest<span class="accent">Pulse</span></span></a>
+      <nav aria-label="التنقل الرئيسي">
+        <a href="#discover">اكتشف العروض</a>
+        <a href="#categories">الفئات</a>
+        <a href="#standards">معايير التحقق</a>
+      </nav>
+      <span class="parent-label">جزء من TLCE</span>
+    </div>
+  </header>
+
+  <main id="main">
+    <section class="hero" id="home">
+      <div class="hero-copy">
+        <p class="eyebrow">THE LAST COSMIC EXPLOSION · PRODUCT MODULE</p>
+        <h1>فرص حقيقية.<br><span>شروط واضحة.</span></h1>
+        <p class="hero-lead">QuestPulse يساعدك على اكتشاف المكافآت والعروض والخصومات والمهام الرقمية، مع توضيح البلدان المؤهلة والرسوم وتاريخ التحقق قبل أن تضيع وقتك في رابط لا يعمل.</p>
+        <a class="primary-button" href="#discover">استكشف الدليل <span aria-hidden="true">←</span></a>
+      </div>
+      <div class="hero-orbit" aria-hidden="true">
+        <div class="orbit orbit-one"></div><div class="orbit orbit-two"></div>
+        <div class="orbit-core">QP</div><span class="orbit-dot"></span>
+      </div>
+    </section>
+
+    <section class="trust-strip" aria-label="مبادئ الدليل">
+      <div><strong>01</strong><span>مصدر معروف</span></div>
+      <div><strong>02</strong><span>أهلية واضحة</span></div>
+      <div><strong>03</strong><span>رسوم وشروط معلنة</span></div>
+      <div><strong>04</strong><span>مراجعة مؤرخة</span></div>
+    </section>
+
+    <section class="content-section" id="discover">
+      <div class="section-heading">
+        <div><p class="eyebrow">DISCOVERY</p><h2>دليل الفرص</h2><p>لا تظهر هنا إلا العناصر المنشورة التي اجتازت شروط التحقق.</p></div>
+        <span class="status-chip" id="catalogue-status" role="status">جارٍ فحص الدليل…</span>
+      </div>
+
+      <form class="filters" id="offer-filters">
+        <label>ابحث بالكلمات<input id="search" name="search" type="search" placeholder="اسم العرض أو الجهة"></label>
+        <label>البلد المؤهل<input id="country" name="country" type="text" placeholder="مثال: Algeria"></label>
+        <label>الفئة<select id="category" name="category">
+          <option value="">كل الفئات</option><option value="reward">مكافآت وهدايا</option><option value="store">متاجر</option><option value="discount">خصومات وكوبونات</option><option value="contest">مسابقات</option><option value="loyalty">برامج الولاء</option><option value="task">تطبيقات ومهام</option><option value="referral">إحالات</option>
+        </select></label>
+        <button class="filter-button" type="submit">بحث</button>
+        <button class="reset-button" type="reset">مسح</button>
+      </form>
+
+      <div class="catalogue-meta"><span id="result-count" aria-live="polite">—</span><span>يتم استبعاد العناصر المنتهية أو غير المكتملة تلقائياً.</span></div>
+      <div id="offer-list" class="offer-grid" aria-live="polite" aria-busy="true">
+        <div class="empty-state"><span class="loader" aria-hidden="true"></span><h3>يتم تجهيز الدليل</h3><p>نحمّل قائمة العروض المنشورة ونتحقق من صلاحيتها.</p></div>
+      </div>
+    </section>
+
+    <section class="content-section category-section" id="categories">
+      <div class="section-heading"><div><p class="eyebrow">CATEGORIES</p><h2>ماذا ستجد هنا؟</h2></div></div>
+      <div class="category-grid">
+        <article><span>🎁</span><h3>مكافآت وهدايا</h3><p>مكافآت التسجيل والهدايا والعروض المجانية.</p></article>
+        <article><span>🛍️</span><h3>المتاجر والخصومات</h3><p>متاجر إلكترونية وكوبونات وتخفيضات.</p></article>
+        <article><span>🏆</span><h3>المسابقات</h3><p>مسابقات وسحوبات مع شروط مشاركة واضحة.</p></article>
+        <article><span>⚡</span><h3>المهام الرقمية</h3><p>تطبيقات ومهام وبرامج ولاء وإحالات.</p></article>
+      </div>
+    </section>
+
+    <section class="standards-section" id="standards">
+      <div><p class="eyebrow">TRUST BY DESIGN</p><h2>لا ننشر لمجرد ملء الصفحة.</h2><p>كل عنصر يحتاج إلى مصدر HTTPS، وأهلية بلد محددة، وشروط ورسوم معلنة، وتاريخ تحقق حديث. عناصر الاستيراد تبقى مرشحة للمراجعة ولا تتحول إلى عروض منشورة تلقائياً.</p></div>
+      <ul><li>لا وعود بأرباح أو مدفوعات مضمونة.</li><li>لا روابط مجهولة أو بيانات غير موثقة.</li><li>لا نشر تلقائي من خلاصات RSS.</li><li>لا محافظ أو تعدين أو توكنات ضمن النطاق النشط.</li></ul>
+    </section>
+  </main>
+
+  <footer><div class="footer-inner"><span>QuestPulse · وحدة داخل The Last Cosmic Explosion</span><span>الدليل معلوماتي، وتبقى الشروط النهائية لدى الجهة المعلنة.</span></div></footer>
+</body>
+</html>
