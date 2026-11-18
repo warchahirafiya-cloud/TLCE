@@ -1,9 +1,9 @@
 import type { MicroFrontendManifest } from "../../../packages/contracts/src/micro-frontend.js";
 
 const ID = /^[a-z][a-z0-9-]{2,63}$/;
-const VERSION = /^(0|[1-9]\\d*)\\.(0|[1-9]\\d*)\\.(0|[1-9]\\d*)(?:-[0-9A-Za-z.-]+)?$/;
+const VERSION = /^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)(?:-[0-9A-Za-z.-]+)?$/;
 const CAPABILITY = /^[a-z][a-z0-9._:-]{1,127}$/;
-const ROUTE = /^\\/(?:[a-z0-9-]+(?:\\/[a-z0-9-]+)*)?$/;
+const ROUTE = /^\/(?:[a-z0-9-]+(?:\/[a-z0-9-]+)*)?$/;
 
 function clone(manifest: MicroFrontendManifest): MicroFrontendManifest {
   return { ...manifest, requestedCapabilities: [...manifest.requestedCapabilities], dependencies: manifest.dependencies.map((item) => ({ ...item })) };
@@ -21,7 +21,7 @@ export class MicroFrontendRegistry {
     if (typeof manifest.route !== "string" || !ROUTE.test(manifest.route) || manifest.route === "/") throw new Error("Invalid micro-frontend route");
     if (typeof manifest.entrypoint !== "string" || !manifest.entrypoint.startsWith("/") ||
         manifest.entrypoint.startsWith("//") || manifest.entrypoint.includes("..") ||
-        manifest.entrypoint.includes("\\\\")) throw new Error("Entrypoint must be a same-origin absolute asset path");
+        manifest.entrypoint.includes("\\")) throw new Error("Entrypoint must be a same-origin absolute asset path");
     if (!Array.isArray(manifest.requestedCapabilities) || !Array.isArray(manifest.dependencies)) throw new Error("Capabilities and dependencies must be arrays");
     if (manifest.requestedCapabilities.some((value) => typeof value !== "string" || !CAPABILITY.test(value)) ||
         new Set(manifest.requestedCapabilities).size !== manifest.requestedCapabilities.length) throw new Error("Invalid or duplicate capability");
@@ -47,11 +47,11 @@ export class MicroFrontendRegistry {
   /** Resolve the most specific registered route; nested paths belong to their longest prefix. */
   resolveRoute(pathname: string): MicroFrontendManifest | undefined {
     if (typeof pathname !== "string" || !pathname.startsWith("/") ||
-        pathname.startsWith("//") || pathname.includes("\\\\") ||
+        pathname.startsWith("//") || pathname.includes("\\") ||
         pathname.includes("?") || pathname.includes("#")) return undefined;
     let decoded: string;
     try { decoded = decodeURIComponent(pathname); } catch { return undefined; }
-    if (decoded.includes("\\\\") || decoded.split("/").some((part) => part === "." || part === "..")) {
+    if (decoded.includes("\\") || decoded.split("/").some((part) => part === "." || part === "..")) {
       return undefined;
     }
     const match = [...this.entries.values()]
