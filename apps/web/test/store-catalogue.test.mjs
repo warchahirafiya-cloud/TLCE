@@ -1,0 +1,55 @@
+import test from "node:test";
+import assert from "node:assert/strict";
+import { filterApprovedApps, isApprovedStoreItem, escapeStoreText } from "../store/catalogue.mjs";
+
+const approvedWebApp = {
+  id: "questpulse",
+  name: "QuestPulse",
+  description: "TLCE discovery module",
+  platform: "web",
+  category: "learning",
+  developerName: "TLCE Team",
+  version: "1.0.0",
+  status: "published",
+  reviewStatus: "approved",
+  developerApproved: true,
+  launchPath: "../index.html"
+};
+
+test("public catalogue includes the approved first-party web module", () => {
+  assert.equal(isApprovedStoreItem(approvedWebApp), true);
+  assert.deepEqual(filterApprovedApps([approvedWebApp]).map((item) => item.id), ["questpulse"]);
+});
+
+test("unreviewed or unapproved developer submissions never become public", () => {
+  assert.equal(isApprovedStoreItem({ ...approvedWebApp, reviewStatus: "under_review" }), false);
+  assert.equal(isApprovedStoreItem({ ...approvedWebApp, developerApproved: false }), false);
+  assert.equal(isApprovedStoreItem({ ...approvedWebApp, status: "draft" }), false);
+});
+
+test("Android package links remain disabled in the static storefront", () => {
+  const androidApp = {
+    ...approvedWebApp,
+    id: "android-demo",
+    platform: "android",
+    launchPath: undefined,
+    downloadUrl: "https://example.invalid/app.apk"
+  };
+  assert.equal(isApprovedStoreItem(androidApp), false);
+});
+
+test("web launch paths cannot use external or protocol-relative URLs", () => {
+  assert.equal(isApprovedStoreItem({ ...approvedWebApp, launchPath: "https://evil.example" }), false);
+  assert.equal(isApprovedStoreItem({ ...approvedWebApp, launchPath: "//evil.example" }), false);
+  assert.equal(isApprovedStoreItem({ ...approvedWebApp, launchPath: "../index.html" }), true);
+});
+
+test("catalogue text is escaped before HTML rendering", () => {
+  assert.equal(escapeStoreText('<img src=x onerror="alert(1)">'), "&lt;img src=x onerror=&quot;alert(1)&quot;&gt;");
+});
+
+test("catalogue filters by platform, category, and search term", () => {
+  assert.equal(filterApprovedApps([approvedWebApp], { platform: "android" }).length, 0);
+  assert.equal(filterApprovedApps([approvedWebApp], { category: "learning" }).length, 1);
+  assert.equal(filterApprovedApps([approvedWebApp], { search: "not found" }).length, 0);
+});
