@@ -19,6 +19,8 @@ test("blocks local hostnames and private or reserved IP ranges", () => {
     "http://127.0.0.1", "http://10.0.0.1", "http://172.16.0.1",
     "http://192.168.1.1", "http://169.254.169.254", "http://100.64.0.1",
     "http://[::1]", "http://[fc00::1]", "http://[fe80::1]", "http://[2002::1]",
+    "http://[2001:db8::1]", "http://[2001:20::1]", "http://[3fff::1]",
+    "http://[::ffff:127.0.0.1]", "http://[ff02::1]",
   ]) assert.throws(() => validateOutboundHttpUrl(value));
 });
 
