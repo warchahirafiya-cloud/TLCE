@@ -25,6 +25,8 @@
 - `docs/architecture/TLCE-STORE-submission.schema.json`: proposed metadata contract for a future private submission API.
 - `docs/architecture/TLCE-STORE-review-checklist.md`: internal review checklist for independent reviewers.
 - `docs/architecture/TLCE-STORE-state-machine.md`: permitted lifecycle transitions, role boundaries, and audit requirements.
+- `docs/architecture/TLCE-STORE-api-contract.md`: provider-neutral backend routes and authorization requirements.
+- `docs/architecture/TLCE-STORE-threat-model.md`: initial threats, mitigations, and production gates.
 
 ## Publication lifecycle
 
