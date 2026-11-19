@@ -119,14 +119,31 @@ export function createLlm7ChatHandler(
       return json({ error: "Chat service is not configured" }, 503);
     }
 
-    let rawBody: ArrayBuffer;
+    const reader = request.body?.getReader();
+    if (!reader) return json({ error: "Request body is required" }, 400);
+
+    const chunks: Uint8Array[] = [];
+    let totalBytes = 0;
     try {
-      rawBody = await request.arrayBuffer();
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        totalBytes += value.byteLength;
+        if (totalBytes > MAX_BODY_BYTES) {
+          await reader.cancel();
+          return json({ error: "Request body is too large" }, 413);
+        }
+        chunks.push(value);
+      }
     } catch {
       return json({ error: "Invalid request body" }, 400);
     }
-    if (rawBody.byteLength > MAX_BODY_BYTES) {
-      return json({ error: "Request body is too large" }, 413);
+
+    const rawBody = new Uint8Array(totalBytes);
+    let offset = 0;
+    for (const chunk of chunks) {
+      rawBody.set(chunk, offset);
+      offset += chunk.byteLength;
     }
 
     let payload: unknown;
