@@ -90,3 +90,16 @@ test("developer program page and submission contract are present and parseable",
   assert.equal(schema.properties.developerType.enum.includes("approved_external"), true);
   assert.equal(schema.properties.product.properties.platform.enum.includes("android"), true);
 });
+
+test("product detail route and controller are part of the store bundle", async () => {
+  const { existsSync, readFileSync } = await import("node:fs");
+  const htmlPath = new URL("../store/product/index.html", import.meta.url);
+  const scriptPath = new URL("../store/product/product.js", import.meta.url);
+  assert.equal(existsSync(htmlPath), true);
+  assert.equal(existsSync(scriptPath), true);
+  const html = readFileSync(htmlPath, "utf8");
+  const script = readFileSync(scriptPath, "utf8");
+  assert.match(html, /product\\.js/);
+  assert.match(script, /filterApprovedApps/);
+  assert.match(script, /product not published/);
+});
