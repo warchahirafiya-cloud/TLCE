@@ -9,7 +9,7 @@ export function isApprovedStoreItem(item) {
   if (typeof item.description !== "string" || !item.description.trim()) return false;
   if (!APPROVED_PLATFORMS.has(item.platform) || !APPROVED_CATEGORIES.has(item.category)) return false;
   if (typeof item.developerName !== "string" || !item.developerName.trim()) return false;
-  if (typeof item.version !== "string" || !/^\\d+\\.\\d+\\.\\d+$/.test(item.version)) return false;
+  if (typeof item.version !== "string" || !/^\d+\.\d+\.\d+$/.test(item.version)) return false;
   if (item.platform === "web") {
     if (typeof item.launchPath !== "string" || !item.launchPath.startsWith("../") || item.launchPath.startsWith("//")) return false;
   } else {
