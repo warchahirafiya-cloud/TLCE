@@ -4,9 +4,16 @@ import { readFile } from "node:fs/promises";
 
 test("QuestPulse ships a restrictive meta Content Security Policy", async () => {
   const html = await readFile(new URL("../index.html", import.meta.url), "utf8");
-  const match = html.match(/<meta\\s+http-equiv="Content-Security-Policy"\\s+content="([^"]+)"/i);
-  assert.ok(match, "CSP meta policy must exist");
-  const policy = match[1];
+  const marker = 'http-equiv="Content-Security-Policy"';
+  const markerIndex = html.indexOf(marker);
+  assert.notEqual(markerIndex, -1, "CSP meta policy must exist");
+  const tagStart = html.lastIndexOf("<meta", markerIndex);
+  const tagEnd = html.indexOf(">", markerIndex);
+  assert.notEqual(tagStart, -1);
+  assert.notEqual(tagEnd, -1);
+  const tag = html.slice(tagStart, tagEnd + 1);
+  const policy = tag.match(/content="([^"]+)"/)?.[1];
+  assert.ok(policy, "CSP content attribute must exist");
   for (const directive of [
     "default-src 'self'",
     "base-uri 'self'",
