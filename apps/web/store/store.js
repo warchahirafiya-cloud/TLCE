@@ -19,9 +19,7 @@ function render() {
     return;
   }
   list.innerHTML = visible.map((app) => {
-    const launch = app.platform === "web" && isSafeLocalPath(app.launchPath)
-      ? `<a class="launch" href="${escapeStoreText(app.launchPath)}">فتح التطبيق ←</a>`
-      : '<span class="launch" aria-label="التنزيل غير متاح">التنزيل غير متاح حالياً</span>';
+    const launch = `<a class="launch" href="./product/?id=${encodeURIComponent(app.id)}">عرض التفاصيل ←</a>`;
     return `<article class="app-card">
       <div class="app-top"><span class="app-icon" aria-hidden="true">${escapeStoreText(app.icon || "✦")}</span><span class="pill">${platformLabel(app.platform)}</span></div>
       <h3>${escapeStoreText(app.name)}</h3><p>${escapeStoreText(app.description)}</p>
@@ -31,9 +29,6 @@ function render() {
   }).join("");
 }
 
-function isSafeLocalPath(value) {
-  return typeof value === "string" && value.startsWith("../") && !value.startsWith("//") && !/[\\\\]/.test(value);
-}
 function platformLabel(platform) {
   return ({ web: "تطبيق ويب", android: "Android", tool: "أداة رقمية" })[platform] || "منتج رقمي";
 }
