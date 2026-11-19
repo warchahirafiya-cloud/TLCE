@@ -1,6 +1,6 @@
 # Zapier Event Bridge — TLCE / QuestPulse
 
-Status: feature-branch adapter implementation added; no live Zapier account connection, staging secret, or production webhook is active.
+Status: feature-branch adapter implementation added; no live Zapier account connection, staging secret, or production webhook is active. The standard Webhooks by Zapier Catch Hook trigger is not available on Zapier's current Free plan (verified 2026-11-19); live staging therefore remains plan-gated.
 
 ## 1. Purpose and ownership
 
@@ -13,7 +13,7 @@ Zapier is an external workflow adapter. It is not the TLCE system of record, ide
 
 ## 2. Integration direction — phase 1
 
-Start with one-way, allowlisted events from TLCE/Q.P to a dedicated Zapier Catch Hook.
+Start with one-way, allowlisted events from TLCE/Q.P to a dedicated Zapier Catch Hook only after plan eligibility is confirmed.
 
 Do not expose a generic Zapier-to-TLCE command endpoint. Any future inbound action must use a separately authenticated, schema-validated, capability-scoped API route with human approval for sensitive operations.
 
@@ -60,25 +60,26 @@ The adapter:
 - applies a bounded request timeout and throws on non-2xx responses so the existing event processor can retry and dead-letter;
 - is transport-injectable for deterministic tests and does not read secrets from browser/runtime globals.
 
-The adapter is intentionally not wired into a production event processor. It must be constructed only in a server-side composition root using a staging secret. The HMAC headers provide a signature for a downstream verifier; do not assume Zapier Catch Hook validates them itself.
+The adapter is intentionally not wired into a production event processor. It must be constructed only in a server-side composition root using a staging secret. The HMAC headers provide a signature for a downstream verifier; do not assume Zapier Catch Hook validates them itself. The standard Catch Hook URL is itself a bearer-like secret protected by obscurity; anyone who obtains it may submit events. Do not treat outbound HMAC headers as authentication at Zapier.
 
 ## 5. Delivery and security requirements
 
 Before enabling a Zap:
-1. Store the Zapier Catch Hook URL as a server-side secret (for example `ZAPIER_QP_EVENTS_WEBHOOK_URL`); never commit it or place it in browser code.
-2. Store a separate signing secret of at least 32 characters server-side; never commit it or expose it to the browser.
-3. Use a dedicated hook per environment (development/staging/production) and per event family where practical.
-4. Send only an allowlisted event schema over HTTPS.
-5. Verify HMAC signature and timestamp at any TLCE-controlled receiver. Reject stale timestamps and invalid signatures. Do not assume Zapier Catch Hook itself verifies custom HMAC headers.
-6. Include `event_id` as an idempotency key. Delivery is at-least-once; downstream Zaps must deduplicate.
-7. Apply bounded retries with exponential backoff and a durable dead-letter path in TLCE. Do not rely on Zapier task history as the only audit record.
-8. Set payload size limits, outbound timeouts, retry limits, and event retention.
-9. Redact secrets and personal data from logs. Record delivery outcome, event ID, correlation ID, destination identifier, and timestamps in the parent audit/observability system.
-10. Treat Zapier and every connected third-party app as an external processor; review data scope, retention, region, plan limits, and terms before production use.
+1. Confirm that the user's Zapier plan includes Webhooks by Zapier. The official Free-plan feature list currently excludes Webhooks; Professional lists Webhooks and multi-step Zaps. Do not start a paid trial, upgrade, or enable pay-per-task billing without explicit approval.
+2. Store the Zapier Catch Hook URL as a server-side secret (for example `ZAPIER_QP_EVENTS_WEBHOOK_URL`); never commit it or place it in browser code.
+3. Store a separate signing secret of at least 32 characters server-side; never commit it or expose it to the browser.
+4. Use a dedicated hook per environment (development/staging/production) and per event family where practical.
+5. Send only an allowlisted event schema over HTTPS.
+6. Verify HMAC signature and timestamp at any TLCE-controlled receiver. Reject stale timestamps and invalid signatures. Do not assume Zapier Catch Hook itself verifies custom HMAC headers.
+7. Include `event_id` as an idempotency key. Delivery is at-least-once; downstream Zaps must deduplicate.
+8. Apply bounded retries with exponential backoff and a durable dead-letter path in TLCE. Do not rely on Zapier task history as the only audit record.
+9. Set payload size limits, outbound timeouts, retry limits, and event retention.
+10. Redact secrets and personal data from logs. Record delivery outcome, event ID, correlation ID, destination identifier, and timestamps in the parent audit/observability system.
+11. Treat Zapier and every connected third-party app as an external processor; review data scope, retention, region, plan limits, and terms before production use.
 
-## 6. Zap configuration runbook
+## 6. Zap configuration runbook (plan-gated)
 
-Create a Zap named `TLCE — QuestPulse Event Bridge (Staging)`:
+Create a Zap named `TLCE — QuestPulse Event Bridge (Staging)` only after confirming the active plan includes Webhooks by Zapier:
 
 1. Trigger: Webhooks by Zapier → Catch Hook.
 2. Copy the generated hook URL into the staging secret store as `ZAPIER_QP_EVENTS_WEBHOOK_URL`.
@@ -89,6 +90,8 @@ Create a Zap named `TLCE — QuestPulse Event Bridge (Staging)`:
 7. Test with synthetic data; verify the payload, filter, deduplication, and destination result.
 8. Enable staging only after all tests pass. Production requires a separate approval and separate credentials.
 
+If the account is on Free, do not attempt to configure this Catch Hook workflow. Investigate only verified Free-compatible triggers (for example, an account-visible Forms/Tables workflow) as a separate prototype; do not claim they provide automatic TLCE event delivery until tested.
+
 ## 7. Current technical gate
 
 The TLCE repository documents a provider-neutral event envelope and idempotent event processor, but its build-status record explicitly states that durable atomic storage, a production broker/dead-letter adapter, production authentication, and a production HTTP gateway are not yet implemented.
@@ -98,8 +101,8 @@ Therefore this document does not claim that a production webhook endpoint exists
 ## 8. Rollout stages
 
 - Stage A — contract and threat review (completed as documentation).
-- Stage B — typed, allowlisted Zapier adapter and mocked transport tests (implemented on `feature/zapier-event-bridge`; TypeScript and unit-test CI passed on commit `e7b0c6a`).
-- Stage C — configure a staging Catch Hook manually in the user's Zapier account and store its URL as a secret; verify end-to-end using synthetic data.
+- Stage B — typed, allowlisted Zapier adapter and mocked transport tests (implemented on `feature/zapier-event-bridge`; TypeScript and unit-test CI passed on commit `e7b0c6a`; later docs-only commits also passed CI).
+- Stage C — confirm plan eligibility and, only with approval, configure a staging Catch Hook manually; verify end-to-end using synthetic data.
 - Stage D — add durable delivery, replay protection, monitoring, and dead-letter handling.
 - Stage E — separate production Zap, credentials, data review, and explicit release approval.
 
@@ -114,3 +117,10 @@ This integration does not grant Zapier authority to:
 - deploy code, alter DNS, or provision paid infrastructure.
 
 Those operations remain in TLCE-controlled authorization flows and require explicit approval where sensitive.
+
+## 10. Official plan and webhook references
+
+- Free plan features: https://help.zapier.com/hc/en-us/articles/32337438839565-What-s-included-in-Zapier-s-Free-plan
+- Zapier pricing: https://zapier.com/pricing
+- Webhook trigger setup and plan availability: https://help.zapier.com/hc/en-us/articles/8496288690317-Trigger-Zap-workflows-from-webhooks
+- Catch Hook URL security: https://help.zapier.com/hc/en-us/articles/8496083355661-How-to-get-started-with-Webhooks-by-Zapier
