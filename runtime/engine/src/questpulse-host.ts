@@ -12,6 +12,8 @@ export interface TLCEHostOptions {
   services: QuestPulseHostServices;
   /** Same-origin URL containing the deployed QuestPulse index.html and assets. */
   frontendBaseUrl?: string;
+  /** Internal adapter seam for deterministic host tests. Never populate from user input. */
+  frontendMount?: (root: HTMLElement, frontendBaseUrl: string) => Promise<() => void>;
 }
 
 export interface TLCEBranch {
@@ -154,13 +156,13 @@ async function mountQuestPulseFrontend(
   }
 }
 
-function createFrontendHost(frontendBaseUrl: string) {
+function createFrontendHost(\n  frontendBaseUrl: string,\n  mountFrontend: typeof mountQuestPulseFrontend,\n) {
   const mounted = new Map<string, { root: HTMLElement; dispose: () => void }>();
 
   return {
     async mount(root: HTMLElement, branchId: string): Promise<void> {
       if (mounted.has(branchId)) return;
-      const dispose = await mountQuestPulseFrontend(root, frontendBaseUrl);
+      const dispose = await mountFrontend(root, frontendBaseUrl);
       mounted.set(branchId, { root, dispose });
     },
     unmount(branchId: string): boolean {
@@ -182,7 +184,7 @@ export function createTLCEHost(options: TLCEHostOptions) {
   registry.register(QUESTPULSE_MANIFEST, createQuestPulseModule(options.services));
 
   const runtime = new RuntimeEngine(registry);
-  const frontendHost = createFrontendHost(options.frontendBaseUrl ?? "/apps/web/");
+  const frontendHost = createFrontendHost(\n    options.frontendBaseUrl ?? "/apps/web/",\n    options.frontendMount ?? mountQuestPulseFrontend,\n  );
   let mountedBranch: string | undefined;
 
   return {
