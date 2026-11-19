@@ -1,5 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
 import { filterApprovedApps, isApprovedStoreItem, escapeStoreText } from "../store/catalogue.mjs";
 
 const approvedWebApp = {
@@ -52,4 +53,10 @@ test("catalogue filters by platform, category, and search term", () => {
   assert.equal(filterApprovedApps([approvedWebApp], { platform: "android" }).length, 0);
   assert.equal(filterApprovedApps([approvedWebApp], { category: "learning" }).length, 1);
   assert.equal(filterApprovedApps([approvedWebApp], { search: "not found" }).length, 0);
+});
+
+test("checked-in store data contains only the approved QuestPulse entry", () => {
+  const data = JSON.parse(readFileSync(new URL("../store/data/apps.json", import.meta.url), "utf8"));
+  assert.equal(data.length, 1);
+  assert.deepEqual(filterApprovedApps(data).map((item) => item.id), ["questpulse"]);
 });
