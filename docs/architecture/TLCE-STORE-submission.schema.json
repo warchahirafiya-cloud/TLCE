@@ -1,0 +1,100 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://warchahirafiya-cloud.github.io/TLCE/schemas/store-submission.schema.json",
+  "title": "TLCE STORE Product Submission",
+  "description": "Pre-publication submission metadata. This schema does not authorize publication or replace server-side review.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "submissionId",
+    "developerId",
+    "developerType",
+    "product",
+    "ownership",
+    "privacyPolicyUrl",
+    "supportUrl",
+    "permissions",
+    "thirdPartyComponents",
+    "requestedAt"
+  ],
+  "properties": {
+    "submissionId": { "type": "string", "pattern": "^sub_[a-zA-Z0-9_-]{8,80}$" },
+    "developerId": { "type": "string", "minLength": 3, "maxLength": 120 },
+    "developerType": { "enum": ["tlce_team", "approved_external"] },
+    "product": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "name", "description", "platform", "category", "version", "sourceUrl"],
+      "properties": {
+        "id": { "type": "string", "pattern": "^[a-z0-9][a-z0-9-]{1,63}$" },
+        "name": { "type": "string", "minLength": 2, "maxLength": 100 },
+        "description": { "type": "string", "minLength": 20, "maxLength": 2000 },
+        "platform": { "enum": ["web", "android", "tool"] },
+        "category": { "enum": ["productivity", "ai", "developer", "learning", "utilities"] },
+        "version": { "type": "string", "pattern": "^\\d+\\.\\d+\\.\\d+$" },
+        "sourceUrl": { "type": "string", "format": "uri", "pattern": "^https://" },
+        "releaseNotes": { "type": "string", "maxLength": 5000 }
+      }
+    },
+    "ownership": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["rightsConfirmed", "license"],
+      "properties": {
+        "rightsConfirmed": { "const": true },
+        "license": { "type": "string", "minLength": 2, "maxLength": 100 },
+        "trademarkPermission": { "type": "boolean" }
+      }
+    },
+    "privacyPolicyUrl": { "type": "string", "format": "uri", "pattern": "^https://" },
+    "supportUrl": { "type": "string", "format": "uri", "pattern": "^https://" },
+    "permissions": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["name", "purpose", "dataCollected"],
+        "properties": {
+          "name": { "type": "string", "maxLength": 120 },
+          "purpose": { "type": "string", "minLength": 5, "maxLength": 500 },
+          "dataCollected": { "type": "array", "items": { "type": "string", "maxLength": 120 } },
+          "sensitive": { "type": "boolean" }
+        }
+      }
+    },
+    "thirdPartyComponents": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["name", "version", "license"],
+        "properties": {
+          "name": { "type": "string", "maxLength": 150 },
+          "version": { "type": "string", "maxLength": 80 },
+          "license": { "type": "string", "maxLength": 100 },
+          "sourceUrl": { "type": "string", "format": "uri", "pattern": "^https://" }
+        }
+      }
+    },
+    "androidRelease": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["packageName", "artifactSha256", "signerCertificateSha256", "targetSdk", "minSdk"],
+      "properties": {
+        "packageName": { "type": "string", "pattern": "^[A-Za-z][A-Za-z0-9_]*(\\.[A-Za-z][A-Za-z0-9_]*)+$" },
+        "artifactSha256": { "type": "string", "pattern": "^[a-fA-F0-9]{64}$" },
+        "signerCertificateSha256": { "type": "string", "pattern": "^[a-fA-F0-9]{64}$" },
+        "targetSdk": { "type": "integer", "minimum": 23 },
+        "minSdk": { "type": "integer", "minimum": 21 }
+      }
+    },
+    "requestedAt": { "type": "string", "format": "date-time" }
+  },
+  "allOf": [
+    {
+      "if": { "properties": { "product": { "properties": { "platform": { "const": "android" } }, "required": ["platform"] } } },
+      "then": { "required": ["androidRelease"] },
+      "else": { "not": { "required": ["androidRelease"] } }
+    }
+  ]
+}
