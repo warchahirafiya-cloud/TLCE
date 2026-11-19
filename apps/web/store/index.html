@@ -1,0 +1,63 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="theme-color" content="#0b1020">
+  <meta name="description" content="TLCE STORE: متجر التطبيقات والأدوات الرقمية ضمن The Last Cosmic Explosion.">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; base-uri 'self'; object-src 'none'; script-src 'self'; style-src 'self'; img-src 'self' data:; font-src 'self'; connect-src 'self'; form-action 'self'; upgrade-insecure-requests">
+  <title>TLCE STORE | The Last Cosmic Explosion</title>
+  <link rel="stylesheet" href="./store.css">
+  <script type="module" src="./store.js"></script>
+</head>
+<body>
+  <a class="skip-link" href="#main">انتقل إلى المحتوى</a>
+  <header class="topbar">
+    <a class="brand" href="#home" aria-label="TLCE STORE"><span class="brand-mark">T</span><span>TLCE <b>STORE</b></span></a>
+    <nav aria-label="التنقل الرئيسي"><a href="#catalogue">استكشف</a><a href="#publish">للمطورين</a><a href="#trust">معايير الأمان</a></nav>
+    <a class="parent-link" href="../index.html">المشروع الأم: TLCE</a>
+  </header>
+  <main id="main">
+    <section class="hero" id="home">
+      <div class="hero-copy">
+        <p class="eyebrow">THE LAST COSMIC EXPLOSION · OFFICIAL APP DIRECTORY</p>
+        <h1>كل أدواتك.<br><span>في مدار واحد.</span></h1>
+        <p>متجر موحّد لتطبيقات الويب وAndroid والأدوات الرقمية. اكتشف المنتجات المعتمدة، وتحقق من المطوّر ومصدر التنزيل قبل الاستخدام.</p>
+        <div class="hero-actions"><a class="primary" href="#catalogue">استكشف المتجر <span aria-hidden="true">←</span></a><a class="secondary" href="#publish">انضم كمطوّر</a></div>
+        <p class="hero-note"><i></i> النشر محصور بفريق TLCE والمطورين الخارجيين المعتمدين بعد المراجعة.</p>
+      </div>
+      <div class="hero-visual" aria-hidden="true"><div class="planet"><span>TLCE</span></div><div class="ring ring-a"></div><div class="ring ring-b"></div><b class="orbit-tag tag-a">WEB</b><b class="orbit-tag tag-b">ANDROID</b><b class="orbit-tag tag-c">TOOLS</b></div>
+    </section>
+    <section class="metrics" aria-label="نطاق المتجر"><div><strong>01</strong><span>تطبيقات الويب</span></div><div><strong>02</strong><span>تطبيقات Android</span></div><div><strong>03</strong><span>أدوات رقمية</span></div><div><strong>04</strong><span>مراجعة قبل النشر</span></div></section>
+    <section class="section" id="catalogue">
+      <div class="section-heading"><div><p class="eyebrow">DISCOVER THE ECOSYSTEM</p><h2>استكشف الكتالوج</h2><p>لا تظهر هنا إلا العناصر المعتمدة والمصرّح بنشرها.</p></div><span id="catalogue-status" class="status" role="status">جارٍ تحميل الكتالوج</span></div>
+      <div class="toolbar">
+        <label class="search">ابحث عن تطبيق أو أداة<input id="search" type="search" placeholder="الاسم أو الوصف أو المطوّر"></label>
+        <label>نوع المنتج<select id="platform"><option value="">كل الأنواع</option><option value="web">تطبيق ويب</option><option value="android">Android</option><option value="tool">أداة رقمية</option></select></label>
+        <label>التصنيف<select id="category"><option value="">كل التصنيفات</option><option value="productivity">الإنتاجية</option><option value="ai">الذكاء الاصطناعي</option><option value="developer">للمطورين</option><option value="learning">التعليم</option><option value="utilities">أدوات عامة</option></select></label>
+        <button id="reset" class="reset" type="button">إعادة ضبط</button>
+      </div>
+      <p class="result-line" id="result-count" aria-live="polite">—</p>
+      <div class="catalogue-grid" id="app-list" aria-live="polite" aria-busy="true"><div class="empty"><span class="spinner"></span><h3>نجهّز المتجر</h3><p>يتم تحميل العناصر المنشورة.</p></div></div>
+    </section>
+    <section class="section category-section">
+      <div class="section-heading"><div><p class="eyebrow">ONE STORE · THREE TRACKS</p><h2>ثلاثة مسارات، بوابة واحدة</h2></div></div>
+      <div class="category-grid">
+        <article><span class="category-icon">⌘</span><h3>تطبيقات الويب</h3><p>تطبيقات تعمل مباشرة من المتصفح، مع معلومات واضحة عن الإصدار والمطوّر.</p></article>
+        <article><span class="category-icon">▣</span><h3>Android</h3><p>تطبيقات Android من مصادر موثقة. تنزيل الحزم لن يُفعّل قبل اعتماد التوقيع والتحقق من سلامة الملفات.</p></article>
+        <article><span class="category-icon">✳</span><h3>الأدوات الرقمية</h3><p>خدمات وأدوات إنتاجية ومطورين وذكاء اصطناعي ضمن كتالوج واحد.</p></article>
+      </div>
+    </section>
+    <section class="publish" id="publish">
+      <div><p class="eyebrow">DEVELOPER PROGRAM</p><h2>للمطورين المعتمدين</h2><p>يستقبل TLCE STORE منتجات فريق TLCE والمطورين الخارجيين بعد اعتماد هويتهم وحقوقهم ومراجعة المنتج. إرسال المنتج لا يعني قبوله أو نشره تلقائياً.</p></div>
+      <ol><li>تسجيل المطوّر والتحقق من هويته ووسيلة التواصل.</li><li>تقديم بيانات المنتج والمالك وحقوق الملكية.</li><li>فحص الأمان والخصوصية والروابط والحزم.</li><li>مراجعة بشرية ثم موافقة نشر موثقة.</li></ol>
+      <p class="notice">بوابة تقديم المطورين غير مفعّلة في هذه المرحلة. لا ترفع ملفات APK أو بيانات اعتماد عبر هذه الصفحة.</p>
+    </section>
+    <section class="section trust" id="trust">
+      <div><p class="eyebrow">TRUST IS THE GATE</p><h2>لا نشر بلا مراجعة.</h2><p>الكتالوج العام يقرأ السجلات التي تحمل حالة نشر معتمدة فقط. السجلات المسودة أو المرفوضة أو قيد المراجعة لا تظهر للزوار.</p></div>
+      <ul><li>مصدر رسمي وروابط HTTPS.</li><li>مطوّر ومالك منتج معروفان.</li><li>مراجعة الخصوصية والأذونات.</li><li>فحص الحزم والتوقيعات قبل تفعيل تنزيل Android.</li><li>سجل إصدار وتحديثات وسياسة إزالة واضحة.</li></ul>
+    </section>
+  </main>
+  <footer><span>TLCE STORE · وحدة ضمن THE LAST COSMIC EXPLOSION</span><a href="../index.html">العودة إلى QuestPulse</a></footer>
+</body>
+</html>
