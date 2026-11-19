@@ -23,3 +23,12 @@ Serve the repository root with any static HTTP server and open `/apps/web/`. ES 
 
 ## Tests
 Run `node --test apps/web/test/*.test.mjs` with Node.js 22 or later.
+
+
+## Runtime integration
+- `questpulse.js` exports `mountQuestPulse(root)` and returns a cleanup callback.
+- `bootstrap.js` calls that lifecycle for the standalone static page.
+- The TLCE runtime host imports the same module after loading the HTML shell.
+- `styles.runtime.css` is the Shadow DOM-scoped stylesheet used by the embedded module; keep it synchronized with `styles.css` when the visual design changes.
+- Configure the runtime host's `frontendBaseUrl` as `/apps/web/` when serving the repository root, or `/` when deploying the contents of this directory at the site root.
+- This mount does not add authentication or write APIs. The module remains read-only and uses browser-local saved guides.
