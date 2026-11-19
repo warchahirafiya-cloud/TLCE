@@ -90,9 +90,6 @@ async function mountQuestPulseFrontend(
 ): Promise<() => void> {
   const documentRef = root.ownerDocument;
   const baseUrl = new URL(frontendBaseUrl, documentRef.baseURI);
-  const documentUrl = new URL("index.html", baseUrl);
-  const pageUrl = new URL(documentUrl.href);
-
   if (baseUrl.origin !== new URL(documentRef.baseURI).origin) {
     throw new Error("QuestPulse frontend must be hosted on the same origin as TLCE");
   }
@@ -100,6 +97,7 @@ async function mountQuestPulseFrontend(
     throw new Error("QuestPulse frontend base URL must end with a slash");
   }
 
+  const documentUrl = new URL("index.html", baseUrl);
   const response = await fetch(documentUrl, {
     headers: { Accept: "text/html" },
     credentials: "same-origin",
@@ -110,32 +108,30 @@ async function mountQuestPulseFrontend(
   const Parser = documentRef.defaultView?.DOMParser;
   if (!Parser) throw new Error("DOMParser is unavailable in this document");
   const parsed = new Parser().parseFromString(await response.text(), "text/html");
-  const main = parsed.querySelector("main#main");
-  if (!main) throw new Error("QuestPulse frontend document is missing main#main");
-
-  const mountPoint = documentRef.createElement("div");
-  mountPoint.className = "tlce-questpulse-frontend";
-  mountPoint.setAttribute("data-tlce-questpulse-frontend", "true");
-
-  const styleLinks: HTMLLinkElement[] = [];
-  for (const link of Array.from(parsed.querySelectorAll('link[rel="stylesheet"][href]'))) {
-    const href = new URL(link.getAttribute("href") ?? "", pageUrl);
-    if (href.origin !== baseUrl.origin) {
-      throw new Error("QuestPulse stylesheet must use the TLCE origin");
-    }
-    const style = documentRef.createElement("link");
-    style.rel = "stylesheet";
-    style.href = href.href;
-    style.dataset.tlceQuestpulseStyle = "true";
-    documentRef.head.append(style);
-    styleLinks.push(style);
+  if (!parsed.querySelector("main#main")) {
+    throw new Error("QuestPulse frontend document is missing main#main");
   }
 
-  const bodyNodes = Array.from(parsed.body.childNodes).filter((node) =>
-    !(node instanceof (documentRef.defaultView?.HTMLScriptElement ?? HTMLScriptElement)),
-  );
-  for (const node of bodyNodes) mountPoint.append(documentRef.importNode(node, true));
-  root.replaceChildren(mountPoint);
+  const hostElement = documentRef.createElement("div");
+  hostElement.className = "tlce-questpulse-frontend";
+  hostElement.setAttribute("data-tlce-questpulse-frontend", "true");
+  const shadow = hostElement.attachShadow({ mode: "open" });
+
+  const stylesheetUrl = new URL("styles.runtime.css", baseUrl);
+  const stylesheet = documentRef.createElement("link");
+  stylesheet.rel = "stylesheet";
+  stylesheet.href = stylesheetUrl.href;
+  shadow.append(stylesheet);
+
+  const mountPoint = documentRef.createElement("div");
+  mountPoint.className = "questpulse-app-root";
+  const body = parsed.body.cloneNode(true) as HTMLElement;
+  for (const script of Array.from(body.querySelectorAll("script"))) script.remove();
+  for (const node of Array.from(body.childNodes)) {
+    mountPoint.append(documentRef.importNode(node, true));
+  }
+  shadow.append(mountPoint);
+  root.replaceChildren(hostElement);
 
   try {
     const moduleUrl = new URL("questpulse.js", baseUrl).href;
@@ -147,16 +143,17 @@ async function mountQuestPulseFrontend(
     return () => {
       unmountApp();
       root.replaceChildren();
-      for (const style of styleLinks) style.remove();
     };
   } catch (error) {
     root.replaceChildren();
-    for (const style of styleLinks) style.remove();
     throw error;
   }
 }
 
-function createFrontendHost(\n  frontendBaseUrl: string,\n  mountFrontend: typeof mountQuestPulseFrontend,\n) {
+function createFrontendHost(
+  frontendBaseUrl: string,
+  mountFrontend: typeof mountQuestPulseFrontend,
+) {
   const mounted = new Map<string, { root: HTMLElement; dispose: () => void }>();
 
   return {
@@ -184,7 +181,10 @@ export function createTLCEHost(options: TLCEHostOptions) {
   registry.register(QUESTPULSE_MANIFEST, createQuestPulseModule(options.services));
 
   const runtime = new RuntimeEngine(registry);
-  const frontendHost = createFrontendHost(\n    options.frontendBaseUrl ?? "/apps/web/",\n    options.frontendMount ?? mountQuestPulseFrontend,\n  );
+  const frontendHost = createFrontendHost(
+    options.frontendBaseUrl ?? "/apps/web/",
+    options.frontendMount ?? mountQuestPulseFrontend,
+  );
   let mountedBranch: string | undefined;
 
   return {
