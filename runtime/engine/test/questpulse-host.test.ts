@@ -151,10 +151,13 @@ test("deduplicates concurrent mount requests", async () => {
 test("queues unmount requested while frontend mounting is still in progress", async () => {
   const frontend = testFrontendMount();
   let releaseMount!: () => void;
+  let signalMountStarted!: () => void;
   const mountGate = new Promise<void>((resolve) => { releaseMount = resolve; });
+  const mountStarted = new Promise<void>((resolve) => { signalMountStarted = resolve; });
   const host = createTLCEHost({
     services,
     frontendMount: async (root) => {
+      signalMountStarted();
       await mountGate;
       return frontend.mount(root);
     },
@@ -162,6 +165,7 @@ test("queues unmount requested while frontend mounting is still in progress", as
   const root = fakeRoot() as unknown as HTMLElement;
 
   const mounting = host.mount(root, "mount-before-unmount", new Set<string>(), "/questpulse");
+  await mountStarted;
   const unmounting = host.unmount();
   releaseMount();
 
