@@ -22,6 +22,7 @@
 - `apps/web/store/developers/index.html`: public developer-program guide; it is informational and does not accept submissions.
 - `docs/architecture/TLCE-STORE-submission.schema.json`: proposed metadata contract for a future private submission API.
 - `docs/architecture/TLCE-STORE-review-checklist.md`: internal review checklist for independent reviewers.
+- `docs/architecture/TLCE-STORE-state-machine.md`: permitted lifecycle transitions, role boundaries, and audit requirements.
 
 ## Publication lifecycle
 
