@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://warchahirafiya-cloud.github.io/TLCE/schemas/store-submission.schema.json",
+  "$id": "urn:tlce:store:submission:1.0.0",
   "title": "TLCE STORE Product Submission",
   "description": "Pre-publication submission metadata. This schema does not authorize publication or replace server-side review.",
   "type": "object",
