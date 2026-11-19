@@ -1,0 +1,16 @@
+[
+  {
+    "id": "questpulse",
+    "name": "QuestPulse",
+    "description": "وحدة TLCE لاكتشاف الفرص الرقمية ومراجعة شروطها ومصادرها عبر أدلة منظمة.",
+    "icon": "Q",
+    "platform": "web",
+    "category": "learning",
+    "developerName": "TLCE Team",
+    "version": "1.0.0",
+    "status": "published",
+    "reviewStatus": "approved",
+    "developerApproved": true,
+    "launchPath": "../index.html"
+  }
+]
