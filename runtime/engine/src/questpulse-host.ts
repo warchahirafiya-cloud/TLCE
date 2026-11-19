@@ -10,6 +10,8 @@ export interface QuestPulseHostServices {
 
 export interface TLCEHostOptions {
   services: QuestPulseHostServices;
+  /** Same-origin URL containing the deployed QuestPulse index.html and assets. */
+  frontendBaseUrl?: string;
 }
 
 export interface TLCEBranch {
@@ -17,6 +19,10 @@ export interface TLCEBranch {
   route: string;
   manifest: ModuleManifest;
 }
+
+type QuestPulseFrontendModule = {
+  mountQuestPulse(root: HTMLElement): () => void;
+};
 
 const QUESTPULSE_MANIFEST: ModuleManifest = {
   id: "questpulse",
@@ -76,22 +82,91 @@ function createBranchRegistry() {
   };
 }
 
-function createFrontendHost() {
-  const mounted = new Map<string, HTMLElement>();
+async function mountQuestPulseFrontend(
+  root: HTMLElement,
+  frontendBaseUrl: string,
+): Promise<() => void> {
+  const documentRef = root.ownerDocument;
+  const baseUrl = new URL(frontendBaseUrl, documentRef.baseURI);
+  const documentUrl = new URL("index.html", baseUrl);
+  const pageUrl = new URL(documentUrl.href);
+
+  if (baseUrl.origin !== new URL(documentRef.baseURI).origin) {
+    throw new Error("QuestPulse frontend must be hosted on the same origin as TLCE");
+  }
+  if (!baseUrl.pathname.endsWith("/")) {
+    throw new Error("QuestPulse frontend base URL must end with a slash");
+  }
+
+  const response = await fetch(documentUrl, {
+    headers: { Accept: "text/html" },
+    credentials: "same-origin",
+    redirect: "error",
+  });
+  if (!response.ok) throw new Error(`QuestPulse frontend request failed: ${response.status}`);
+
+  const Parser = documentRef.defaultView?.DOMParser;
+  if (!Parser) throw new Error("DOMParser is unavailable in this document");
+  const parsed = new Parser().parseFromString(await response.text(), "text/html");
+  const main = parsed.querySelector("main#main");
+  if (!main) throw new Error("QuestPulse frontend document is missing main#main");
+
+  const mountPoint = documentRef.createElement("div");
+  mountPoint.className = "tlce-questpulse-frontend";
+  mountPoint.setAttribute("data-tlce-questpulse-frontend", "true");
+
+  const styleLinks: HTMLLinkElement[] = [];
+  for (const link of Array.from(parsed.querySelectorAll('link[rel="stylesheet"][href]'))) {
+    const href = new URL(link.getAttribute("href") ?? "", pageUrl);
+    if (href.origin !== baseUrl.origin) {
+      throw new Error("QuestPulse stylesheet must use the TLCE origin");
+    }
+    const style = documentRef.createElement("link");
+    style.rel = "stylesheet";
+    style.href = href.href;
+    style.dataset.tlceQuestpulseStyle = "true";
+    documentRef.head.append(style);
+    styleLinks.push(style);
+  }
+
+  const bodyNodes = Array.from(parsed.body.childNodes).filter((node) =>
+    !(node instanceof (documentRef.defaultView?.HTMLScriptElement ?? HTMLScriptElement)),
+  );
+  for (const node of bodyNodes) mountPoint.append(documentRef.importNode(node, true));
+  root.replaceChildren(mountPoint);
+
+  try {
+    const moduleUrl = new URL("questpulse.js", baseUrl).href;
+    const app = await import(moduleUrl) as QuestPulseFrontendModule;
+    if (typeof app.mountQuestPulse !== "function") {
+      throw new Error("QuestPulse frontend does not export mountQuestPulse");
+    }
+    const unmountApp = app.mountQuestPulse(mountPoint);
+    return () => {
+      unmountApp();
+      root.replaceChildren();
+      for (const style of styleLinks) style.remove();
+    };
+  } catch (error) {
+    root.replaceChildren();
+    for (const style of styleLinks) style.remove();
+    throw error;
+  }
+}
+
+function createFrontendHost(frontendBaseUrl: string) {
+  const mounted = new Map<string, { root: HTMLElement; dispose: () => void }>();
 
   return {
-    mount(root: HTMLElement, branchId: string): void {
+    async mount(root: HTMLElement, branchId: string): Promise<void> {
       if (mounted.has(branchId)) return;
-      const element = root.ownerDocument.createElement("section");
-      element.setAttribute("data-tlce-branch", branchId);
-      element.setAttribute("aria-label", "QuestPulse module host");
-      root.replaceChildren(element);
-      mounted.set(branchId, root);
+      const dispose = await mountQuestPulseFrontend(root, frontendBaseUrl);
+      mounted.set(branchId, { root, dispose });
     },
     unmount(branchId: string): boolean {
-      const root = mounted.get(branchId);
-      if (!root) return false;
-      root.replaceChildren();
+      const entry = mounted.get(branchId);
+      if (!entry) return false;
+      entry.dispose();
       mounted.delete(branchId);
       return true;
     },
@@ -107,7 +182,7 @@ export function createTLCEHost(options: TLCEHostOptions) {
   registry.register(QUESTPULSE_MANIFEST, createQuestPulseModule(options.services));
 
   const runtime = new RuntimeEngine(registry);
-  const frontendHost = createFrontendHost();
+  const frontendHost = createFrontendHost(options.frontendBaseUrl ?? "/apps/web/");
   let mountedBranch: string | undefined;
 
   return {
@@ -132,7 +207,7 @@ export function createTLCEHost(options: TLCEHostOptions) {
 
       await runtime.startModule(branch.id);
       try {
-        frontendHost.mount(root, branch.id);
+        await frontendHost.mount(root, branch.id);
         mountedBranch = branch.id;
       } catch (error) {
         await runtime.stopModule(branch.id);
