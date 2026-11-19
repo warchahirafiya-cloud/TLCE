@@ -17,6 +17,8 @@
 - `apps/web/store/index.html`: accessible Arabic RTL storefront.
 - `apps/web/store/store.css`: isolated responsive presentation layer.
 - `apps/web/store/store.js`: browser-side catalogue controller.
+- `apps/web/store/product/`: product-detail route that resolves only approved catalogue records.
+- `apps/web/store/product/product.js`: safe product-detail renderer.
 - `apps/web/store/catalogue.mjs`: public-listing validation and filtering.
 - `apps/web/store/data/apps.json`: static public catalogue; only approved published records are rendered.
 - `apps/web/store/developers/index.html`: public developer-program guide; it is informational and does not accept submissions.
