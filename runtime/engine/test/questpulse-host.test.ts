@@ -17,27 +17,12 @@ interface TestElement {
 function fakeElement(tagName: string): TestElement {
   const attributes: Record<string, string> = {};
   const children: TestElement[] = [];
-
   const element: TestElement = {
-    tagName,
-    attributes,
-    children,
-    id: "",
-    className: "",
-    textContent: "",
-    setAttribute(name: string, value: string): void {
-      attributes[name] = value;
-    },
-    getAttribute(name: string): string | null {
-      return Object.prototype.hasOwnProperty.call(attributes, name)
-        ? attributes[name]
-        : null;
-    },
-    append(...items: TestElement[]): void {
-      children.push(...items);
-    },
+    tagName, attributes, children, id: "", className: "", textContent: "",
+    setAttribute(name, value) { attributes[name] = value; },
+    getAttribute(name) { return Object.prototype.hasOwnProperty.call(attributes, name) ? attributes[name] : null; },
+    append(...items) { children.push(...items); },
   };
-
   return element;
 }
 
@@ -48,18 +33,10 @@ interface FakeRoot {
 }
 
 function fakeRoot(): FakeRoot {
-  const documentRef = {
-    createElement(tag: string): TestElement {
-      return fakeElement(tag);
-    },
-  };
-
   return {
-    ownerDocument: documentRef,
+    ownerDocument: { createElement: fakeElement },
     children: [],
-    replaceChildren(...items: TestElement[]): void {
-      this.children = items;
-    },
+    replaceChildren(...items) { this.children = items; },
   };
 }
 
@@ -75,41 +52,79 @@ const services = {
   },
 };
 
-test("mounts QuestPulse under the TLCE host and tears it down cleanly", async () => {
-  const host = createTLCEHost({ services });
+function testFrontendMount() {
+  let mountCount = 0;
+  let unmountCount = 0;
+  return {
+    get mountCount() { return mountCount; },
+    get unmountCount() { return unmountCount; },
+    async mount(root: HTMLElement): Promise<() => void> {
+      mountCount += 1;
+      const element = fakeElement("section");
+      element.setAttribute("data-tlce-branch", "questpulse");
+      (root as unknown as FakeRoot).replaceChildren(element);
+      return () => {
+        unmountCount += 1;
+        (root as unknown as FakeRoot).replaceChildren();
+      };
+    },
+  };
+}
+
+test("mounts the QuestPulse frontend through TLCE and tears it down cleanly", async () => {
+  const frontend = testFrontendMount();
+  const host = createTLCEHost({
+    services,
+    frontendBaseUrl: "/",
+    frontendMount: (root) => frontend.mount(root),
+  });
   const root = fakeRoot();
 
   assert.equal(host.branchRegistry.get("questpulse")?.route, "/questpulse");
-  await host.mount(
-    root as unknown as HTMLElement,
-    "request-test-1",
-    new Set<string>(),
-    "/questpulse/offers",
-  );
+  await host.mount(root as unknown as HTMLElement, "request-test-1", new Set<string>(), "/questpulse/offers");
 
   assert.equal(host.runtime.isActive("questpulse"), true);
   assert.equal(host.frontendHost.isMounted("questpulse"), true);
   assert.equal(root.children.length, 1);
   assert.equal(root.children[0].getAttribute("data-tlce-branch"), "questpulse");
+  assert.equal(frontend.mountCount, 1);
+
+  await host.mount(root as unknown as HTMLElement, "request-test-1-repeat", new Set<string>(), "/questpulse");
+  assert.equal(frontend.mountCount, 1, "duplicate mount must not duplicate the frontend");
 
   assert.equal(await host.unmount(), true);
   assert.equal(host.runtime.isActive("questpulse"), false);
   assert.equal(host.frontendHost.isMounted("questpulse"), false);
   assert.equal(root.children.length, 0);
+  assert.equal(frontend.unmountCount, 1);
 });
 
 test("does not start the branch when the route is outside its namespace", async () => {
-  const host = createTLCEHost({ services });
+  const frontend = testFrontendMount();
+  const host = createTLCEHost({
+    services,
+    frontendMount: (root) => frontend.mount(root),
+  });
 
   await assert.rejects(
-    host.mount(
-      fakeRoot() as unknown as HTMLElement,
-      "request-test-2",
-      new Set<string>(),
-      "/admin",
-    ),
+    host.mount(fakeRoot() as unknown as HTMLElement, "request-test-2", new Set<string>(), "/admin"),
     /does not match registered/,
   );
 
   assert.equal(host.runtime.isActive("questpulse"), false);
+  assert.equal(frontend.mountCount, 0);
+});
+
+test("stops the runtime module if frontend mounting fails", async () => {
+  const host = createTLCEHost({
+    services,
+    frontendMount: async () => { throw new Error("frontend unavailable"); },
+  });
+
+  await assert.rejects(
+    host.mount(fakeRoot() as unknown as HTMLElement, "request-test-3", new Set<string>(), "/questpulse"),
+    /frontend unavailable/,
+  );
+  assert.equal(host.runtime.isActive("questpulse"), false);
+  assert.equal(host.frontendHost.isMounted("questpulse"), false);
 });
