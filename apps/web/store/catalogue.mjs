@@ -32,11 +32,12 @@ export function filterApprovedApps(items, filters = {}) {
   const seen = new Set();
   return items.filter((item) => {
     if (!isApprovedStoreItem(item) || seen.has(item.id)) return false;
-    seen.add(item.id);
     if (filters.platform && item.platform !== filters.platform) return false;
     if (filters.category && item.category !== filters.category) return false;
     const haystack = [item.name, item.description, item.developerName].join(" ").toLocaleLowerCase();
-    return !needle || haystack.includes(needle);
+    if (needle && !haystack.includes(needle)) return false;
+    seen.add(item.id);
+    return true;
   });
 }
 
