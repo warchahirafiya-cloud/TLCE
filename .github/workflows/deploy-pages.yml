@@ -37,6 +37,7 @@ jobs:
           node --check apps/web/questpulse-catalogue.mjs
           node --check apps/web/questpulse.js
           node --check apps/web/store/store.js
+          node --check apps/web/store/product/product.js
           node --check apps/web/store/catalogue.mjs
           node --test apps/web/test/*.test.mjs
           node --input-type=module -e "import fs from 'node:fs'; for (const file of ['apps/web/data/offers.json','apps/web/data/guides.json','apps/web/store/data/apps.json','docs/architecture/TLCE-STORE-submission.schema.json']) JSON.parse(fs.readFileSync(file,'utf8'));"
