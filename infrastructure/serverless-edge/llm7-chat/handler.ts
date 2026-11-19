@@ -4,6 +4,13 @@ export interface Llm7ChatEnv {
   LLM7_MODEL?: string;
 }
 
+export interface Llm7ChatSecurityPolicy {
+  /** Must validate a trusted TLCE identity from server-verified credentials. */
+  authenticate(request: Request): Promise<boolean>;
+  /** Must enforce a shared, server-side rate limit for the authenticated identity. */
+  allowRequest(request: Request): Promise<boolean>;
+}
+
 export interface ChatMessage {
   role: "user" | "assistant";
   content: string;
@@ -42,7 +49,6 @@ function parseMessages(value: unknown): ChatMessage[] | null {
     messages.push({ role: item.role, content: item.content });
   }
 
-  // Conversations must start with a user message and alternate roles.
   if (messages[0]?.role !== "user") return null;
   for (let index = 1; index < messages.length; index += 1) {
     if (messages[index]?.role === messages[index - 1]?.role) return null;
@@ -51,17 +57,38 @@ function parseMessages(value: unknown): ChatMessage[] | null {
 }
 
 /**
- * Same-origin chat proxy. Mount behind TLCE identity/rate-limit middleware;
- * never expose this handler as an anonymous public endpoint.
+ * LLM7 proxy. It fails closed unless a trusted identity and shared rate-limit
+ * policy are supplied by the hosting integration. Origin checks are not auth.
  */
 export function createLlm7ChatHandler(
   env: Llm7ChatEnv,
   fetchImpl: typeof fetch = fetch,
+  security?: Llm7ChatSecurityPolicy,
 ): (request: Request) => Promise<Response> {
   return async (request: Request): Promise<Response> => {
+    if (!security) {
+      return json({ error: "Chat service security is not configured" }, 503);
+    }
+
     if (request.method !== "POST") {
       return json({ error: "Method not allowed" }, 405);
     }
+
+    let authenticated = false;
+    try {
+      authenticated = await security.authenticate(request);
+    } catch {
+      return json({ error: "Authentication service unavailable" }, 503);
+    }
+    if (!authenticated) return json({ error: "Authentication required" }, 401);
+
+    let allowed = false;
+    try {
+      allowed = await security.allowRequest(request);
+    } catch {
+      return json({ error: "Rate-limit service unavailable" }, 503);
+    }
+    if (!allowed) return json({ error: "Rate limit exceeded" }, 429);
 
     const origin = request.headers.get("origin");
     if (origin) {
@@ -78,18 +105,50 @@ export function createLlm7ChatHandler(
       return json({ error: "Content-Type must be application/json" }, 415);
     }
 
-    const contentLength = Number(request.headers.get("content-length") ?? "0");
-    if (Number.isFinite(contentLength) && contentLength > MAX_BODY_BYTES) {
-      return json({ error: "Request body is too large" }, 413);
+    const contentLengthHeader = request.headers.get("content-length");
+    if (contentLengthHeader !== null) {
+      if (!/^\d+$/.test(contentLengthHeader)) {
+        return json({ error: "Invalid Content-Length" }, 400);
+      }
+      if (Number(contentLengthHeader) > MAX_BODY_BYTES) {
+        return json({ error: "Request body is too large" }, 413);
+      }
     }
 
     if (!env.LLM7_API_KEY?.trim()) {
       return json({ error: "Chat service is not configured" }, 503);
     }
 
+    const reader = request.body?.getReader();
+    if (!reader) return json({ error: "Request body is required" }, 400);
+
+    const chunks: Uint8Array[] = [];
+    let totalBytes = 0;
+    try {
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        totalBytes += value.byteLength;
+        if (totalBytes > MAX_BODY_BYTES) {
+          await reader.cancel();
+          return json({ error: "Request body is too large" }, 413);
+        }
+        chunks.push(value);
+      }
+    } catch {
+      return json({ error: "Invalid request body" }, 400);
+    }
+
+    const rawBody = new Uint8Array(totalBytes);
+    let offset = 0;
+    for (const chunk of chunks) {
+      rawBody.set(chunk, offset);
+      offset += chunk.byteLength;
+    }
+
     let payload: unknown;
     try {
-      payload = await request.json();
+      payload = JSON.parse(new TextDecoder().decode(rawBody));
     } catch {
       return json({ error: "Invalid JSON body" }, 400);
     }
@@ -120,7 +179,6 @@ export function createLlm7ChatHandler(
     }
 
     if (!upstream.ok) {
-      // Do not relay provider error bodies; they may contain sensitive diagnostics.
       return json({ error: "The AI provider returned an error", providerStatus: upstream.status }, 502);
     }
 
