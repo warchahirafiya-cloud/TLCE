@@ -1,7 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
-import { filterApprovedApps, isApprovedStoreItem, escapeStoreText } from "../store/catalogue.mjs";
+import { filterApprovedApps, isApprovedStoreItem, isSafeStoreLaunchPath, escapeStoreText } from "../store/catalogue.mjs";
 
 const approvedWebApp = {
   id: "questpulse",
@@ -59,4 +59,24 @@ test("checked-in store data contains only the approved QuestPulse entry", () => 
   const data = JSON.parse(readFileSync(new URL("../store/data/apps.json", import.meta.url), "utf8"));
   assert.equal(data.length, 1);
   assert.deepEqual(filterApprovedApps(data).map((item) => item.id), ["questpulse"]);
+});
+
+test("store launch paths reject traversal, encoded paths, and non-HTML targets", () => {
+  assert.equal(isSafeStoreLaunchPath("../index.html"), true);
+  assert.equal(isSafeStoreLaunchPath("../questpulse/index.html"), true);
+  assert.equal(isSafeStoreLaunchPath("../../outside.html"), false);
+  assert.equal(isSafeStoreLaunchPath("../%2e%2e/outside.html"), false);
+  assert.equal(isSafeStoreLaunchPath("..\\\\outside.html"), false);
+  assert.equal(isSafeStoreLaunchPath("https://example.com/app.html"), false);
+  assert.equal(isSafeStoreLaunchPath("../download.apk"), false);
+});
+
+test("duplicate product IDs are reduced to one public catalogue entry", () => {
+  const duplicate = { ...approvedWebApp, name: "Duplicate listing" };
+  assert.equal(filterApprovedApps([approvedWebApp, duplicate]).length, 1);
+});
+
+test("overlong catalogue fields are rejected", () => {
+  assert.equal(isApprovedStoreItem({ ...approvedWebApp, name: "x".repeat(101) }), false);
+  assert.equal(isApprovedStoreItem({ ...approvedWebApp, description: "x".repeat(2001) }), false);
 });
