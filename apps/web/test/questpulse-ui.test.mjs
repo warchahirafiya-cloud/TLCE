@@ -87,7 +87,7 @@ await new Promise((resolve) => setImmediate(resolve));
 
 test("loads and renders verified offers and educational guides", () => {
   assert.match(elements.get("#catalogue-status").textContent, /جاهز/);
-  assert.match(elements.get("#result-count").textContent, /1/);
+  assert.equal(elements.get("#result-count").textContent, "فرصة واحدة منشورة");
   assert.match(elements.get("#offer-list").innerHTML, /Welcome reward/);
   assert.match(elements.get("#guide-list").innerHTML, /Verify the source/);
   assert.equal(elements.get("#offer-list").getAttribute("aria-busy"), "false");
