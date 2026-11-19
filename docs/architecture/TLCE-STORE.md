@@ -19,6 +19,9 @@
 - `apps/web/store/store.js`: browser-side catalogue controller.
 - `apps/web/store/catalogue.mjs`: public-listing validation and filtering.
 - `apps/web/store/data/apps.json`: static public catalogue; only approved published records are rendered.
+- `apps/web/store/developers/index.html`: public developer-program guide; it is informational and does not accept submissions.
+- `docs/architecture/TLCE-STORE-submission.schema.json`: proposed metadata contract for a future private submission API.
+- `docs/architecture/TLCE-STORE-review-checklist.md`: internal review checklist for independent reviewers.
 
 ## Publication lifecycle
 
@@ -41,6 +44,14 @@ Platform values:
 - `web`: a reviewed same-origin launch path.
 - `android`: reserved; no public binary download until signing, provenance, malware scanning, checksum verification, and release review are implemented.
 - `tool`: reserved for reviewed digital tools; external launch links are not enabled in this first baseline.
+
+## Developer and review governance
+
+- Eligible publishers are limited to the TLCE team and externally approved developers.
+- Developer identity and ownership verification must happen in a private authenticated service; no identity documents or secrets belong in the public repository.
+- Submission metadata is described by `TLCE-STORE-submission.schema.json`; schema validation is not approval.
+- Reviewers must be independent from submitters. Decisions, evidence references, timestamps, and product versions must be auditable.
+- The public developer page is guidance only. It must not imply that a submission endpoint or account system is live.
 
 ## Security boundaries
 
