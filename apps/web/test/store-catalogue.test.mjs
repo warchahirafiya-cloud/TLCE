@@ -99,7 +99,7 @@ test("product detail route and controller are part of the store bundle", async (
   assert.equal(existsSync(scriptPath), true);
   const html = readFileSync(htmlPath, "utf8");
   const script = readFileSync(scriptPath, "utf8");
-  assert.match(html, /product\\.js/);
+  assert.match(html, /product\.js/);
   assert.match(script, /filterApprovedApps/);
   assert.match(script, /product not published/);
 });
