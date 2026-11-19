@@ -80,3 +80,13 @@ test("overlong catalogue fields are rejected", () => {
   assert.equal(isApprovedStoreItem({ ...approvedWebApp, name: "x".repeat(101) }), false);
   assert.equal(isApprovedStoreItem({ ...approvedWebApp, description: "x".repeat(2001) }), false);
 });
+
+test("developer program page and submission contract are present and parseable", async () => {
+  const { existsSync } = await import("node:fs");
+  const schema = JSON.parse(readFileSync(new URL("../../../docs/architecture/TLCE-STORE-submission.schema.json", import.meta.url), "utf8"));
+  const developerPage = new URL("../store/developers/index.html", import.meta.url);
+  assert.equal(existsSync(developerPage), true);
+  assert.equal(schema.title, "TLCE STORE Product Submission");
+  assert.equal(schema.properties.developerType.enum.includes("approved_external"), true);
+  assert.equal(schema.properties.product.properties.platform.enum.includes("android"), true);
+});
