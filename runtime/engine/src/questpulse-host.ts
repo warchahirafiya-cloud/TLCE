@@ -117,23 +117,33 @@ async function mountQuestPulseFrontend(
   hostElement.setAttribute("data-tlce-questpulse-frontend", "true");
   const shadow = hostElement.attachShadow({ mode: "open" });
 
-  const stylesheetUrl = new URL("styles.runtime.css", baseUrl);
-  const stylesheet = documentRef.createElement("link");
-  stylesheet.rel = "stylesheet";
-  stylesheet.href = stylesheetUrl.href;
-  shadow.append(stylesheet);
-
   const mountPoint = documentRef.createElement("div");
   mountPoint.className = "questpulse-app-root";
+  mountPoint.lang = "ar";
+  mountPoint.dir = "rtl";
+
   const body = parsed.body.cloneNode(true) as HTMLElement;
   for (const script of Array.from(body.querySelectorAll("script"))) script.remove();
   for (const node of Array.from(body.childNodes)) {
     mountPoint.append(documentRef.importNode(node, true));
   }
   shadow.append(mountPoint);
+
+  const stylesheetUrl = new URL("styles.runtime.css", baseUrl);
+  const stylesheet = documentRef.createElement("link");
+  stylesheet.rel = "stylesheet";
+  stylesheet.href = stylesheetUrl.href;
+
   root.replaceChildren(hostElement);
 
   try {
+    const stylesheetLoaded = new Promise<void>((resolve, reject) => {
+      stylesheet.onload = () => resolve();
+      stylesheet.onerror = () => reject(new Error("QuestPulse runtime stylesheet failed to load"));
+    });
+    shadow.prepend(stylesheet);
+    await stylesheetLoaded;
+
     const moduleUrl = new URL("questpulse.js", baseUrl).href;
     const app = await import(moduleUrl) as QuestPulseFrontendModule;
     if (typeof app.mountQuestPulse !== "function") {
@@ -141,8 +151,11 @@ async function mountQuestPulseFrontend(
     }
     const unmountApp = app.mountQuestPulse(mountPoint);
     return () => {
-      unmountApp();
-      root.replaceChildren();
+      try {
+        unmountApp();
+      } finally {
+        root.replaceChildren();
+      }
     };
   } catch (error) {
     root.replaceChildren();
@@ -155,18 +168,42 @@ function createFrontendHost(
   mountFrontend: typeof mountQuestPulseFrontend,
 ) {
   const mounted = new Map<string, { root: HTMLElement; dispose: () => void }>();
+  const mounting = new Map<string, Promise<void>>();
 
   return {
     async mount(root: HTMLElement, branchId: string): Promise<void> {
       if (mounted.has(branchId)) return;
-      const dispose = await mountFrontend(root, frontendBaseUrl);
-      mounted.set(branchId, { root, dispose });
+      const inFlight = mounting.get(branchId);
+      if (inFlight) return inFlight;
+
+      const operation = (async () => {
+        const dispose = await mountFrontend(root, frontendBaseUrl);
+        mounted.set(branchId, { root, dispose });
+      })();
+      mounting.set(branchId, operation);
+      try {
+        await operation;
+      } finally {
+        if (mounting.get(branchId) === operation) mounting.delete(branchId);
+      }
     },
-    unmount(branchId: string): boolean {
+    async unmount(branchId: string): Promise<boolean> {
+      const inFlight = mounting.get(branchId);
+      if (inFlight) {
+        try {
+          await inFlight;
+        } catch {
+          return false;
+        }
+      }
       const entry = mounted.get(branchId);
       if (!entry) return false;
-      entry.dispose();
-      mounted.delete(branchId);
+      try {
+        entry.dispose();
+      } finally {
+        mounted.delete(branchId);
+        entry.root.replaceChildren();
+      }
       return true;
     },
     isMounted(branchId: string): boolean {
@@ -186,13 +223,21 @@ export function createTLCEHost(options: TLCEHostOptions) {
     options.frontendMount ?? mountQuestPulseFrontend,
   );
   let mountedBranch: string | undefined;
+  let lifecycle = Promise.resolve();
+
+  // Serialize mount/unmount transitions so navigation cannot interleave lifecycle changes.
+  function serialize<T>(operation: () => Promise<T>): Promise<T> {
+    const result = lifecycle.then(operation, operation);
+    lifecycle = result.then(() => undefined, () => undefined);
+    return result;
+  }
 
   return {
     branchRegistry,
     runtime,
     frontendHost,
 
-    async mount(
+    mount(
       root: HTMLElement,
       requestId: string,
       _capabilities: ReadonlySet<string>,
@@ -200,31 +245,42 @@ export function createTLCEHost(options: TLCEHostOptions) {
     ): Promise<void> {
       const branch = branchRegistry.get("questpulse");
       if (!branch || !(route === branch.route || route.startsWith(`${branch.route}/`))) {
-        throw new Error(`Route ${route} does not match registered QuestPulse namespace`);
+        return Promise.reject(new Error(`Route ${route} does not match registered QuestPulse namespace`));
       }
-      if (mountedBranch && mountedBranch !== branch.id) {
-        throw new Error(`Another TLCE branch is already mounted: ${mountedBranch}`);
-      }
-      if (frontendHost.isMounted(branch.id)) return;
 
-      await runtime.startModule(branch.id);
-      try {
-        await frontendHost.mount(root, branch.id);
-        mountedBranch = branch.id;
-      } catch (error) {
-        await runtime.stopModule(branch.id);
-        throw error;
-      }
-      void requestId;
+      return serialize(async () => {
+        if (mountedBranch === branch.id || frontendHost.isMounted(branch.id)) return;
+        if (mountedBranch && mountedBranch !== branch.id) {
+          throw new Error(`Another TLCE branch is already mounted: ${mountedBranch}`);
+        }
+
+        await runtime.startModule(branch.id);
+        try {
+          await frontendHost.mount(root, branch.id);
+          mountedBranch = branch.id;
+        } catch (error) {
+          try {
+            await runtime.stopModule(branch.id);
+          } catch {
+            // Preserve the original frontend mount failure.
+          }
+          throw error;
+        }
+        void requestId;
+      });
     },
 
-    async unmount(): Promise<boolean> {
-      if (!mountedBranch) return false;
-      const branchId = mountedBranch;
-      const didUnmount = frontendHost.unmount(branchId);
-      await runtime.stopModule(branchId);
-      mountedBranch = undefined;
-      return didUnmount;
+    unmount(): Promise<boolean> {
+      return serialize(async () => {
+        if (!mountedBranch) return false;
+        const branchId = mountedBranch;
+        try {
+          return await frontendHost.unmount(branchId);
+        } finally {
+          mountedBranch = undefined;
+          await runtime.stopModule(branchId);
+        }
+      });
     },
   };
 }
