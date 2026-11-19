@@ -23,12 +23,38 @@ function isPrivateIpv4(address: string): boolean {
     (a === 203 && b === 0 && c === 113);
 }
 
-function isPrivateIpv6(address: string): boolean {
+function ipv6Hextets(address: string): number[] | null {
   const normalized = address.toLowerCase().split("%")[0];
-  // Permit only global-unicast space and reject known special-purpose/documentation ranges.
-  if (!normalized.startsWith("2") && !normalized.startsWith("3")) return true;
-  if (normalized.startsWith("2001:db8:") || normalized.startsWith("2001:10:") ||
-      normalized.startsWith("2002:")) return true;
+  if (normalized.includes(".")) return null; // IPv4-mapped and transition forms are denied.
+  const halves = normalized.split("::");
+  if (halves.length > 2) return null;
+  const parseHalf = (part: string): number[] | null => {
+    if (!part) return [];
+    const values = part.split(":");
+    if (values.some((value) => !/^[0-9a-f]{1,4}$/.test(value))) return null;
+    return values.map((value) => Number.parseInt(value, 16));
+  };
+  const left = parseHalf(halves[0]);
+  const right = parseHalf(halves[1] ?? "");
+  if (!left || !right) return null;
+  if (halves.length === 1) return left.length === 8 ? left : null;
+  const missing = 8 - left.length - right.length;
+  if (missing < 1) return null;
+  return [...left, ...Array(missing).fill(0), ...right];
+}
+
+function isPrivateIpv6(address: string): boolean {
+  const groups = ipv6Hextets(address);
+  if (!groups) return true;
+  const [first, second] = groups;
+  // Only global-unicast 2000::/3 is eligible. This rejects unspecified,
+  // loopback, link-local, ULA, multicast, IPv4-mapped and transition ranges.
+  if (first < 0x2000 || first > 0x3fff) return true;
+  // Conservatively deny protocol-assignment, documentation, and 6to4 space.
+  if (first === 0x2001 && second <= 0x01ff) return true; // 2001::/23
+  if (first === 0x2001 && second === 0x0db8) return true; // 2001:db8::/32
+  if (first === 0x2002) return true; // 6to4 embeds IPv4 destinations.
+  if (first === 0x3fff && second <= 0x0fff) return true; // 3fff::/20 documentation
   return false;
 }
 
