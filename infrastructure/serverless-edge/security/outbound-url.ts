@@ -2,7 +2,8 @@ import { lookup as dnsLookup } from "node:dns/promises";
 import { isIP } from "node:net";
 import { request as httpRequest } from "node:http";
 import { request as httpsRequest } from "node:https";
-import type { LookupAddress, LookupFunction } from "node:net";
+import type { LookupAddress } from "node:dns";
+import type { LookupFunction } from "node:net";
 
 const BLOCKED_HOSTS = new Set(["localhost", "localhost.localdomain", "internal", "metadata.google.internal"]);
 const DEFAULT_MAX_REDIRECTS = 3;
