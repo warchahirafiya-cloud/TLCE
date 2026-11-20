@@ -1,6 +1,6 @@
-import type { ModuleContext, ModuleHealth, ModuleManifest, TLCEModule } from "../../../packages/contracts/src/module";
-import { ModuleRegistry } from "./module-registry";
-import { RuntimeEngine } from "./runtime-engine";
+import type { ModuleContext, ModuleHealth, ModuleManifest, TLCEModule } from "../../../packages/contracts/src/module.js";
+import { ModuleRegistry } from "./module-registry.js";
+import { RuntimeEngine } from "./runtime-engine.js";
 
 export interface QuestPulseHostServices {
   request(...args: unknown[]): Promise<unknown>;
