@@ -142,7 +142,7 @@ jobs:
             ["bootstrap.js", /javascript/i],
             ["runtime/engine/src/index.js", /javascript/i],
             ["web/questpulse.js", /javascript/i],
-            ["web/styles.css", /text\\/css/i],
+            ["web/styles.css", /text\/css/i],
             ["web/data/offers.json", /json/i],
             ["web/data/guides.json", /json/i],
           ];
