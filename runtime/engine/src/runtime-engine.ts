@@ -1,5 +1,5 @@
-import type { ModuleContext, ModuleHealth, ModulePermission, ModuleLifecycleState } from "../../../packages/contracts/src/module";
-import { ModuleRegistry } from "./module-registry";
+import type { ModuleContext, ModuleHealth, ModulePermission, ModuleLifecycleState } from "../../../packages/contracts/src/module.js";
+import { ModuleRegistry } from "./module-registry.js";
 
 export interface RuntimeOptions {
   requestIdFactory?: () => string;
