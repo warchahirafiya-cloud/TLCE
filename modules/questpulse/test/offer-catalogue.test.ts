@@ -70,6 +70,23 @@ test("rejects unsafe links, unsupported classifications, and missing eligibility
   assert.ok(errors.some(error => error.includes("termsUrl")));
 });
 
+test("rejects future verification timestamps", () => {
+  const errors = validateOfferCatalogue([publishedOffer({
+    verifiedAt: "2026-11-19T12:00:00.000Z",
+  })], now);
+  assert.ok(errors.some(error => error.includes("cannot be in the future")));
+});
+
+test("requires non-empty disclosures and an HTTPS terms URL", () => {
+  const errors = validateOfferCatalogue([publishedOffer({
+    fees: " ",
+    eligibility: "",
+    termsUrl: "http://offers.example/terms",
+  })], now);
+  assert.ok(errors.some(error => error.includes("disclose fees, eligibility, and termsUrl")));
+  assert.ok(errors.some(error => error.includes("termsUrl") && error.includes("HTTPS")));
+});
+
 test("rejects stale verification and expired published offers", () => {
   const errors = validateOfferCatalogue([publishedOffer({
     verifiedAt: "2026-10-01T00:00:00.000Z",
