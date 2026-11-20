@@ -80,8 +80,8 @@ guideList.addEventListener("click", (event) => {
 });
 
 Promise.all([
-  fetch("./data/offers.json", { headers: { Accept: "application/json" }, cache: "no-store" }).then((response) => { if (!response.ok) throw new Error("offers"); return response.json(); }),
-  fetch("./data/guides.json", { headers: { Accept: "application/json" }, cache: "no-cache" }).then((response) => { if (!response.ok) throw new Error("guides"); return response.json(); })
+  fetch("../data/offers.json", { headers: { Accept: "application/json" }, cache: "no-store" }).then((response) => { if (!response.ok) throw new Error("offers"); return response.json(); }),
+  fetch("../data/guides.json", { headers: { Accept: "application/json" }, cache: "no-cache" }).then((response) => { if (!response.ok) throw new Error("guides"); return response.json(); })
 ]).then(([offerData, guideData]) => {
   catalogue = Array.isArray(offerData) ? offerData : [];
   guides = Array.isArray(guideData) ? guideData : [];
