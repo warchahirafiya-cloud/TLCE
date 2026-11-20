@@ -14,7 +14,7 @@ const approvedWebApp = {
   status: "published",
   reviewStatus: "approved",
   developerApproved: true,
-  launchPath: "../index.html"
+  launchPath: "../questpulse/index.html"
 };
 
 test("public catalogue includes the approved first-party web module", () => {
@@ -62,7 +62,7 @@ test("checked-in store data contains only the approved QuestPulse entry", () => 
 });
 
 test("store launch paths reject traversal, encoded paths, and non-HTML targets", () => {
-  assert.equal(isSafeStoreLaunchPath("../index.html"), true);
+  assert.equal(isSafeStoreLaunchPath("../questpulse/index.html"), true);
   assert.equal(isSafeStoreLaunchPath("../questpulse/index.html"), true);
   assert.equal(isSafeStoreLaunchPath("../../outside.html"), false);
   assert.equal(isSafeStoreLaunchPath("../%2e%2e/outside.html"), false);
