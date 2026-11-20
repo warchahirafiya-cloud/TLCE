@@ -6,8 +6,8 @@ const read = (path) => readFileSync(new URL(path, import.meta.url), "utf8");
 const jsonLd = (html) => [...html.matchAll(/<script type="application\/ld\+json"(?: id="[^"]+")?>([\s\S]*?)<\/script>/g)]
   .map((match) => JSON.parse(match[1]));
 
-test("TLCE homepage exposes Organization and WebSite structured data", () => {
-  const html = read("../index.html");
+test("TLCE parent homepage exposes Organization and WebSite structured data", () => {
+  const html = read("../../parent/index.html");
   const graph = jsonLd(html)[0]["@graph"];
   assert.ok(graph.some((item) => item["@type"] === "Organization" && item.name === "The Last Cosmic Explosion"));
   assert.ok(graph.some((item) => item["@type"] === "WebSite" && item.url === "https://tlce.store/"));

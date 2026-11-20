@@ -5,6 +5,11 @@ on:
     branches: [main]
     paths:
       - "apps/web/**"
+      - "apps/parent/**"
+      - "runtime/engine/src/**"
+      - "packages/contracts/src/**"
+      - "tsconfig.browser.json"
+      - "package.json"
       - ".github/workflows/deploy-pages.yml"
       - ".github/workflows/deploy-questpulse-pages.yml"
   workflow_dispatch:
@@ -32,23 +37,38 @@ jobs:
           node-version: 22
           package-manager-cache: false
 
-      - name: Validate website
+      - name: Validate website and build runtime
         run: |
           node --check apps/web/questpulse-catalogue.mjs
           node --check apps/web/questpulse.js
           node --check apps/web/store/store.js
           node --check apps/web/store/product/product.js
           node --check apps/web/store/catalogue.mjs
-          node --test apps/web/test/*.test.mjs
+          node --check apps/parent/bootstrap.js
+          node --test apps/web/test/*.test.mjs apps/parent/test/*.test.mjs
+          npm install
+          npm run build:browser
           node --input-type=module -e "import fs from 'node:fs'; for (const file of ['apps/web/data/offers.json','apps/web/data/guides.json','apps/web/store/data/apps.json','docs/architecture/TLCE-STORE-submission.schema.json']) JSON.parse(fs.readFileSync(file,'utf8'));"
 
       - name: Configure GitHub Pages
+        id: pages
         uses: actions/configure-pages@45bfe0192ca1faeb007ade9deae92b16b8254a0d
+
+      - name: Assemble TLCE parent and QuestPulse site
+        run: |
+          mkdir -p site/web site/runtime
+          cp -R apps/web/. site/web/
+          cp apps/parent/index.html apps/parent/404.html apps/parent/bootstrap.js apps/parent/styles.css site/
+          cp -R dist/browser/runtime site/
+          BASE_PATH="${{ steps.pages.outputs.base_path }}"
+          if [ -n "$BASE_PATH" ]; then BASE_PATH="/${BASE_PATH#/}"; fi
+          BASE_HREF="${BASE_PATH%/}/"
+          sed -i "s|__TLCE_BASE_HREF__|$BASE_HREF|g" site/index.html site/404.html
 
       - name: Upload website artifact
         uses: actions/upload-pages-artifact@fc324d3547104276b827a68afc52ff2a11cc49c9
         with:
-          path: apps/web
+          path: site
 
   deploy:
     needs: build

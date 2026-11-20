@@ -4,6 +4,7 @@ import { readFile } from "node:fs/promises";
 
 const publicPages = [
   "../index.html",
+  "../../parent/index.html",
   "../questpulse/index.html",
   "../store/index.html",
   "../store/product/index.html",

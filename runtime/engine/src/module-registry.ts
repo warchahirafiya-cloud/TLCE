@@ -1,4 +1,4 @@
-import type { ModuleManifest, TLCEModule } from "../../../packages/contracts/src/module";
+import type { ModuleManifest, TLCEModule } from "../../../packages/contracts/src/module.js";
 
 export interface RegisteredModule {
   manifest: ModuleManifest;
