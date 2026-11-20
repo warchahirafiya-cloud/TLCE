@@ -1,5 +1,3 @@
-import type { TLCEHostOptions } from "./questpulse-host.js";
-
 export interface TLCEApplicationHost {
   mount(root: HTMLElement, requestId: string, capabilities: ReadonlySet<string>, route: string): Promise<void>;
   unmount(): Promise<boolean>;
