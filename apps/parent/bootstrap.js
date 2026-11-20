@@ -27,13 +27,14 @@ const host = createTLCEHost({
 const router = createTLCEApplicationRouter({
   host,
   root,
+  basePath: new URL(".", import.meta.url).pathname.replace(/\/$/, ""),
   onNotFound(pathname) {
     if (pathname === "/") {
-      root.innerHTML = '<div class="welcome"><p class="eyebrow">MODULAR APPLICATION ECOSYSTEM</p><h1>منصة واحدة.<br><span>وحدات مترابطة.</span></h1><p>هذه هي المنصة الأم The Last Cosmic Explosion. تعمل الوحدات الداخلية من خلال محرك التشغيل وموجّه التطبيق المركزي.</p><a class="launch-link" href="/questpulse" data-route="/questpulse">فتح QuestPulse <span aria-hidden="true">←</span></a></div>';
+      root.innerHTML = '<div class="welcome"><p class="eyebrow">MODULAR APPLICATION ECOSYSTEM</p><h1>منصة واحدة.<br><span>وحدات مترابطة.</span></h1><p>هذه هي المنصة الأم The Last Cosmic Explosion. تعمل الوحدات الداخلية من خلال محرك التشغيل وموجّه التطبيق المركزي.</p><a class="launch-link" href="./questpulse" data-route="/questpulse">فتح QuestPulse <span aria-hidden="true">←</span></a></div>';
       status.textContent = "المحرك جاهز";
       return;
     }
-    root.innerHTML = '<div class="welcome"><p class="eyebrow">404 · ROUTE NOT FOUND</p><h1>المسار غير موجود</h1><p>لم يتم تسجيل هذه الوحدة داخل TLCE.</p><a class="launch-link" href="/" data-route="/">العودة للرئيسية</a></div>';
+    root.innerHTML = '<div class="welcome"><p class="eyebrow">404 · ROUTE NOT FOUND</p><h1>المسار غير موجود</h1><p>لم يتم تسجيل هذه الوحدة داخل TLCE.</p><a class="launch-link" href="./" data-route="/">العودة للرئيسية</a></div>';
     status.textContent = "المسار غير مسجل";
   },
   onError(error) {
