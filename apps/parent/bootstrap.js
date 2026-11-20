@@ -44,7 +44,9 @@ const router = createTLCEApplicationRouter({
 });
 
 document.addEventListener("click", (event) => {
-  const link = event.target.closest("a[data-route]");
+  const target = event.target;
+  if (!(target instanceof Element)) return;
+  const link = target.closest("a[data-route]");
   if (!link || event.defaultPrevented || event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
   event.preventDefault();
   router.navigate(link.getAttribute("data-route")).catch((error) => {
