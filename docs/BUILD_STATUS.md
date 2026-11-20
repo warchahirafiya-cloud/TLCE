@@ -1,52 +1,48 @@
 # TLCE Build Status
 
-Last reviewed: 2026-11-19
-Baseline: `main` at `e68c47371c884fc5a1230c908fb9dc56071bf0ae`
+Last reviewed: 2026-11-21
+Baseline: `main` at `a48d6e76087bf2088fa6579d7154f7455367691e`
 
-## Implemented and verified foundation
+## Current verified repository state
 
-- Hierarchical TLCE parent architecture; QuestPulse remains an internal product module.
-- Shared module manifest, dependency, permission, lifecycle, context and health contracts.
-- Runtime registry validation, dependency ordering, missing/cycle detection and defensive manifest snapshots.
-- Runtime lifecycle start/stop serialization, deny-by-default permission grants, immutable module context, health response validation and failure cleanup.
-- API gateway request/path validation, traversal and encoded separator rejection, capability checks, correlation IDs and exception-detail isolation.
-- Provider-neutral event envelope and event processing contract.
-- Idempotent event processor with bounded retries and a dead-letter sink integration contract.
-- Outbound HTTP URL validation with DNS A/AAAA checks, public-address validation, selected-IP pinning, redirect revalidation, HTTPS downgrade rejection, response-size limits and request timeouts.
-- LLM7 proxy handler with fail-closed behavior unless server-verified authentication and shared rate limiting are injected; request bounds and provider-response validation.
-- Immutable audit record construction with metadata limits and sensitive-key rejection.
-- Unit tests for runtime lifecycle, registry integrity, gateway validation, event processing, outbound URL checks, LLM7 request handling and audit records.
-- TypeScript strict checking and unit tests pass in GitHub Actions on the current main baseline.
-- GitHub Pages deployment succeeded on commit `e68c47371c884fc5a1230c908fb9dc56071bf0ae`; the published HTML, JS, CSS and JSON endpoints returned HTTP 200 in post-deployment inspection.
+- TLCE is the parent platform; QuestPulse remains an internal module under the parent route.
+- The parent runtime, module registry, lifecycle contracts, browser composition and QuestPulse route integration are present on `main`.
+- The public Pages workflow assembles the parent shell at the site root and QuestPulse assets beneath the nested web path.
+- The store and developer-information pages are present. The developer page is informational; it explicitly says that application intake and file upload are not active.
+- SEO crawl files and canonical metadata are present for the public pages.
+- Organization, WebSite, page-level and QuestPulse SoftwareApplication structured data are included.
+- A production smoke-check job is configured to verify the deployed TLCE HTML, CSP, runtime assets, QuestPulse assets and JSON catalogues at `https://tlce.store/`.
+- QuestPulse offer and candidate-inbox domain validation is included in the root typecheck and test suite. Feed ingestion remains candidate-only; publication requires editorial review and complete source, eligibility, fee and terms disclosures.
+- PR #33's exact head commit `5b90830c3f65404870ba6bae32c9649d01174865` passed both GitHub Actions checks: TLCE CI run `44833316213` (typecheck and unit tests) and QuestPulse Web run `44833316208` (browser module validation, browser build, catalogue validation and browser tests). That commit is now represented by the latest `main` commit `a48d6e76087bf2088fa6579d7154f7455367691e`.
 
-## Active verification work (not yet merged)
+## Production and release gaps — not complete
 
-- PR #20 adds a post-deployment smoke-check job for the actual GitHub Pages URL, including the deployed CSP, JS/CSS assets and parsed JSON catalogues.
-- PR #21 adds deterministic UI interaction tests for catalogue filtering and guide persistence. Its initial test run caught and corrected an assertion mismatch; the corrected run passed the QuestPulse Web suite and TLCE CI.
+- The public site is a static GitHub Pages experience. It does not provide live user registration, production authentication, persistent developer accounts, shared uploads, central submissions, live moderation, checkout or payment processing.
+- The developer programme page is informational only; no production intake workflow is active.
+- The production identity and gateway layer still needs OIDC/JWT verification, schema validation, shared rate limiting, quotas, tenant isolation and a real HTTP/edge adapter.
+- The runtime executes module implementations in-process; hardened process/container isolation and signed module artifact verification are absent.
+- Event delivery still needs a durable atomic idempotency store, lease recovery, durable broker/dead-letter adapters and replay/poison-message procedures.
+- Network-level egress controls and cloud metadata isolation are not provisioned.
+- Persistent audit storage, access controls, retention, encryption and operational alerts are not configured.
+- Production database/cache adapters, secrets injection, monitoring, tracing, health/readiness probes and SLOs are not configured.
+- Root CI still uses `npm install`; a committed lockfile and reproducible `npm ci` pipeline remain outstanding.
+- SBOM generation and automated dependency/secret scanning need to be completed or independently evidenced.
+- The legacy QuestPulse source, routes, schema and business rules are not fully migrated into the parent module. The protected `app.asar` reference remains read-only.
+- Public legal policy coverage and hosting-level HTTP security-header behavior still require explicit review. A meta CSP is not equivalent to response headers; GitHub Pages does not provide arbitrary response-header configuration.
+- The production smoke-check workflow is present, but its successful run against the current deployed `main` artifact has not been independently confirmed in this review.
 
-These changes are not part of `main` until reviewed and merged.
+## Verification boundaries
 
-## Production gaps — explicitly not complete
+- The exact PR #33 head SHA passed TLCE CI and QuestPulse Web checks as recorded above.
+- The production deployment smoke check must be confirmed on the current deployed artifact before claiming live production verification.
+- A green build or static Pages deployment does not establish production readiness for authentication, payments, developer publishing, backend operations or security isolation.
+- Do not provision services, migrate production data, alter DNS/Pages settings, publish payments, expose backend traffic or modify protected assets without explicit approval.
 
-- Runtime still executes module implementations in-process; no hardened process/container sandbox or signed artifact verification exists.
-- Event processing still depends on a durable atomic idempotency store, lease recovery and a durable broker/dead-letter adapter.
-- Outbound URL code validates DNS and pins the selected public IP, but there is no network-level egress firewall or cloud metadata isolation policy.
-- API gateway remains an in-process router, not a production HTTP server; production OIDC/JWT verification, schema validation, quotas, rate limiting and tenant isolation adapters remain absent.
-- LLM7 handler is not mounted at a deployed server route. It intentionally returns 503 unless real authentication and shared rate-limit services are supplied.
-- Audit records have a safe constructor but no persistent audit sink, retention policy or access-control adapter.
-- No production database, cache, secrets manager, cloud provider adapters, monitoring, DNS or infrastructure provisioning is configured.
-- Root dependency installation uses `npm install`; a committed lockfile and reproducible `npm ci` pipeline are still needed.
-- QuestPulse legacy routes, schema and business rules have not been source-integrated; the original `app.asar` remains untouched.
+## Next release sequence
 
-## Verification policy
-
-Use the latest GitHub Actions run attached to the exact current branch HEAD as the authoritative CI status. Historical failures on earlier commits are not evidence of failure in the current HEAD. CI success and static Pages availability do not imply production readiness. Do not provision services, migrate production data, alter DNS or enable public backend traffic without explicit approval.
-
-
-## QuestPulse parent-runtime integration (merge candidate)
-
-- The integration branch now carries the parent browser shell, same-origin QuestPulse frontend mount, route lifecycle, and browser TypeScript build introduced by the QuestPulse runtime integration change.
-- The GitHub Pages artifact is assembled with the TLCE parent at the site root and the QuestPulse frontend under `/web/`; runtime assets are emitted under `/runtime/`.
-- Runtime/browser validation must pass on this exact merge candidate before the change is eligible for merge into `main`.
-- The browser host denies backend and event capabilities by default. No backend, credentials, production data, DNS, paid services, or original `app.asar` reference asset is changed by this integration.
-- This frontend/runtime composition does not constitute production sandbox isolation, authentication, backend deployment, or full migration of the legacy QuestPulse implementation.
+1. Confirm the latest `main` deployment and post-deploy smoke-check result for `https://tlce.store/`.
+2. Close public legal, privacy, contact and support requirements with reviewed, accurate policies.
+3. Decide whether the first release is a static catalogue/marketing release or a transactional app-store release; do not imply unavailable functions.
+4. For a transactional release, implement and independently verify identity, developer onboarding, upload scanning, moderation, persistent storage, checkout/payment and operational controls.
+5. Complete legacy QuestPulse migration mapping and contract tests without modifying the protected `app.asar`.
+6. Run independent threat-model, abuse-case, accessibility, browser E2E, rollback and release reviews.
