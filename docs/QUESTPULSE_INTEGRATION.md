@@ -1,6 +1,6 @@
 # QuestPulse Integration Contract
 
-Status: runtime host and browser application router implemented on `fix/questpulse-host-lifecycle`; live parent-shell browser validation and backend integration remain pending.
+Status: TLCE parent browser shell, application router, QuestPulse runtime host, and static deployment assembly are implemented on `fix/questpulse-host-lifecycle`; live browser validation after Pages deployment and backend integration remain pending.
 
 ## Product boundary
 
@@ -33,7 +33,7 @@ The standalone static page uses `apps/web/bootstrap.js` to call the same mount l
 
 Host tests cover route rejection, duplicate mount, teardown, and runtime rollback. Browser tests verify the standalone bootstrap and Shadow DOM-scoped stylesheet.
 
-This is a frontend integration milestone, not a deployed runtime route. The existing GitHub Pages static deployment is a separate artifact and has not been replaced by this host implementation.
+This is a frontend integration milestone, not a deployed runtime route. The GitHub Pages deployment workflow now assembles the TLCE parent shell at the site root and the QuestPulse frontend under `/web/`; this change remains on the feature branch until reviewed and merged.
 
 ## Current frontend behavior
 
@@ -76,7 +76,7 @@ The current TLCE web shell and standalone Q.P README state that the active Q.P s
 
 ## Remaining integration gates
 
-1. Embed `createTLCEApplicationRouter` in the parent browser shell, provide its root element and host instance, then verify route behavior in a real browser. The reusable router and lifecycle tests now exist; the repository still has no parent HTML shell/composition page.
+1. Deploy the parent shell and validate `/questpulse` navigation, refresh, back/forward, and teardown in a real browser. The shell now creates the runtime host and router; the Pages workflow assembles the parent at `/` and the Q.P frontend at `/web/`.
 2. Inventory the standalone Q.P API routes, database tables, migrations, authentication flows, external integrations, and secrets usage.
 3. Produce field-level mappings against actual TLCE Core identity/content/media contracts.
 4. Implement parent-owned identity, content, media, moderation, and audit adapters on a feature branch.
