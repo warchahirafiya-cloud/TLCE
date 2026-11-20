@@ -22,7 +22,42 @@ function showUnavailable(message) {
   content.innerHTML = `<section class="empty"><h2>لم نعثر على المنتج</h2><p>${escapeStoreText(message)}</p><a class="primary" href="../index.html">العودة إلى المتجر</a></section>`;
 }
 
+function updateProductMetadata(product) {
+  const title = `${product.name} | تفاصيل المنتج في TLCE STORE`;
+  const description = `${product.name}: ${product.description}`.slice(0, 300);
+  document.title = title;
+  for (const [selector, value] of [
+    ['meta[name="description"]', description],
+    ['meta[property="og:title"]', title],
+    ['meta[property="og:description"]', description],
+    ['meta[name="twitter:title"]', title],
+    ['meta[name="twitter:description"]', description]
+  ]) {
+    const element = document.querySelector(selector);
+    if (element) element.setAttribute("content", value);
+  }
+
+  const schema = document.querySelector("#product-schema");
+  if (schema) {
+    schema.textContent = JSON.stringify({
+      "@context": "https://schema.org",
+      "@type": "SoftwareApplication",
+      "@id": "https://tlce.store/store/product/?id=" + encodeURIComponent(product.id) + "#software",
+      name: product.name,
+      description: product.description,
+      applicationCategory: "EducationalApplication",
+      operatingSystem: product.platform === "web" ? "Web" : product.platform,
+      softwareVersion: product.version,
+      author: { "@type": "Organization", name: product.developerName, url: "https://tlce.store/" },
+      url: "https://tlce.store/questpulse/",
+      isPartOf: { "@id": "https://tlce.store/#website" },
+      inLanguage: "ar"
+    });
+  }
+}
+
 function renderProduct(product) {
+  updateProductMetadata(product);
   const launch = product.platform === "web" && isSafeStoreLaunchPath(product.launchPath)
     ? `<a class="primary" href="../../${escapeStoreText(product.launchPath.slice(3))}">فتح التطبيق</a>`
     : '<span class="secondary" aria-disabled="true">التشغيل أو التنزيل غير متاح حالياً</span>';
