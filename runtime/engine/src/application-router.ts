@@ -24,7 +24,7 @@ export function createTLCEApplicationRouter(options: TLCEApplicationRouterOption
   if (!windowRef) throw new Error("A browser window is required to start the TLCE application router");
   const browserWindow: Window = windowRef;
 
-  const basePath = (options.basePath ?? "").replace(/\\/$/, "");
+  const basePath = (options.basePath ?? "").replace(/\/$/, "");
   if (basePath && (!basePath.startsWith("/") || basePath.startsWith("//"))) {
     throw new Error("TLCE basePath must be an absolute same-origin path");
   }
