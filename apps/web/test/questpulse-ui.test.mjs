@@ -1,5 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
+import { mountQuestPulse } from "../questpulse.js";
 
 class FakeElement {
   value = "";
@@ -65,27 +66,32 @@ const guides = [{
   tags: ["verification", "safety"],
 }];
 
-globalThis.document = {
-  querySelector(selector) {
-    const element = elements.get(selector);
-    assert.ok(element, `Unexpected selector: ${selector}`);
-    return element;
-  },
-};
-globalThis.localStorage = {
-  getItem(key) { return storage.get(key) ?? null; },
-  setItem(key, value) { storage.set(key, String(value)); },
-};
 globalThis.fetch = async (input) => {
   const path = String(input);
   const data = path.includes("offers.json") ? offers : guides;
   return { ok: true, json: async () => data };
 };
 
-await import("../questpulse.js");
+const root = {
+  querySelector(selector) {
+    const element = elements.get(selector);
+    assert.ok(element, `Unexpected selector: ${selector}`);
+    return element;
+  },
+  ownerDocument: {
+    defaultView: {
+      localStorage: {
+        getItem(key) { return storage.get(key) ?? null; },
+        setItem(key, value) { storage.set(key, String(value)); },
+      },
+    },
+  },
+};
+
+const dispose = mountQuestPulse(root);
 await new Promise((resolve) => setImmediate(resolve));
 
-test("loads and renders verified offers and educational guides", () => {
+test("mounts and renders verified offers and educational guides", () => {
   assert.match(elements.get("#catalogue-status").textContent, /جاهز/);
   assert.equal(elements.get("#result-count").textContent, "فرصة واحدة منشورة");
   assert.match(elements.get("#offer-list").innerHTML, /Welcome reward/);
@@ -130,4 +136,9 @@ test("saves a guide, persists it, and filters the saved-only view", () => {
   });
   assert.match(guideList.innerHTML, /لا توجد أدلة مطابقة/);
   assert.equal(storage.get("tlce.questpulse.saved-guides.v1"), "[]");
+});
+
+test("unmount aborts pending frontend work and listeners", () => {
+  assert.equal(typeof dispose, "function");
+  dispose();
 });
