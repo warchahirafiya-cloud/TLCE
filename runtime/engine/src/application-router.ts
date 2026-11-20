@@ -8,6 +8,8 @@ export interface TLCEApplicationRouterOptions {
   root: HTMLElement;
   windowRef?: Window;
   capabilities?: ReadonlySet<string>;
+  /** GitHub Pages project path or deployment subdirectory, e.g. /TLCE. */
+  basePath?: string;
   requestIdFactory?: () => string;
   onNotFound?: (pathname: string) => void;
   onError?: (error: unknown, pathname: string) => void;
@@ -22,6 +24,10 @@ export function createTLCEApplicationRouter(options: TLCEApplicationRouterOption
   if (!windowRef) throw new Error("A browser window is required to start the TLCE application router");
   const browserWindow: Window = windowRef;
 
+  const basePath = (options.basePath ?? "").replace(/\\/$/, "");
+  if (basePath && (!basePath.startsWith("/") || basePath.startsWith("//"))) {
+    throw new Error("TLCE basePath must be an absolute same-origin path");
+  }
   const capabilities = options.capabilities ?? new Set<string>();
   let sequence = 0;
   const requestIdFactory = options.requestIdFactory ?? (() => `tlce-route-${++sequence}`);
@@ -35,11 +41,19 @@ export function createTLCEApplicationRouter(options: TLCEApplicationRouterOption
     return result;
   }
 
+  function toApplicationPath(pathname: string): string {
+    if (!basePath) return pathname;
+    if (pathname === basePath || pathname === `${basePath}/`) return "/";
+    if (pathname.startsWith(`${basePath}/`)) return pathname.slice(basePath.length);
+    return pathname;
+  }
+
   function isQuestPulseRoute(pathname: string): boolean {
     return pathname === "/questpulse" || pathname.startsWith("/questpulse/");
   }
 
-  async function dispatch(pathname: string): Promise<void> {
+  async function dispatch(browserPathname: string): Promise<void> {
+    const pathname = toApplicationPath(browserPathname);
     await serialize(async () => {
       if (isQuestPulseRoute(pathname)) {
         if (activeRoute === pathname) return;
@@ -78,10 +92,15 @@ export function createTLCEApplicationRouter(options: TLCEApplicationRouterOption
     },
 
     async navigate(path: string): Promise<void> {
-      const target = new URL(path, browserWindow.location.href);
-      if (target.origin !== browserWindow.location.origin) {
+      const requested = new URL(path, browserWindow.location.href);
+      if (requested.origin !== browserWindow.location.origin) {
         throw new Error("TLCE navigation must remain on the current origin");
       }
+      const targetPath = basePath && requested.pathname !== basePath &&
+        !requested.pathname.startsWith(`${basePath}/`)
+        ? `${basePath}${requested.pathname.startsWith("/") ? "" : "/"}${requested.pathname}`
+        : requested.pathname;
+      const target = new URL(targetPath, browserWindow.location.origin);
       browserWindow.history.pushState(null, "", target.href);
       await dispatch(target.pathname);
     },
