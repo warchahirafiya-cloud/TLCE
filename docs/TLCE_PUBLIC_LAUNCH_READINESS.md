@@ -1,6 +1,6 @@
 # TLCE Public Launch Readiness Audit
 
-**Review date:** 2026-11-20  
+**Review date:** 2026-11-21  
 **Scope:** Published static web shell in `apps/web/`, its data catalogues, GitHub Pages workflow, and public routing.  
 **Status:** Pre-launch review. This document is an engineering status report, not a legal opinion, penetration-test certificate, or production-readiness certification.
 
@@ -69,3 +69,12 @@ The web security test now checks all five public HTML entry pages for the expect
 ## Explicit non-claims
 
 This audit does not certify legal compliance, production backend security, payment readiness, or a completed custom-domain transfer. A green static-site build proves that the checked build and tests passed; it does not prove that every operational launch gate is closed.
+
+
+## Verification addendum — 2026-11-21
+
+- The TLCE documentation status/roadmap update in PR #34 was merged to `main` as commit `71b8df252e2bb51d4860a1beefc0f2604e664227`. Its PR CI passed (run #625). The subsequent main-branch CI run #626 was still in progress at the time of this addendum.
+- The latest Pages deployment remains the deployment of `main` commit `a48d6e76087bf2088fa6579d7154f7455367691e`, run `44833390931`; build, deploy and the production smoke-check jobs all passed. PR #34 changed only documentation and did not match the Pages workflow's deployment path filters, so a new Pages deployment was not expected.
+- The custom-domain handoff remains open: the prior audit records that `tlce.store` apex still serves the legacy standalone QuestPulse site. The TLCE main repository tree has no root `CNAME` file. Do not claim that the custom domain is serving the TLCE parent until the Pages settings handoff, certificate provisioning and apex/`www` redirect checks are complete.
+- The public web shell remains static/read-only. No live account registration, developer submissions, uploads, checkout, payments, reward ledger or backend write API is deployed.
+- Project-specific Privacy Policy and Terms of Use are not present in the reviewed public web tree. Confirm the legal operator and contact details before drafting or publishing them.
