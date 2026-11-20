@@ -7,7 +7,15 @@
     "noEmit": true,
     "skipLibCheck": true,
     "forceConsistentCasingInFileNames": true,
-    "types": ["node"]
+    "types": [
+      "node"
+    ]
   },
-  "include": ["core/**/*.ts", "runtime/**/*.ts", "packages/**/*.ts", "infrastructure/**/*.ts"]
+  "include": [
+    "core/**/*.ts",
+    "runtime/**/*.ts",
+    "packages/**/*.ts",
+    "infrastructure/**/*.ts",
+    "modules/**/*.ts"
+  ]
 }
