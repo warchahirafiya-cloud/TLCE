@@ -5,6 +5,11 @@ on:
     branches: [main]
     paths:
       - "apps/web/**"
+      - "apps/parent/**"
+      - "runtime/engine/src/**"
+      - "packages/contracts/src/**"
+      - "tsconfig.browser.json"
+      - "package.json"
       - ".github/workflows/deploy-pages.yml"
       - ".github/workflows/deploy-questpulse-pages.yml"
   workflow_dispatch:
@@ -36,15 +41,24 @@ jobs:
           node --check apps/web/questpulse-catalogue.mjs
           node --check apps/web/questpulse.js
           node --test apps/web/test/*.test.mjs
+          node --check apps/parent/bootstrap.js
+          npm install
+          npm run build:browser
           node --input-type=module -e "import fs from 'node:fs'; JSON.parse(fs.readFileSync('apps/web/data/offers.json','utf8')); JSON.parse(fs.readFileSync('apps/web/data/guides.json','utf8'));"
 
       - name: Configure GitHub Pages
         uses: actions/configure-pages@983d7736d9b0ae728b81ab479565c72886d7745b
 
+      - name: Assemble TLCE parent and QuestPulse site
+        run: |
+          mkdir -p site/web site/runtime
+          cp -R apps/web/. site/web/
+          cp apps/parent/index.html apps/parent/404.html apps/parent/bootstrap.js apps/parent/styles.css site/
+          cp -R dist/browser/runtime site/
       - name: Upload website artifact
         uses: actions/upload-pages-artifact@56afc609e74202658d3ffba0e8f6dda462b719fa
         with:
-          path: apps/web
+          path: site
 
   deploy:
     needs: build
