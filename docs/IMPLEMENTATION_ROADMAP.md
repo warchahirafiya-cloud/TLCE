@@ -21,9 +21,14 @@
 - [x] QuestPulse offer and candidate-inbox validation, including source-host checks, HTTPS URLs, explicit eligibility/disclosures, freshness/expiry checks and candidate-only ingestion.
 - [x] PR #33 head passed TLCE CI and QuestPulse Web workflows (runs 44833316213 and 44833316208).
 
+## Remaining work before a public-domain launch
+
+1. **Custom-domain handoff:** transfer `tlce.store` from the legacy QuestPulse GitHub Pages project to TLCE Pages using repository Settings → Pages. The public-launch audit records that the apex still serves the legacy site; the TLCE repository has no root `CNAME`. After the handoff, verify apex and `www`, HTTPS certificate provisioning and canonical redirects. Do not alter DNS without a fresh diagnosis.
+2. **Legal and public trust:** confirm the operator/contact details, then publish reviewed project-specific Privacy Policy and Terms of Use. Do not invent legal identity or jurisdictional details.
+
 ## Remaining work before a production candidate
 
-1. **Production deployment evidence:** confirm a successful Pages deployment and post-deploy smoke-check on the exact current `main` commit and inspect the live public routes.
+1. **Production deployment evidence:** the Pages deployment and post-deploy smoke check passed for `main` commit `a48d6e76087bf2088fa6579d7154f7455367691e` (run `44833390931`). Repeat after the custom-domain handoff and verify the actual public domain.
 2. **Legal and public trust:** publish reviewed privacy, terms, contact/support, content-removal and complaint procedures. Confirm the public site does not imply active services that are not implemented.
 3. **Durable events:** implement and contract-test a durable idempotency store with atomic claims, leases, crash recovery and retention; add durable broker and dead-letter adapters plus replay/poison-message procedures.
 4. **Network egress:** add network-level private-range and cloud-metadata blocking around the existing DNS-aware, IP-pinned outbound HTTP helper.
