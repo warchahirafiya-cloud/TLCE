@@ -20,6 +20,7 @@ export interface TLCEApplicationRouterOptions {
 export function createTLCEApplicationRouter(options: TLCEApplicationRouterOptions) {
   const windowRef = options.windowRef ?? options.root.ownerDocument.defaultView;
   if (!windowRef) throw new Error("A browser window is required to start the TLCE application router");
+  const browserWindow: Window = windowRef;
 
   const capabilities = options.capabilities ?? new Set<string>();
   let sequence = 0;
@@ -56,8 +57,8 @@ export function createTLCEApplicationRouter(options: TLCEApplicationRouterOption
   }
 
   function onPopState(): void {
-    void dispatch(windowRef.location.pathname).catch((error) => {
-      options.onError?.(error, windowRef.location.pathname);
+    void dispatch(browserWindow.location.pathname).catch((error) => {
+      options.onError?.(error, browserWindow.location.pathname);
     });
   }
 
@@ -65,30 +66,30 @@ export function createTLCEApplicationRouter(options: TLCEApplicationRouterOption
     async start(): Promise<void> {
       if (started) return;
       started = true;
-      windowRef.addEventListener("popstate", onPopState);
+      browserWindow.addEventListener("popstate", onPopState);
       try {
-        await dispatch(windowRef.location.pathname);
+        await dispatch(browserWindow.location.pathname);
       } catch (error) {
         started = false;
-        windowRef.removeEventListener("popstate", onPopState);
-        options.onError?.(error, windowRef.location.pathname);
+        browserWindow.removeEventListener("popstate", onPopState);
+        options.onError?.(error, browserWindow.location.pathname);
         throw error;
       }
     },
 
     async navigate(path: string): Promise<void> {
-      const target = new URL(path, windowRef.location.href);
-      if (target.origin !== windowRef.location.origin) {
+      const target = new URL(path, browserWindow.location.href);
+      if (target.origin !== browserWindow.location.origin) {
         throw new Error("TLCE navigation must remain on the current origin");
       }
-      windowRef.history.pushState(null, "", target.href);
+      browserWindow.history.pushState(null, "", target.href);
       await dispatch(target.pathname);
     },
 
     async stop(): Promise<void> {
       if (!started) return;
       started = false;
-      windowRef.removeEventListener("popstate", onPopState);
+      browserWindow.removeEventListener("popstate", onPopState);
       await serialize(async () => {
         if (activeRoute !== undefined) {
           await options.host.unmount();
