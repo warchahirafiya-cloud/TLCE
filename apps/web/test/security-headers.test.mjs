@@ -41,7 +41,7 @@ test("every public HTML page ships a restrictive Content Security Policy", async
 test("public HTML pages do not add inline scripts or inline event handlers", async () => {
   for (const page of publicPages) {
     const html = await readFile(new URL(page, import.meta.url), "utf8");
-    assert.doesNotMatch(html, /<script\b(?![^>]*\bsrc=)[^>]*>/i, `${page} must not contain inline script blocks`);
+    assert.doesNotMatch(html, /<script\b(?![^>]*\bsrc=)(?![^>]*\btype=["\']application\/ld\+json["\'])[^>]*>/i, `${page} must not contain executable inline script blocks`);
     assert.doesNotMatch(html, /\son[a-z]+\s*=/i, `${page} must not use inline event handlers`);
   }
 });
