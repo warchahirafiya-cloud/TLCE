@@ -23,12 +23,12 @@
 
 ## Remaining work before a public-domain launch
 
-1. **Custom-domain handoff:** transfer `tlce.store` from the legacy QuestPulse GitHub Pages project to TLCE Pages using repository Settings → Pages. The public-launch audit records that the apex still serves the legacy site; the TLCE repository has no root `CNAME`. After the handoff, verify apex and `www`, HTTPS certificate provisioning and canonical redirects. Do not alter DNS without a fresh diagnosis.
+1. **Custom-domain consistency check:** the latest Pages smoke check successfully fetched `https://tlce.store/` and validated TLCE HTML, CSP, runtime assets and catalogues, while an older audit says the apex served legacy QuestPulse. Reconcile this conflict by checking apex and `www` in a real browser, including HTTPS and canonical redirects. Do not change DNS or Pages settings unless the fresh check identifies a fault.
 2. **Legal and public trust:** confirm the operator/contact details, then publish reviewed project-specific Privacy Policy and Terms of Use. Do not invent legal identity or jurisdictional details.
 
 ## Remaining work before a production candidate
 
-1. **Production deployment evidence:** the Pages deployment and post-deploy smoke check passed for `main` commit `a48d6e76087bf2088fa6579d7154f7455367691e` (run `44833390931`). Repeat after the custom-domain handoff and verify the actual public domain.
+1. **Production deployment evidence:** the Pages deployment and post-deploy smoke check passed for `main` commit `a48d6e76087bf2088fa6579d7154f7455367691e` (run `44833390931`), using `https://tlce.store/` as its target. Repeat after any future routing change and verify apex plus `www`.
 2. **Legal and public trust:** publish reviewed privacy, terms, contact/support, content-removal and complaint procedures. Confirm the public site does not imply active services that are not implemented.
 3. **Durable events:** implement and contract-test a durable idempotency store with atomic claims, leases, crash recovery and retention; add durable broker and dead-letter adapters plus replay/poison-message procedures.
 4. **Network egress:** add network-level private-range and cloud-metadata blocking around the existing DNS-aware, IP-pinned outbound HTTP helper.
