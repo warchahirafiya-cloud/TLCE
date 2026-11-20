@@ -125,11 +125,11 @@ jobs:
             throw lastError ?? new Error(`Unable to fetch ${path}`);
           }
 
-          const page = await get("", /text\\/html/i);
+          const page = await get("", /text\/html/i);
           const html = await page.text();
           assert.match(html, /THE LAST COSMIC EXPLOSION/);
           assert.match(html, /QuestPulse/);
-          assert.match(html, /https:\\/\\/tlce\\.store\\/#organization/);
+          assert.match(html, /https:\/\/tlce\.store\/#organization/);
           const csp = html.match(/<meta[^>]+http-equiv=["']Content-Security-Policy["'][^>]+>/i)?.[0];
           assert.ok(csp, "Deployed HTML must include the Content Security Policy meta tag");
           for (const directive of ["default-src 'self'", "object-src 'none'", "script-src 'self'", "connect-src 'self'"]) {
@@ -138,7 +138,7 @@ jobs:
           assert.ok(!csp.includes("'unsafe-inline'"), "Deployed CSP must not allow unsafe inline execution");
 
           const assets = [
-            ["styles.css", /text\\/css/i],
+            ["styles.css", /text\/css/i],
             ["bootstrap.js", /javascript/i],
             ["runtime/engine/src/index.js", /javascript/i],
             ["web/questpulse.js", /javascript/i],
