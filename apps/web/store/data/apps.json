@@ -11,6 +11,6 @@
     "status": "published",
     "reviewStatus": "approved",
     "developerApproved": true,
-    "launchPath": "../index.html"
+    "launchPath": "../questpulse/index.html"
   }
 ]
