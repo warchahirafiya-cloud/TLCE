@@ -29,19 +29,26 @@ Baseline: `main` at `a48d6e76087bf2088fa6579d7154f7455367691e`
 - SBOM generation and automated dependency/secret scanning need to be completed or independently evidenced.
 - The legacy QuestPulse source, routes, schema and business rules are not fully migrated into the parent module. The protected `app.asar` reference remains read-only.
 - Public legal policy coverage and hosting-level HTTP security-header behavior still require explicit review. A meta CSP is not equivalent to response headers; GitHub Pages does not provide arbitrary response-header configuration.
-- The production smoke-check workflow is present, but its successful run against the current deployed `main` artifact has not been independently confirmed in this review.
+- The Pages deployment for `main` commit `a48d6e76087bf2088fa6579d7154f7455367691e` completed successfully in run `44833390931`, including the live production smoke check. The later PR #34 merge changed documentation only and did not match the Pages workflow path filters, so it did not trigger a new site deployment.
+
+## Public domain and legal verification
+
+- The latest Pages deployment (run `44833390931`) successfully fetched `https://tlce.store/` and verified the TLCE parent HTML, QuestPulse presence, CSP, runtime assets and catalogues. This is direct evidence that `tlce.store` served the TLCE deployment at the time of that run.
+- An earlier audit document says the apex still served the legacy standalone QuestPulse site. That statement conflicts with the later successful production smoke check and must be treated as stale or unresolved until a fresh browser check of both apex and `www` confirms current routing, HTTPS and canonical redirects. The absence of a root `CNAME` in the Actions-based source tree is not, by itself, proof that the custom domain is unconfigured.
+- Do not transfer the domain, change Pages settings or edit DNS based only on the older audit. Re-check first; the available GitHub connector cannot perform Pages settings changes.
+- Project-specific Privacy Policy and Terms of Use pages are not yet published; operator identity and contact details must be confirmed rather than invented.
 
 ## Verification boundaries
 
 - The exact PR #33 head SHA passed TLCE CI and QuestPulse Web checks as recorded above.
-- The production deployment smoke check must be confirmed on the current deployed artifact before claiming live production verification.
+- The production deployment smoke check passed for the latest site deployment on commit `a48d6e76087bf2088fa6579d7154f7455367691e` (run `44833390931`), explicitly fetching `https://tlce.store/` and validating the TLCE page, CSP, runtime, QuestPulse assets and catalogues.
 - A green build or static Pages deployment does not establish production readiness for authentication, payments, developer publishing, backend operations or security isolation.
 - Do not provision services, migrate production data, alter DNS/Pages settings, publish payments, expose backend traffic or modify protected assets without explicit approval.
 
 ## Next release sequence
 
-1. Confirm the latest `main` deployment and post-deploy smoke-check result for `https://tlce.store/`.
-2. Close public legal, privacy, contact and support requirements with reviewed, accurate policies.
+1. Reconcile the older custom-domain audit with the successful smoke check by verifying `https://tlce.store/` and `https://www.tlce.store/` in a real browser, including HTTPS certificate and canonical redirect behavior. Do not change DNS or Pages settings unless this fresh check identifies a fault.
+2. Publish reviewed, project-specific Privacy Policy, Terms of Use, contact and support information after the operator details are confirmed.
 3. Decide whether the first release is a static catalogue/marketing release or a transactional app-store release; do not imply unavailable functions.
 4. For a transactional release, implement and independently verify identity, developer onboarding, upload scanning, moderation, persistent storage, checkout/payment and operational controls.
 5. Complete legacy QuestPulse migration mapping and contract tests without modifying the protected `app.asar`.

@@ -1,6 +1,6 @@
 # TLCE Public Launch Readiness Audit
 
-**Review date:** 2026-11-20  
+**Review date:** 2026-11-21  
 **Scope:** Published static web shell in `apps/web/`, its data catalogues, GitHub Pages workflow, and public routing.  
 **Status:** Pre-launch review. This document is an engineering status report, not a legal opinion, penetration-test certificate, or production-readiness certification.
 
@@ -69,3 +69,12 @@ The web security test now checks all five public HTML entry pages for the expect
 ## Explicit non-claims
 
 This audit does not certify legal compliance, production backend security, payment readiness, or a completed custom-domain transfer. A green static-site build proves that the checked build and tests passed; it does not prove that every operational launch gate is closed.
+
+
+## Verification addendum — 2026-11-21
+
+- The TLCE documentation status/roadmap update in PR #34 was merged to `main` as commit `71b8df252e2bb51d4860a1beefc0f2604e664227`. Its PR CI passed (run #625). The subsequent main-branch CI run #626 was still in progress at the time of this addendum.
+- The latest Pages deployment remains the deployment of `main` commit `a48d6e76087bf2088fa6579d7154f7455367691e`, run `44833390931`; build, deploy and the production smoke-check jobs all passed. PR #34 changed only documentation and did not match the Pages workflow's deployment path filters, so a new Pages deployment was not expected.
+- Domain evidence conflicts: the earlier audit records that `tlce.store` apex served the legacy standalone QuestPulse site, but the later Pages deployment's production smoke check (run `44833390931`) fetched `https://tlce.store/` and successfully verified TLCE parent HTML, CSP, runtime assets, QuestPulse assets and catalogues. Treat the older audit statement as stale or unresolved; verify apex and `www` in a real browser, including HTTPS and canonical redirects, before making further domain changes. The absence of a root `CNAME` in an Actions-based deployment tree is not conclusive.
+- The public web shell remains static/read-only. No live account registration, developer submissions, uploads, checkout, payments, reward ledger or backend write API is deployed.
+- Project-specific Privacy Policy and Terms of Use are not present in the reviewed public web tree. Confirm the legal operator and contact details before drafting or publishing them.
