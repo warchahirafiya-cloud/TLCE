@@ -41,3 +41,12 @@ These changes are not part of `main` until reviewed and merged.
 ## Verification policy
 
 Use the latest GitHub Actions run attached to the exact current branch HEAD as the authoritative CI status. Historical failures on earlier commits are not evidence of failure in the current HEAD. CI success and static Pages availability do not imply production readiness. Do not provision services, migrate production data, alter DNS or enable public backend traffic without explicit approval.
+
+
+## QuestPulse parent-runtime integration (merge candidate)
+
+- The integration branch now carries the parent browser shell, same-origin QuestPulse frontend mount, route lifecycle, and browser TypeScript build introduced by the QuestPulse runtime integration change.
+- The GitHub Pages artifact is assembled with the TLCE parent at the site root and the QuestPulse frontend under `/web/`; runtime assets are emitted under `/runtime/`.
+- Runtime/browser validation must pass on this exact merge candidate before the change is eligible for merge into `main`.
+- The browser host denies backend and event capabilities by default. No backend, credentials, production data, DNS, paid services, or original `app.asar` reference asset is changed by this integration.
+- This frontend/runtime composition does not constitute production sandbox isolation, authentication, backend deployment, or full migration of the legacy QuestPulse implementation.

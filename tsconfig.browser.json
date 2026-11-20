@@ -1,0 +1,18 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "noEmit": false,
+    "outDir": "dist/browser",
+    "rootDir": ".",
+    "types": [],
+    "declaration": false,
+    "sourceMap": false
+  },
+  "include": [
+    "runtime/engine/src/**/*.ts",
+    "packages/contracts/src/**/*.ts"
+  ],
+  "exclude": [
+    "runtime/engine/test/**/*.ts"
+  ]
+}
