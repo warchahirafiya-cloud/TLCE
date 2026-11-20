@@ -4,6 +4,11 @@ on:
     branches: [main]
     paths:
       - "apps/web/**"
+      - "apps/parent/**"
+      - "runtime/engine/src/**"
+      - "packages/contracts/src/**"
+      - "tsconfig.browser.json"
+      - "package.json"
       - ".github/workflows/questpulse-web.yml"
   push:
     branches: ["main", "feature/**"]
@@ -25,7 +30,9 @@ jobs:
         with:
           node-version: 22
       - name: Validate browser modules
-        run: node --check apps/web/questpulse-catalogue.mjs && node --check apps/web/questpulse.js && node --check apps/web/bootstrap.js
+        run: node --check apps/web/questpulse-catalogue.mjs && node --check apps/web/questpulse.js && node --check apps/web/bootstrap.js && node --check apps/parent/bootstrap.js
+      - name: Build parent browser runtime
+        run: npm install && npm run build:browser
       - name: Validate content catalogues
         run: |
           node --input-type=module -e "import fs from 'node:fs'; const offers=JSON.parse(fs.readFileSync('apps/web/data/offers.json','utf8')); const guides=JSON.parse(fs.readFileSync('apps/web/data/guides.json','utf8')); if(!Array.isArray(offers)||!Array.isArray(guides)||guides.length<1) process.exit(1); console.log('Offers:',offers.length,'Guides:',guides.length)"
