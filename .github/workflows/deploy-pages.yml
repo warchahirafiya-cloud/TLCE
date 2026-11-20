@@ -83,3 +83,81 @@ jobs:
       - name: Deploy to GitHub Pages
         id: deployment
         uses: actions/deploy-pages@368f82528645a54fb793d4d04e342629a3f51346
+
+  verify:
+    needs: deploy
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - name: Setup Node.js
+        uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e
+        with:
+          node-version: 22
+          package-manager-cache: false
+
+      - name: Verify production deployment
+        env:
+          SITE_URL: https://tlce.store/
+        run: |
+          node --input-type=module <<'NODE'
+          import assert from "node:assert/strict";
+
+          const base = process.env.SITE_URL;
+          async function get(path, expectedType) {
+            let lastError;
+            for (let attempt = 1; attempt <= 12; attempt += 1) {
+              try {
+                const response = await fetch(new URL(path, base), {
+                  headers: { accept: "*/*", "cache-control": "no-cache" },
+                  signal: AbortSignal.timeout(10000),
+                });
+                if (response.ok) {
+                  assert.match(response.headers.get("content-type") ?? "", expectedType, `${path} has an unexpected content type`);
+                  return response;
+                }
+                lastError = new Error(`${path}: HTTP ${response.status}`);
+              } catch (error) {
+                lastError = error;
+              }
+              await new Promise((resolve) => setTimeout(resolve, 5000));
+            }
+            throw lastError ?? new Error(`Unable to fetch ${path}`);
+          }
+
+          const page = await get("", /text\\/html/i);
+          const html = await page.text();
+          assert.match(html, /THE LAST COSMIC EXPLOSION/);
+          assert.match(html, /QuestPulse/);
+          assert.match(html, /https:\\/\\/tlce\\.store\\/#organization/);
+          const csp = html.match(/<meta[^>]+http-equiv=["']Content-Security-Policy["'][^>]+>/i)?.[0];
+          assert.ok(csp, "Deployed HTML must include the Content Security Policy meta tag");
+          for (const directive of ["default-src 'self'", "object-src 'none'", "script-src 'self'", "connect-src 'self'"]) {
+            assert.ok(csp.includes(directive), `Deployed CSP must include ${directive}`);
+          }
+          assert.ok(!csp.includes("'unsafe-inline'"), "Deployed CSP must not allow unsafe inline execution");
+
+          const assets = [
+            ["styles.css", /text\\/css/i],
+            ["bootstrap.js", /javascript/i],
+            ["runtime/engine/src/index.js", /javascript/i],
+            ["web/questpulse.js", /javascript/i],
+            ["web/styles.css", /text\\/css/i],
+            ["web/data/offers.json", /json/i],
+            ["web/data/guides.json", /json/i],
+          ];
+          for (const [path, expectedType] of assets) {
+            const response = await get(path, expectedType);
+            const body = await response.text();
+            assert.ok(body.length > 0, `${path} must not be empty`);
+            if (path.endsWith(".json")) {
+              const data = JSON.parse(body);
+              assert.ok(Array.isArray(data), `${path} must contain a JSON array`);
+              if (path.endsWith("guides.json")) {
+                assert.ok(data.length >= 5, "The deployed guide catalogue must contain at least five entries");
+              }
+            }
+          }
+
+          console.log("Production smoke check passed: TLCE HTML, CSP, runtime, QuestPulse JS/CSS and catalogues.");
+          NODE
