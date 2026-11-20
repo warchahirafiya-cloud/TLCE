@@ -1,6 +1,6 @@
 # QuestPulse Integration Contract
 
-Status: source identified; static web shell mount implemented on `feature/questpulse-runtime-mount`; parent backend integration remains pending.
+Status: runtime host and browser application router implemented on `fix/questpulse-host-lifecycle`; live parent-shell browser validation and backend integration remain pending.
 
 ## Product boundary
 
@@ -72,11 +72,11 @@ The current TLCE web shell and standalone Q.P README state that the active Q.P s
 - Never log credentials, access tokens, session cookies, private keys, or sensitive payloads.
 - Apply rate limits, audit trails, and abuse controls to externally reachable actions.
 - Do not load untrusted module code until a hardened isolation model is implemented.
-- The runtime frontend URL is same-origin only; do not accept it from user-controlled data.
+- The runtime frontend URL is same-origin only; do not accept it from user-controlled data. The application router also rejects cross-origin navigation.
 
 ## Remaining integration gates
 
-1. Mount the frontend in the real TLCE application router and verify route behavior in a browser.
+1. Embed `createTLCEApplicationRouter` in the parent browser shell, provide its root element and host instance, then verify route behavior in a real browser. The reusable router and lifecycle tests now exist; the repository still has no parent HTML shell/composition page.
 2. Inventory the standalone Q.P API routes, database tables, migrations, authentication flows, external integrations, and secrets usage.
 3. Produce field-level mappings against actual TLCE Core identity/content/media contracts.
 4. Implement parent-owned identity, content, media, moderation, and audit adapters on a feature branch.
