@@ -47,6 +47,7 @@ jobs:
           node --input-type=module -e "import fs from 'node:fs'; JSON.parse(fs.readFileSync('apps/web/data/offers.json','utf8')); JSON.parse(fs.readFileSync('apps/web/data/guides.json','utf8'));"
 
       - name: Configure GitHub Pages
+        id: pages
         uses: actions/configure-pages@983d7736d9b0ae728b81ab479565c72886d7745b
 
       - name: Assemble TLCE parent and QuestPulse site
@@ -55,6 +56,10 @@ jobs:
           cp -R apps/web/. site/web/
           cp apps/parent/index.html apps/parent/404.html apps/parent/bootstrap.js apps/parent/styles.css site/
           cp -R dist/browser/runtime site/
+          BASE_PATH="${{ steps.pages.outputs.base_path }}"
+          if [ -n "$BASE_PATH" ]; then BASE_PATH="/${BASE_PATH#/}"; fi
+          BASE_HREF="${BASE_PATH%/}/"
+          sed -i "s|__TLCE_BASE_HREF__|$BASE_HREF|g" site/index.html site/404.html
       - name: Upload website artifact
         uses: actions/upload-pages-artifact@56afc609e74202658d3ffba0e8f6dda462b719fa
         with:
