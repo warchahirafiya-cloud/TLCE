@@ -32,7 +32,7 @@ function fakeWindow(initialPath = "/") {
   return windowRef as unknown as Window & { fire(type: string): void };
 }
 
-function harness(initialPath = "/") {
+function harness(initialPath = "/", basePath = "") {
   const calls: string[] = [];
   const host = {
     async mount(_root: HTMLElement, _id: string, _caps: ReadonlySet<string>, route: string) {
@@ -48,6 +48,7 @@ function harness(initialPath = "/") {
     host,
     root: {} as HTMLElement,
     windowRef,
+    basePath,
     requestIdFactory: () => "route-test",
   });
   return { calls, windowRef, router };
@@ -94,4 +95,26 @@ test("does not mount similarly prefixed unrelated routes", async () => {
   await router.start();
   assert.deepEqual(calls, []);
   await router.stop();
+});
+
+test("maps application routes beneath a GitHub Pages project base path", async () => {
+  const { calls, windowRef, router } = harness("/TLCE/", "/TLCE");
+  await router.start();
+  await router.navigate("/questpulse");
+  assert.equal(windowRef.location.pathname, "/TLCE/questpulse");
+  assert.deepEqual(calls, ["mount:/questpulse"]);
+  await router.navigate("/");
+  assert.equal(windowRef.location.pathname, "/TLCE/");
+  assert.deepEqual(calls, ["mount:/questpulse", "unmount"]);
+  await router.stop();
+});
+
+test("rejects malformed deployment base paths", () => {
+  const windowRef = fakeWindow("/");
+  assert.throws(() => createTLCEApplicationRouter({
+    host: { async mount() {}, async unmount() { return true; } },
+    root: {} as HTMLElement,
+    windowRef,
+    basePath: "//attacker.test",
+  }), /absolute same-origin path/);
 });
