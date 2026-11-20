@@ -160,6 +160,8 @@ export function validateOfferCatalogue(
     const verifiedAt = Date.parse(text(offer.verifiedAt));
     if (!Number.isFinite(verifiedAt)) {
       errors.push(label + ": verifiedAt must be a valid date.");
+    } else if (verifiedAt > now + 5 * 60 * 1000) {
+      errors.push(label + ": verifiedAt cannot be in the future.");
     } else if (now - verifiedAt > MAX_VERIFICATION_AGE_MS) {
       errors.push(label + ": verification is older than 30 days; review before publishing.");
     }
@@ -171,10 +173,11 @@ export function validateOfferCatalogue(
     }
 
     for (const key of ["fees", "eligibility", "termsUrl"]) {
-      if (offer[key] === undefined) {
+      if (!text(offer[key])) {
         errors.push(label + ": disclose fees, eligibility, and termsUrl (use explicit \"none\" where applicable).");
       }
     }
+    if (text(offer.termsUrl)) httpsUrl(offer.termsUrl, label + ".termsUrl", errors);
   }
   return errors;
 }
