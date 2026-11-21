@@ -166,6 +166,11 @@ test("rejects unlinked identities and never creates a session", async () => {
     }),
     accountLinks: { async findLink() { return null; } },
     sessions: new OperatorSessionService({ store: sessionStore }),
+    mfaChallenges: new MfaChallengeService({
+      store: new MemoryMfaStore(),
+      sessions: new OperatorSessionService({ store: sessionStore }),
+      verifier: { async verify() { return true; } },
+    }),
     resolvePolicy: async () => ({ roles: ["viewer"], allowedModuleIds: [] }),
   });
   const started = await unlinkedProvider.start();
