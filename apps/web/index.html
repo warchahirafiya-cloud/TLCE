@@ -15,12 +15,27 @@
   <header class="site-header">
     <div class="header-inner">
       <a class="brand" href="#home" aria-label="QuestPulse الصفحة الرئيسية"><span class="brand-mark">Q</span><span>Quest<span class="accent">Pulse</span></span></a>
-      <nav aria-label="التنقل الرئيسي">
-        <a href="#discover">العروض</a><a href="#academy">مركز المعرفة</a><a href="#how-it-works">كيف يعمل</a><a href="#standards">الأمان</a>
-      </nav>
       <span class="parent-label">وحدة داخل TLCE</span>
+      <button class="menu-toggle" id="qp-menu-toggle" type="button" aria-label="فتح القائمة" aria-controls="qp-site-drawer" aria-expanded="false"><span></span><span></span><span></span></button>
     </div>
   </header>
+  <div class="drawer-backdrop" id="qp-drawer-backdrop" hidden></div>
+  <aside class="site-drawer" id="qp-site-drawer" aria-label="قائمة QuestPulse" aria-hidden="true">
+    <div class="drawer-heading"><span>Quest<span class="accent">Pulse</span></span><button class="drawer-close" id="qp-drawer-close" type="button" aria-label="إغلاق القائمة">×</button></div>
+    <p class="drawer-kicker">عناوين وأقسام الوحدة</p>
+    <nav class="drawer-nav">
+      <a href="#home">الرئيسية</a>
+      <a href="#discover">لوحة الفرص المنشورة</a>
+      <a href="#academy">مركز المعرفة</a>
+      <a href="#how-it-works">كيف يعمل QuestPulse؟</a>
+      <a href="#categories">مجالات الاستكشاف</a>
+      <a href="#standards">معايير الثقة والنشر</a>
+      <a href="#faq">الأسئلة الشائعة</a>
+      <a href="../">العودة إلى TLCE</a>
+      <a href="../store/">TLCE STORE</a>
+    </nav>
+    <div class="drawer-foot">DISCOVER · VERIFY · LEARN</div>
+  </aside>
 
   <main id="main" data-questpulse-app>
     <section class="hero" id="home">
