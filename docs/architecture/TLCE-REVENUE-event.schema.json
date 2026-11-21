@@ -1,0 +1,109 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://tlce.store/schemas/revenue-event.schema.json",
+  "title": "TLCE Revenue Event",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "id",
+    "idempotencyKey",
+    "source",
+    "status",
+    "currency",
+    "currencyExponent",
+    "grossMinor",
+    "discountMinor",
+    "processingFeeMinor",
+    "taxMinor",
+    "refundMinor",
+    "provider",
+    "providerTransactionId",
+    "occurredAt"
+  ],
+  "properties": {
+    "id": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 128
+    },
+    "idempotencyKey": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 255
+    },
+    "source": {
+      "enum": [
+        "product_sale",
+        "subscription",
+        "developer_commission",
+        "affiliate_commission",
+        "advertising",
+        "licensing",
+        "digital_service",
+        "sponsorship",
+        "donation",
+        "other"
+      ]
+    },
+    "status": {
+      "enum": [
+        "pending",
+        "settled",
+        "refunded",
+        "disputed",
+        "void"
+      ]
+    },
+    "currency": {
+      "type": "string",
+      "pattern": "^[A-Z]{3}$"
+    },
+    "currencyExponent": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 3
+    },
+    "grossMinor": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "discountMinor": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "processingFeeMinor": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "taxMinor": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "refundMinor": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "provider": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 80
+    },
+    "providerTransactionId": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 255
+    },
+    "occurredAt": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "settledAt": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "productId": {
+      "type": "string",
+      "maxLength": 128
+    }
+  }
+}
