@@ -47,6 +47,8 @@ jobs:
           node --check apps/parent/bootstrap.js
           node --test apps/web/test/*.test.mjs apps/parent/test/*.test.mjs
           npm install
+          npm run typecheck
+          npm run test:revenue
           npm run build:browser
           node --input-type=module -e "import fs from 'node:fs'; for (const file of ['apps/web/data/offers.json','apps/web/data/guides.json','apps/web/store/data/apps.json','docs/architecture/TLCE-STORE-submission.schema.json']) JSON.parse(fs.readFileSync(file,'utf8'));"
 
@@ -56,8 +58,10 @@ jobs:
 
       - name: Assemble TLCE parent and QuestPulse site
         run: |
-          mkdir -p site/web site/runtime
+          mkdir -p site/web site/runtime site/store
           cp -R apps/web/. site/web/
+          cp -R apps/web/store/. site/store/
+          cp apps/web/favicon.svg site/favicon.svg
           cp apps/parent/index.html apps/parent/404.html apps/parent/bootstrap.js apps/parent/styles.css site/
           cp -R dist/browser/runtime site/
           BASE_PATH="${{ steps.pages.outputs.base_path }}"
@@ -129,6 +133,7 @@ jobs:
           const html = await page.text();
           assert.match(html, /THE LAST COSMIC EXPLOSION/);
           assert.match(html, /QuestPulse/);
+          assert.match(html, /TLCE STORE/);
           assert.match(html, /https:\/\/tlce\.store\/#organization/);
           const csp = html.match(/<meta[^>]+http-equiv=["']Content-Security-Policy["'][^>]+>/i)?.[0];
           assert.ok(csp, "Deployed HTML must include the Content Security Policy meta tag");
@@ -145,6 +150,10 @@ jobs:
             ["web/styles.css", /text\/css/i],
             ["web/data/offers.json", /json/i],
             ["web/data/guides.json", /json/i],
+            ["store/index.html", /text\\/html/i],
+            ["store/store.css", /text\\/css/i],
+            ["store/store.js", /javascript/i],
+            ["store/data/apps.json", /json/i],
           ];
           for (const [path, expectedType] of assets) {
             const response = await get(path, expectedType);
@@ -159,5 +168,5 @@ jobs:
             }
           }
 
-          console.log("Production smoke check passed: TLCE HTML, CSP, runtime, QuestPulse JS/CSS and catalogues.");
+          console.log("Production smoke check passed: TLCE parent, store, CSP, runtime and catalogues.");
           NODE
