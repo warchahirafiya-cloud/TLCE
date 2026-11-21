@@ -23,6 +23,7 @@ CREATE TABLE revenue_transactions (
   updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   CONSTRAINT revenue_discount_not_over_gross CHECK (discount_minor <= gross_minor),
   CONSTRAINT revenue_refund_not_over_net_gross CHECK (refund_minor <= gross_minor - discount_minor),
+  CONSTRAINT revenue_deductions_not_over_gross CHECK (processing_fee_minor + tax_minor + refund_minor <= gross_minor - discount_minor),
   CONSTRAINT revenue_provider_transaction_unique UNIQUE (provider, provider_transaction_id)
 );
 
@@ -37,7 +38,7 @@ CREATE TABLE operating_expenses (
   id TEXT PRIMARY KEY,
   idempotency_key TEXT NOT NULL UNIQUE,
   category TEXT NOT NULL CHECK (category IN (
-    'hosting','domain','software','payment_processing','marketing',
+    'hosting','domain','software','marketing',
     'contractor','support','legal','tax_advisory','other'
   )),
   status TEXT NOT NULL CHECK (status IN ('planned','paid','void')),
