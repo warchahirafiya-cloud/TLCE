@@ -5,7 +5,7 @@ import {
   type PostgresQueryExecutor,
   type PostgresQueryResult,
 } from "../src/postgres-operator-session-store.js";
-import type { OperatorSessionRecord } from "../../../core/identity/src/operator-session.js";
+import type { OperatorSessionRecord } from "../../../../core/identity/src/operator-session.js";
 
 const sample: OperatorSessionRecord = Object.freeze({
   sessionTokenHash: "a".repeat(64),
