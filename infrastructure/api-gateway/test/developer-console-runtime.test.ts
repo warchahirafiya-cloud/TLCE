@@ -6,6 +6,7 @@ import {
 } from "../src/developer-console-runtime.js";
 import type { PostgresQueryExecutor, PostgresQueryResult } from "../../persistence/postgres/src/postgres-operator-session-store.js";
 import type { OAuthHttpClient, OAuthHttpResponse } from "../src/github-oauth-provider.js";
+import type { TotpFactorVerifier } from "../../../core/identity/src/mfa-challenge.js";
 
 class FakeDatabase implements PostgresQueryExecutor {
   calls: Array<{ text: string; values: ReadonlyArray<unknown> }> = [];
@@ -33,10 +34,10 @@ function options(database: FakeDatabase): TlceDeveloperConsoleRuntimeOptions {
     githubClientSecret: "runtime-secret",
     githubRedirectUri: "https://console.tlce.store/auth/github/callback",
     allowedOrigins: ["https://console.tlce.store"],
+    totpVerifier: { async verify() { return false; } } satisfies TotpFactorVerifier,
     resolveOperatorPolicy: async () => ({
       roles: ["viewer"],
       allowedModuleIds: [],
-      mfaVerifiedForThisAuthentication: false,
     }),
   };
 }

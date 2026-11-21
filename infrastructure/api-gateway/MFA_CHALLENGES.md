@@ -30,3 +30,16 @@ Apply migration `005_mfa_challenges.sql` through the approved migration runner. 
 ## Status
 
 The challenge engine and persistence contract are implemented as source and tests. No production verifier, factor enrollment, credentials, migration execution, listener, or deployment is configured by this change.
+
+## OAuth and HTTP integration
+
+The GitHub OAuth provider now branches by server-resolved role:
+
+- `viewer` receives a normal operator session after successful OAuth.
+- `operator`, `maintainer`, and `security_admin` receive a five-minute `__Host-tlce_mfa_challenge` cookie (Secure, HttpOnly, SameSite=Strict) and are redirected to the fixed local MFA page. No operator session is created at this point.
+- `POST /auth/mfa/verify` requires an exact configured HTTPS Origin, JSON content type, a six-digit code, and the challenge cookie. On success it returns the operator session cookie and clears the challenge cookie using two separate Set-Cookie values.
+- The MFA verification request body is capped at 1 KiB by this route. The host adapter must additionally enforce request-body limits before buffering, reject duplicate/ambiguous headers, and apply per-IP and per-subject rate limits.
+
+The runtime now requires a `TotpFactorVerifier` dependency. It deliberately has no default implementation: runtime composition must fail to compile/configure without an explicit verifier. Do not use a permissive test verifier in production. The host must also provide a real enrollment lifecycle, encrypted factor store, replay prevention, and monitored rate limiting before enabling the route in a public environment.
+
+The MFA cookie is scoped to `Path=/` so the verification endpoint receives it. It is not a session credential and cannot access the developer console gateway.
