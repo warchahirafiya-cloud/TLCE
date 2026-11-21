@@ -10,7 +10,7 @@ import type { OperatorSessionRecord } from "../../../../core/identity/src/operat
 const sample: OperatorSessionRecord = Object.freeze({
   sessionTokenHash: "a".repeat(64),
   subject: "operator-42",
-  roles: Object.freeze(["viewer", "operator"]),
+  roles: Object.freeze(["viewer", "operator"] as const),
   allowedModuleIds: Object.freeze(["store", "questpulse"]),
   csrfTokenHash: "b".repeat(64),
   createdAtMs: 1_800_000_000_000,
