@@ -27,7 +27,7 @@ export class IntegrationRegistry {
   list(): readonly IntegrationDescriptor[] {
     return DEFINITIONS.map((definition) => {
       const state = configuredState(definition.id, this.config);
-      return { id: definition.id, label: definition.label, capabilities: [...definition.capabilities], configured: state.configured, enabled: state.enabled, health: "not_checked", details: state.details };
+      return { id: definition.id, label: definition.label, capabilities: [...definition.capabilities], configured: state.configured, enabled: state.enabled, health: "not_checked" as const, details: state.details };
     });
   }
   async diagnostics(): Promise<IntegrationDiagnostics> {
