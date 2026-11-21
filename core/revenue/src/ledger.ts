@@ -83,6 +83,9 @@ export function validateRevenueRecord(record: RevenueRecord): string[] {
   if (record.refundMinor > record.grossMinor - record.discountMinor) {
     errors.push("refundMinor cannot exceed the discounted gross amount");
   }
+  if (record.processingFeeMinor + record.taxMinor + record.refundMinor > record.grossMinor - record.discountMinor) {
+    errors.push("fees, tax and refunds cannot exceed the discounted gross amount");
+  }
   if (!record.provider.trim()) errors.push("provider is required");
   if (!record.providerTransactionId.trim()) errors.push("providerTransactionId is required");
   if (!Number.isFinite(Date.parse(record.occurredAt))) errors.push("occurredAt must be a valid timestamp");
@@ -98,7 +101,7 @@ export function netRevenueMinor(record: RevenueRecord): number {
   if (record.status !== "settled") return 0;
   return Math.max(
     0,
-    record.grossMinor - record.discountMinor - record.processingFeeMinor - record.refundMinor,
+    record.grossMinor - record.discountMinor - record.processingFeeMinor - record.taxMinor - record.refundMinor,
   );
 }
 
