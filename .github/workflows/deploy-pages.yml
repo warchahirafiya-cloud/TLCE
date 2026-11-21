@@ -150,8 +150,8 @@ jobs:
             ["web/styles.css", /text\/css/i],
             ["web/data/offers.json", /json/i],
             ["web/data/guides.json", /json/i],
-            ["store/index.html", /text\\/html/i],
-            ["store/store.css", /text\\/css/i],
+            ["store/index.html", /text\/html/i],
+            ["store/store.css", /text\/css/i],
             ["store/store.js", /javascript/i],
             ["store/data/apps.json", /json/i],
           ];
