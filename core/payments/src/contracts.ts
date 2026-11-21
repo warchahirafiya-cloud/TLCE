@@ -38,7 +38,7 @@ export interface VerifiedPaymentEvent {
   currency: string;
   occurredAt: string;
   refundAmountMinor?: number;
-  signatureVerified: true;
+  signatureVerified: boolean;
 }
 
 export interface PaymentProviderAdapter {
