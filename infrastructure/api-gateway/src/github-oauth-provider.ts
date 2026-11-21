@@ -69,7 +69,7 @@ export class GitHubOAuthProvider {
 
   async complete(input: { readonly code: string; readonly state: string }): Promise<CompletedGitHubAuthorization> {
     if (typeof input.code !== "string" || input.code.length < 1 || input.code.length > 512 ||
-        /[\\u0000-\\u0020]/.test(input.code)) {
+        /[\u0000-\u0020]/.test(input.code)) {
       throw new Error("Invalid GitHub authorization response");
     }
     await this.options.transactions.consume("github", input.state, this.options.redirectUri);
