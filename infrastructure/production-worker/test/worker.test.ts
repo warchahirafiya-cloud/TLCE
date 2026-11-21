@@ -37,13 +37,13 @@ test("CORS preflight is restricted to the configured site origin", async () => {
 });
 
 test("Durable Object enforces a fixed per-object request window", async () => {
-  let stored: { startedAt: number; count: number } | undefined;
-  const storage = {
-    get: async () => stored,
-    put: async (_key: string, value: { startedAt: number; count: number }) => { stored = value; },
-    transaction: async (callback: (txn: { get: typeof storage.get; put: typeof storage.put }) => Promise<boolean>) =>
-      callback({ get: storage.get, put: storage.put }),
-  };
+  class MemoryStorage {
+    value: { startedAt: number; count: number } | undefined;
+    async get<T>(_key: string): Promise<T | undefined> { return this.value as T | undefined; }
+    async put<T>(_key: string, value: T): Promise<void> { this.value = value as { startedAt: number; count: number }; }
+    async transaction<T>(callback: (txn: MemoryStorage) => Promise<T>): Promise<T> { return callback(this); }
+  }
+  const storage = new MemoryStorage();
   const limiter = new RateLimiter({ storage } as never);
   let allowed = true;
   for (let i = 0; i < 20; i += 1) {
