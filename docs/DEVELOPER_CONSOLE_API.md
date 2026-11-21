@@ -35,10 +35,14 @@ The new `OperatorSessionService` provides the session lifecycle core in
 - Builds the host-only `__Host-tlce_session` cookie with Secure, HttpOnly,
   Path=/ and SameSite=Lax attributes.
 
-The store is an interface, not a production persistence adapter. A durable,
-atomic server-side implementation, expiry cleanup, concurrency semantics,
-session revocation across instances and operational retention still must be
-implemented and tested before deployment. The included memory store is test-only.
+The session-store contract now has a PostgreSQL adapter at
+`infrastructure/persistence/postgres/src/postgres-operator-session-store.ts`,
+with schema migration `001_operator_sessions.sql` and adapter tests. The
+adapter accepts only token digests, uses parameterized SQL, validates persisted
+roles/scope, and supports bounded expiry cleanup. It is not yet wired into a
+deployed runtime: database provisioning, TLS-verified connection configuration,
+migration execution, least-privilege credentials, scheduled cleanup, backup/
+restore validation and operational monitoring remain required before production.
 
 - Session cookie: `__Host-tlce_session`, Secure, HttpOnly, Path=/, SameSite=Lax, short-lived and rotated after authentication/privilege changes.
 - `GET /api/tlce/control-plane/session`: return `{ authenticated: true, operator: { displayName, roles }, csrfToken }` or HTTP 401. Do not return session IDs, access tokens, refresh tokens or internal permission grants.
