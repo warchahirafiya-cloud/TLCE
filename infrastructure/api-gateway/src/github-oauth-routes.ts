@@ -15,7 +15,7 @@ export interface GitHubOAuthRouteRequest {
 }
 export interface GitHubOAuthRouteResponse {
   readonly status: number;
-  readonly headers: Readonly<Record<string, string>>;
+  readonly headers: Readonly<Record<string, string | ReadonlyArray<string>>>;
   readonly body?: string;
 }
 export interface GitHubOAuthRoutesOptions {
@@ -115,7 +115,7 @@ export class GitHubOAuthRoutes {
       const completed = await this.options.mfaChallenges.complete(token, payload.code);
       return Object.freeze({ status: 204, headers: Object.freeze({
         "cache-control": "no-store",
-        "set-cookie": `${completed.session.cookie}, ${clearMfaCookie()}`,
+        "set-cookie": Object.freeze([completed.session.cookie, clearMfaCookie()]),
       }) });
     } catch {
       // Keep the short-lived cookie for remaining attempts; the server enforces the attempt cap.
