@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "typecheck": "tsc --noEmit",
-    "test": "tsx --test runtime/engine/test/*.test.ts core/identity/test/*.test.ts infrastructure/api-gateway/test/*.test.ts infrastructure/serverless-edge/test/*.test.ts infrastructure/serverless-edge/llm7-chat/*.test.ts core/audit/test/*.test.ts core/revenue/test/*.test.ts modules/questpulse/test/*.test.ts core/payments/test/*.test.ts",
+    "test": "tsx --test runtime/engine/test/*.test.ts core/identity/test/*.test.ts infrastructure/api-gateway/test/*.test.ts infrastructure/serverless-edge/test/*.test.ts infrastructure/serverless-edge/llm7-chat/*.test.ts infrastructure/search/test/*.test.ts core/audit/test/*.test.ts core/revenue/test/*.test.ts modules/questpulse/test/*.test.ts core/payments/test/*.test.ts",
     "build:browser": "tsc -p tsconfig.browser.json",
     "test:questpulse": "tsx --test modules/questpulse/test/*.test.ts",
     "test:revenue": "tsx --test core/revenue/test/*.test.ts",
