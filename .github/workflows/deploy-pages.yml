@@ -50,7 +50,7 @@ jobs:
           npm run typecheck
           npm run test:revenue
           npm run build:browser
-          node --input-type=module -e "import fs from 'node:fs'; for (const file of ['apps/web/data/offers.json','apps/web/data/guides.json','apps/web/store/data/apps.json','docs/architecture/TLCE-STORE-submission.schema.json']) JSON.parse(fs.readFileSync(file,'utf8'));"
+          node --input-type=module -e "import fs from 'node:fs'; for (const file of ['apps/web/data/offers.json','apps/web/data/guides.json','apps/web/store/data/apps.json','docs/architecture/TLCE-STORE-submission.schema.json','docs/architecture/TLCE-REVENUE-event.schema.json']) JSON.parse(fs.readFileSync(file,'utf8'));"
 
       - name: Configure GitHub Pages
         id: pages
