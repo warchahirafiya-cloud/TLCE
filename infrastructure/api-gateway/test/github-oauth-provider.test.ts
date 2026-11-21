@@ -12,6 +12,7 @@ import {
   type OperatorSessionStore,
 } from "../../../core/identity/src/operator-session.js";
 import type { ExternalAccountLinkStore } from "../../../core/identity/src/external-identity.js";
+import { MfaChallengeService, type MfaChallengeRecord, type MfaChallengeStore } from "../../../core/identity/src/mfa-challenge.js";
 
 class MemoryOAuthStore implements OAuthTransactionStore {
   records = new Map<string, OAuthTransactionRecord>();
@@ -22,6 +23,18 @@ class MemoryOAuthStore implements OAuthTransactionStore {
     this.records.delete(hash);
     return record.expiresAtMs > now ? record : null;
   }
+}
+class MemoryMfaStore implements MfaChallengeStore {
+  records = new Map<string, MfaChallengeRecord>();
+  async create(record: MfaChallengeRecord) { this.records.set(record.challengeTokenHash, record); }
+  async reserveAttempt(hash: string, now: number, max: number) {
+    const record = this.records.get(hash);
+    if (!record || record.expiresAtMs <= now || record.attempts >= max) return null;
+    const updated = Object.freeze({ ...record, attempts: record.attempts + 1 });
+    this.records.set(hash, updated);
+    return updated;
+  }
+  async consume(hash: string) { return this.records.delete(hash); }
 }
 class MemorySessionStore implements OperatorSessionStore {
   records = new Map<string, OperatorSessionRecord>();
@@ -49,7 +62,6 @@ const redirectUri = "https://console.tlce.store/auth/github/callback";
 function fixture(policy = {
   roles: ["viewer"] as const,
   allowedModuleIds: ["store"] as const,
-  mfaVerifiedForThisAuthentication: false,
 }) {
   const oauthStore = new MemoryOAuthStore();
   const sessionStore = new MemorySessionStore();
@@ -64,6 +76,13 @@ function fixture(policy = {
     randomToken: (() => { let i = 0; const values = ["t", "c"]; return () => values[i++].repeat(43); })(),
   });
   const http = new FakeHttp();
+  const mfaChallenges = new MfaChallengeService({
+    store: new MemoryMfaStore(),
+    sessions: new OperatorSessionService({ store: sessionStore, now: () => 1_800_000_000_000 }),
+    verifier: { async verify() { return true; } },
+    now: () => 1_800_000_000_000,
+    randomToken: () => "m".repeat(43),
+  });
   const links: ExternalAccountLinkStore = {
     async findLink(provider, providerSubject) {
       assert.equal(provider, "github");
@@ -79,6 +98,7 @@ function fixture(policy = {
     transactions,
     accountLinks: links,
     sessions,
+    mfaChallenges,
     resolvePolicy: async (subject) => {
       assert.equal(subject, "tlce-operator-01");
       return policy;
@@ -109,6 +129,8 @@ test("exchanges code, verifies stable numeric GitHub ID, resolves existing link 
   const { provider, http, sessionStore } = fixture();
   const { state } = await authorizationState(provider);
   const result = await provider.complete({ code: "one-time-code", state });
+  assert.equal(result.kind, "authenticated");
+  if (result.kind !== "authenticated") throw new Error("Expected authenticated result");
   assert.match(result.cookie, /__Host-tlce_session=/);
   assert.equal(sessionStore.records.size, 1);
   assert.equal(http.calls.length, 2);
@@ -144,7 +166,7 @@ test("rejects unlinked identities and never creates a session", async () => {
     }),
     accountLinks: { async findLink() { return null; } },
     sessions: new OperatorSessionService({ store: sessionStore }),
-    resolvePolicy: async () => ({ roles: ["viewer"], allowedModuleIds: [], mfaVerifiedForThisAuthentication: false }),
+    resolvePolicy: async () => ({ roles: ["viewer"], allowedModuleIds: [] }),
   });
   const started = await unlinkedProvider.start();
   const unlinkedState = new URL(started.authorizationUrl).searchParams.get("state")!;
@@ -157,10 +179,12 @@ test("requires separately verified MFA for privileged TLCE roles", async () => {
   const { provider, sessionStore } = fixture({
     roles: ["maintainer"],
     allowedModuleIds: ["store"],
-    mfaVerifiedForThisAuthentication: false,
   });
   const { state } = await authorizationState(provider);
-  await assert.rejects(provider.complete({ code: "code", state }), /multi-factor/);
+  const result = await provider.complete({ code: "code", state });
+  assert.equal(result.kind, "mfa_required");
+  if (result.kind !== "mfa_required") throw new Error("Expected MFA challenge");
+  assert.match(result.challengeToken, /^[A-Za-z0-9_-]{43}$/);
   assert.equal(sessionStore.records.size, 0);
 });
 
