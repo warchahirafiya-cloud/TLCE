@@ -1,6 +1,8 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { GitHubOAuthRoutes } from "../src/github-oauth-routes.js";
+import type { GitHubOAuthProvider } from "../src/github-oauth-provider.js";
+import type { MfaChallengeService } from "../../../core/identity/src/mfa-challenge.js";
 
 function fixture(overrides: Record<string, unknown> = {}, mfaOverrides: Record<string, unknown> = {}) {
   const calls: unknown[] = [];
@@ -18,11 +20,23 @@ function fixture(overrides: Record<string, unknown> = {}, mfaOverrides: Record<s
   const mfa = {
     async complete(token: string, code: string) {
       calls.push({ token, code });
-      return { session: { cookie: "__Host-tlce_session=verified-session; Path=/; Secure; HttpOnly; SameSite=Lax" } };
+      return {
+        session: {
+          sessionToken: "s".repeat(43),
+          csrfToken: "c".repeat(43),
+          cookie: "__Host-tlce_session=verified-session; Path=/; Secure; HttpOnly; SameSite=Lax",
+          expiresAt: "2026-11-21T20:00:00.000Z",
+        },
+        mfaVerifiedAt: "2026-11-21T12:00:00.000Z",
+      };
     },
     ...mfaOverrides,
   };
-  return { routes: new GitHubOAuthRoutes({ provider, mfaChallenges: mfa, allowedOrigins: ["https://console.tlce.store"] }), calls };
+  return { routes: new GitHubOAuthRoutes({
+    provider: provider as unknown as Pick<GitHubOAuthProvider, "start" | "complete">,
+    mfaChallenges: mfa as unknown as Pick<MfaChallengeService, "complete">,
+    allowedOrigins: ["https://console.tlce.store"],
+  }), calls };
 }
 
 test("redirects to GitHub using a server-generated authorization URL", async () => {
@@ -129,7 +143,12 @@ test("rejects unsafe redirect paths and unknown routes", async () => {
   assert.equal(await routes.handle({ method: "POST", url: "/auth/github/start" }), null);
   assert.throws(() => new GitHubOAuthRoutes({
     provider: { async start() { return { authorizationUrl: "", expiresAt: "" }; }, async complete() { return { kind: "authenticated", cookie: "", expiresAt: "" }; } },
-    mfaChallenges: { async complete() { return { session: { cookie: "" } }; } },
+    mfaChallenges: { async complete() {
+      return {
+        session: { sessionToken: "s".repeat(43), csrfToken: "c".repeat(43), cookie: "", expiresAt: "" },
+        mfaVerifiedAt: "",
+      };
+    } },
     allowedOrigins: ["https://console.tlce.store"],
     successPath: "//attacker.example/",
   }), /safe local path/);
