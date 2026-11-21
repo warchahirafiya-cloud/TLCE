@@ -1,4 +1,3 @@
-@import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@400;500;600;700&family=Manrope:wght@400;500;600;700;800&display=swap');
 :root{color-scheme:dark;font-family:"IBM Plex Sans Arabic",Manrope,system-ui,-apple-system,"Segoe UI",sans-serif;background:#080d18;color:#f3f5fa;font-synthesis:none;text-rendering:optimizeLegibility;--bg:#080d18;--surface:#101827;--surface-2:#141f30;--line:#ffffff16;--text:#f3f5fa;--muted:#9aa8ba;--accent:#c7a66a;--accent-soft:#c7a66a1c;--max:1180px}
 *{box-sizing:border-box}
 html{scroll-behavior:smooth}
