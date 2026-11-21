@@ -24,46 +24,30 @@
   <a class="skip-link" href="#main">انتقل إلى المحتوى</a>
   <header class="topbar">
     <a class="brand" href="./" data-route="/" aria-label="TLCE الصفحة الرئيسية"><span class="brand-symbol">T</span><span class="brand-word">TLCE<span class="brand-period">.</span></span></a>
-    <nav aria-label="التنقل الرئيسي">
-      <a href="./" data-route="/">الرئيسية</a>
+    <span class="parent-tag">PARENT ECOSYSTEM</span>
+    <button class="menu-toggle" id="menu-toggle" type="button" aria-label="فتح القائمة" aria-controls="site-drawer" aria-expanded="false"><span></span><span></span><span></span></button>
+  </header>
+  <div class="drawer-backdrop" id="drawer-backdrop" hidden></div>
+  <aside class="site-drawer" id="site-drawer" aria-label="القائمة الرئيسية" aria-hidden="true">
+    <div class="drawer-heading"><span>TLCE<span class="brand-period">.</span></span><button class="drawer-close" id="drawer-close" type="button" aria-label="إغلاق القائمة">×</button></div>
+    <p class="drawer-kicker">التنقل داخل المنظومة</p>
+    <nav class="drawer-nav">
+      <a href="./" data-route="/">الرئيسية · مساحة النشر</a>
       <a href="./questpulse" data-route="/questpulse">QuestPulse</a>
+      <a class="drawer-sub" href="./questpulse#discover" data-route="/questpulse" data-hash="#discover">لوحة الفرص المنشورة</a>
+      <a class="drawer-sub" href="./questpulse#academy" data-route="/questpulse" data-hash="#academy">مركز المعرفة</a>
+      <a class="drawer-sub" href="./questpulse#how-it-works" data-route="/questpulse" data-hash="#how-it-works">كيف يعمل QuestPulse؟</a>
+      <a class="drawer-sub" href="./questpulse#categories" data-route="/questpulse" data-hash="#categories">مجالات الاستكشاف</a>
+      <a class="drawer-sub" href="./questpulse#standards" data-route="/questpulse" data-hash="#standards">معايير الثقة والنشر</a>
+      <a class="drawer-sub" href="./questpulse#faq" data-route="/questpulse" data-hash="#faq">الأسئلة الشائعة</a>
       <a href="./store/">TLCE STORE</a>
     </nav>
-    <span class="parent-tag">PARENT ECOSYSTEM</span>
-  </header>
+    <div class="drawer-foot">THE LAST COSMIC EXPLOSION</div>
+  </aside>
   <main id="main">
-    <section class="module-frame" id="tlce-module-root" aria-live="polite">
-      <div class="home-shell">
-        <div class="home-copy">
-          <p class="eyebrow"><span></span> THE LAST COSMIC EXPLOSION</p>
-          <h1>منظومة رقمية.<br><span>رؤية واحدة.</span></h1>
-          <p class="home-lead">نبني بيئة رقمية مترابطة تجمع المنتجات والوحدات المتخصصة ضمن بنية موحدة، قابلة للتوسع ومصممة لتقديم تجربة واضحة وموثوقة.</p>
-          <div class="home-actions"><a class="primary-action" href="./questpulse" data-route="/questpulse">استكشف QuestPulse <span aria-hidden="true">←</span></a><a class="text-action" href="./store/">زيارة المتجر <span aria-hidden="true">↗</span></a></div>
-          <div class="home-caption"><span class="caption-line"></span> منصة أم · وحدات مستقلة · تجربة متكاملة</div>
-        </div>
-        <aside class="ecosystem-visual" aria-label="بنية منظومة TLCE">
-          <div class="visual-top"><span>ECOSYSTEM / 001</span><span class="visual-status">● ACTIVE DESIGN</span></div>
-          <div class="visual-core"><span class="core-ring"></span><span class="core-monogram">TLCE</span><small>THE PARENT PLATFORM</small></div>
-          <div class="visual-branch"><span class="branch-line"></span><span class="branch-node">QP</span><span class="branch-copy"><b>QuestPulse</b><small>DISCOVERY &amp; LEARNING</small></span><span class="branch-state">INTERNAL MODULE</span></div>
-          <div class="visual-bottom"><span>MODULAR ARCHITECTURE</span><span>01 / 01</span></div>
-        </aside>
-      </div>
-      <section class="principles" aria-label="مبادئ المنظومة">
-        <article><span class="principle-number">01</span><div><b>بنية موحدة</b><small>منصة أم تدير الوحدات المترابطة</small></div></article>
-        <article><span class="principle-number">02</span><div><b>تصميم معياري</b><small>كل وحدة تؤدي دوراً محدداً</small></div></article>
-        <article><span class="principle-number">03</span><div><b>توسع مدروس</b><small>قابلية نمو دون فقدان الاتساق</small></div></article>
-      </section>
-      <section class="modules-section" aria-labelledby="modules-title">
-        <div class="section-intro"><div><p class="eyebrow">THE ECOSYSTEM</p><h2 id="modules-title">وحدات المنظومة</h2></div><p>تجربة مترابطة، مع الحفاظ على هوية ووظيفة كل منتج.</p></div>
-        <a class="module-card" href="./questpulse" data-route="/questpulse">
-          <span class="module-icon">QP</span><span class="module-info"><small>INTERNAL PRODUCT MODULE</small><b>QuestPulse</b><span>اكتشاف الفرص الرقمية، التحقق من مصادرها، والتعلّم عبر أدلة منظمة.</span></span><span class="module-arrow" aria-hidden="true">↗</span>
-        </a>
-      </section>
-      <section class="closing-panel">
-        <div><p class="eyebrow">BUILT AS ONE ECOSYSTEM</p><h2>ابدأ من الوحدة المناسبة.</h2><p>استكشف QuestPulse وتعرّف على إحدى وحدات TLCE الداخلية.</p></div>
-        <a class="primary-action" href="./questpulse" data-route="/questpulse">فتح QuestPulse <span aria-hidden="true">←</span></a>
-      </section>
-    </section>
+    <section class="module-frame publish-canvas" id="tlce-module-root" aria-label="مساحة النشر" aria-live="polite"></section>
+    <!-- The parent landing canvas is intentionally empty and reserved for publishing. -->
+
   </main>
   <footer><span>© TLCE · THE LAST COSMIC EXPLOSION</span><span id="runtime-status" role="status">تهيئة محرك المنظومة…</span></footer>
 </body>
