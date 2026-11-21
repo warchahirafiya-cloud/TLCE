@@ -34,7 +34,7 @@ Refunds and chargebacks reduce recognized proceeds; they are not a separate inco
 ## Core formulas
 
 - Gross sales: sum of settled gross amounts.
-- Net revenue: gross - discounts - processor fees - refunds.
+- Net revenue: gross - discounts - processor fees - taxes collected - refunds.
 - Taxes collected: tracked as a liability/clearing amount, not operating revenue.
 - Operating profit: net revenue - paid operating expenses.
 - Pending volume: visible separately and excluded from recognized revenue.
