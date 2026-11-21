@@ -1,6 +1,8 @@
 import type { ControlPlaneReadModel } from "../../../core/control-plane/src/developer-console.js";
 import type { OperatorRole } from "../../../core/identity/src/operator-authorization.js";
 import type { TotpFactorVerifier } from "../../../core/identity/src/mfa-challenge.js";
+import type { TotpKms } from "../../../core/identity/src/totp-provider.js";
+import { KmsBackedTotpProvider } from "../../../core/identity/src/totp-provider.js";
 import type { OAuthHttpClient } from "./github-oauth-provider.js";
 import {
   DeveloperConsoleGateway,
@@ -21,8 +23,9 @@ import {
 import { PostgresExternalAccountLinkStore } from "../../persistence/postgres/src/postgres-external-account-link-store.js";
 import { PostgresOAuthTransactionStore } from "../../persistence/postgres/src/postgres-oauth-transaction-store.js";
 import { PostgresMfaChallengeStore } from "../../persistence/postgres/src/postgres-mfa-challenge-store.js";
+import { PostgresTotpFactorStore } from "../../persistence/postgres/src/postgres-totp-factor-store.js";
 
-export interface TlceDeveloperConsoleRuntimeOptions {
+interface TlceDeveloperConsoleRuntimeBaseOptions {
   readonly database: PostgresQueryExecutor;
   readonly readModel: ControlPlaneReadModel;
   readonly oauthHttp: OAuthHttpClient;
@@ -30,8 +33,6 @@ export interface TlceDeveloperConsoleRuntimeOptions {
   readonly githubClientSecret: string;
   readonly githubRedirectUri: string;
   readonly allowedOrigins: ReadonlyArray<string>;
-  /** Mandatory production verifier backed by encrypted enrolled TOTP factors and replay protection. */
-  readonly totpVerifier: TotpFactorVerifier;
   readonly resolveOperatorPolicy: (subject: string) => Promise<{
     readonly roles: ReadonlyArray<OperatorRole>;
     readonly allowedModuleIds: ReadonlyArray<string>;
@@ -43,6 +44,12 @@ export interface TlceDeveloperConsoleRuntimeOptions {
   readonly createRequestId?: () => string;
 }
 
+/** Production composition uses KMS + PostgreSQL directly; verifier injection remains for isolated tests. */
+export type TlceDeveloperConsoleRuntimeOptions = TlceDeveloperConsoleRuntimeBaseOptions & (
+  | { readonly totpKms: TotpKms; readonly totpIssuer: string; readonly totpVerifier?: never }
+  | { readonly totpVerifier: TotpFactorVerifier; readonly totpKms?: never; readonly totpIssuer?: never }
+);
+
 export function createTlceDeveloperConsoleRuntime(options: TlceDeveloperConsoleRuntimeOptions): {
   handle(request: GatewayRequest): Promise<GatewayResponse>;
 } {
@@ -51,6 +58,14 @@ export function createTlceDeveloperConsoleRuntime(options: TlceDeveloperConsoleR
   const externalLinks = new PostgresExternalAccountLinkStore(options.database);
   const oauthTransactionStore = new PostgresOAuthTransactionStore(options.database);
   const mfaStore = new PostgresMfaChallengeStore(options.database);
+  const totpVerifier: TotpFactorVerifier = options.totpKms
+    ? new KmsBackedTotpProvider({
+        store: new PostgresTotpFactorStore(options.database),
+        kms: options.totpKms,
+        issuer: options.totpIssuer,
+        ...(options.now ? { now: options.now } : {}),
+      })
+    : options.totpVerifier;
   const sessions = new OperatorSessionService({
     store: sessionStore,
     ...(options.now ? { now: options.now } : {}),
@@ -62,7 +77,7 @@ export function createTlceDeveloperConsoleRuntime(options: TlceDeveloperConsoleR
   const mfaChallenges = new MfaChallengeService({
     store: mfaStore,
     sessions,
-    verifier: options.totpVerifier,
+    verifier: totpVerifier,
     ...(options.now ? { now: options.now } : {}),
   });
   const consoleService = new DeveloperConsoleService({
