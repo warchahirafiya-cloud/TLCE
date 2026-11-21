@@ -117,8 +117,9 @@ export async function searchWeb(
   config: SearchConfig = {},
   fetchImpl: typeof fetch = fetch,
 ): Promise<SearchResponse> {
+  if (typeof rawQuery !== "string" || rawQuery.trim().length < 2 || rawQuery.trim().length > MAX_QUERY_LENGTH) throw new Error("Search query must contain 2–240 characters");
   const query = cleanText(rawQuery, MAX_QUERY_LENGTH);
-  if (!query || query.length < 2 || query.length > MAX_QUERY_LENGTH) throw new Error("Search query must contain 2–240 characters");
+  if (!query) throw new Error("Search query must contain 2–240 characters");
   const limit = Math.max(1, Math.min(10, Math.trunc(config.maxResults ?? 5)));
   const timeoutMs = config.timeoutMs ?? DEFAULT_TIMEOUT_MS;
   if (!Number.isInteger(timeoutMs) || timeoutMs < 500 || timeoutMs > 15_000) throw new Error("Invalid search timeout");
