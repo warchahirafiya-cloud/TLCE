@@ -59,7 +59,11 @@ test("routes OAuth start through the composed PostgreSQL transaction store", asy
     headers: {},
   });
   assert.equal(response.status, 302);
-  assert.match(response.headers.location, /^https:\/\/github\.com\/login\/oauth\/authorize/);
+  const location = response.headers.location;
+  assert.equal(typeof location, "string");
+  if (typeof location === "string") {
+    assert.match(location, /^https:\/\/github\.com\/login\/oauth\/authorize/);
+  }
   assert.equal(database.calls.length, 1);
   assert.match(database.calls[0].text, /INSERT INTO tlce_oauth_transactions/);
   assert.equal(JSON.stringify(database.calls[0].values).includes("runtime-secret"), false);
