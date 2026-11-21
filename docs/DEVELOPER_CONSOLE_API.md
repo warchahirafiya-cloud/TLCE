@@ -83,6 +83,14 @@ Requires `modules.registry:read`. Returns only modules inside the operator's ser
 }
 ```
 
+The audit contract has a PostgreSQL writer at
+`infrastructure/persistence/postgres/src/postgres-audit-sink.ts` and schema
+migration `002_audit_records.sql`. It revalidates audit records before
+parameterized insertion and propagates storage failures so protected console
+reads fail closed. For deployment, use a dedicated database role with INSERT
+only on the audit table. This is not tamper-evident/WORM storage and does not
+yet provide a read API, retention worker or external immutable archive.
+
 The current UI is intentionally read-only. Lifecycle controls, grant editing, security-policy mutation, user management and secret management are not exposed.
 
 ## Role policy
