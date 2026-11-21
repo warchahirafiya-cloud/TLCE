@@ -24,6 +24,22 @@ The `core/identity/src/external-identity.ts` resolver accepts only a provider-ve
 
 ## Session
 
+The new `OperatorSessionService` provides the session lifecycle core in
+`core/identity/src/operator-session.ts`:
+
+- Generates opaque 256-bit URL-safe session and CSRF tokens.
+- Persists only SHA-256 token digests through an injected `OperatorSessionStore`.
+- Resolves roles and module scope only from the server-created session record.
+- Rotates CSRF tokens, validates them using constant-time digest comparison,
+  enforces idle and absolute expiry, and supports revocation.
+- Builds the host-only `__Host-tlce_session` cookie with Secure, HttpOnly,
+  Path=/ and SameSite=Lax attributes.
+
+The store is an interface, not a production persistence adapter. A durable,
+atomic server-side implementation, expiry cleanup, concurrency semantics,
+session revocation across instances and operational retention still must be
+implemented and tested before deployment. The included memory store is test-only.
+
 - Session cookie: `__Host-tlce_session`, Secure, HttpOnly, Path=/, SameSite=Lax, short-lived and rotated after authentication/privilege changes.
 - `GET /api/tlce/control-plane/session`: return `{ authenticated: true, operator: { displayName, roles }, csrfToken }` or HTTP 401. Do not return session IDs, access tokens, refresh tokens or internal permission grants.
 - `POST /auth/logout`: require a valid CSRF token, revoke the server-side session, clear the cookie and return HTTP 204.
