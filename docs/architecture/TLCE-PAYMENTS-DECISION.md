@@ -1,39 +1,29 @@
 # TLCE Card and Electronic Payments — Architecture Decision
 
-**Decision:** Card and electronic payments are the primary checkout direction for TLCE STORE.
+**Decision:** Card and electronic payments are the primary checkout direction.
+
+## Merchant status and provider selection
+The owner states that TLCE is currently a personal project with no commercial registration.
+- **First provider to evaluate:** Paddle, conditionally, for eligible international software/SaaS/digital products as Merchant of Record. Individual identity verification applies; business verification may not be required for individuals/sole traders. This does not guarantee Algeria supplier acceptance or a supported payout method.
+- **Local cards later:** Guiddini Pay for CIB/Edahabia after obtaining an eligible legal status and provider/bank approval. Its current published Visa/Mastercard offer is for Algerian-law companies with partner-bank arrangements.
+- **PayPal:** optional only after account-level receiving and withdrawal eligibility is verified.
+
+No provider is currently selected as a live processor. Paddle is the onboarding candidate only.
+
+## Algerian legal gate
+Law 18-05 Article 8 states e-commerce activity is subject to registration in the commercial register or register of crafts and trades as applicable; it also specifies Algeria-hosted website/page and .com.dz extension for its domestic e-commerce scope. Article 7 separately addresses specified cross-border electronic transactions. A foreign Merchant of Record does not itself prove exemption from Algerian obligations. Obtain competent Algerian legal/accounting advice before accepting sales.
+Official law: https://www.mpt.gov.dz/wp-content/uploads/2023/11/Loi-n%C2%B0-18-05-ar.pdf
 
 ## Architecture
-TLCE STORE -> Payment Orchestrator -> Provider-hosted checkout -> signed webhook -> payment order state machine -> revenue ledger -> restricted Finance Dashboard.
-
-The public site remains static. All payment creation, provider credentials, webhook verification, order fulfillment and ledger writes must run in a private backend.
-
-## Provider strategy
-- Local Algeria route: assess Guiddini Pay for CIB/Edahabia and international Visa/Mastercard, subject to merchant eligibility, bank agreement, foreign-currency account where required, and legal/site requirements.
-- International digital-goods route: assess Paddle as Merchant of Record, subject to supplier onboarding approval and supported product categories.
-- PayPal: optional additional wallet after merchant receiving and withdrawal capabilities are verified.
-
-No live provider is selected or integrated yet.
-
-## Payment state machine
-created -> requires_action/processing -> settled -> fulfilled
-created/requires_action/processing -> failed/cancelled
-settled -> partially_refunded/refunded/disputed
-
-Only a verified provider settlement event with matching order ID, amount, currency and merchant account can mark an order paid. Fulfillment is idempotent. Refunds and disputes reverse or suspend access according to the product policy.
-
-## Required controls
-- Hosted checkout; no cardholder data stored or processed by TLCE.
-- Signed webhooks verified against raw request bytes.
-- Unique provider event and transaction IDs.
-- Idempotency on order creation and webhook processing.
-- Amount/currency/order/merchant validation.
-- 3-D Secure when supported/required.
-- Reconciliation against provider settlement reports.
-- Audit trail for all manual finance adjustments.
-- No secrets, ledger records or customer data in the public repository.
-
-## Financial reporting
-A settled payment creates a revenue ledger entry. Taxes, processor fees, discounts, refunds, chargebacks and settlement FX differences are separate dimensions. Revenue is grouped by currency and never summed across currencies without an explicit, timestamped conversion rate.
+TLCE STORE -> private payment backend -> Paddle-hosted checkout -> signed webhook -> order state machine -> revenue ledger -> restricted Finance Dashboard.
+GitHub Pages remains static. All secrets, checkout creation, webhook verification, fulfilment and ledger writes must be on a private backend.
 
 ## Release gates
-Legal status, merchant category, product eligibility, settlement bank/account, provider approval, contract/fees, sandbox access, webhook documentation, legal pages and production backend are prerequisites. The current GitHub Pages site is not a payment backend.
+1. Paddle approves individual supplier, TLCE domain, product category and Algeria-based operation.
+2. A supported payout beneficiary/method is verified.
+3. Legal obligations for the exact business model are confirmed.
+4. Sandbox credentials and official webhook documentation are obtained.
+5. Backend, database, secret manager, privacy/terms/refund/support pages are ready.
+6. Signed webhook, idempotency, amount/currency/order checks and refund reconciliation pass tests.
+
+Until then, no real checkout is enabled and no live payment is claimed.
