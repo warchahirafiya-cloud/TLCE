@@ -90,7 +90,20 @@ document.addEventListener("click", (event) => {
   const sectionHash = link.getAttribute("data-hash");
   setDrawerOpen(false);
   router.navigate(link.getAttribute("data-route")).then(() => {
-    if (sectionHash) window.location.hash = sectionHash;
+    if (sectionHash) {
+      const sectionId = sectionHash.slice(1);
+      let section = root.querySelector(`[id="${sectionId}"]`);
+      if (!section) {
+        for (const node of root.querySelectorAll("*")) {
+          if (node.shadowRoot) {
+            section = node.shadowRoot.querySelector(`[id="${sectionId}"]`);
+            if (section) break;
+          }
+        }
+      }
+      if (section) section.scrollIntoView({ behavior: "smooth", block: "start" });
+      else window.location.hash = sectionHash;
+    }
   }).catch((error) => {
     console.error("TLCE navigation failed", error);
     status.textContent = "تعذر التنقل";
