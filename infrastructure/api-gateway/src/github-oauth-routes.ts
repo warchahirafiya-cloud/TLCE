@@ -34,7 +34,7 @@ export class GitHubOAuthRoutes {
     this.mfaPath = options.mfaPath ?? "/developer-console/mfa";
     for (const path of [this.successPath, this.mfaPath]) {
       if (!path.startsWith("/") || path.startsWith("//") || path.includes("\\") ||
-          /[\\u0000-\\u001f]/.test(path)) throw new Error("OAuth redirect path must be a safe local path");
+          /[\u0000-\u001f]/.test(path)) throw new Error("OAuth redirect path must be a safe local path");
     }
     this.allowedOrigins = new Set(options.allowedOrigins);
     for (const origin of this.allowedOrigins) {
@@ -108,7 +108,7 @@ export class GitHubOAuthRoutes {
     let payload: unknown;
     try { payload = JSON.parse(request.body); } catch { return response(400, { error: "invalid_request" }); }
     if (!isObject(payload) || Object.keys(payload).length !== 1 ||
-        typeof payload.code !== "string" || !/^\\d{6}$/.test(payload.code)) {
+        typeof payload.code !== "string" || !/^\d{6}$/.test(payload.code)) {
       return response(400, { error: "invalid_request" });
     }
     try {
