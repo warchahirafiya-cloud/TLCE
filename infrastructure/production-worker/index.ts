@@ -22,7 +22,7 @@ interface RateWindow { startedAt: number; count: number; }
 const WINDOW_MS = 60_000;
 const MAX_REQUESTS = 20;
 const MAX_QUERY_LENGTH = 240;
-let cachedJwks: { expiresAt: number; keys: JsonWebKey[] } | undefined;
+interface AccessJwk extends JsonWebKey { kid?: string; kty?: string; }\nlet cachedJwks: { expiresAt: number; keys: AccessJwk[] } | undefined;
 
 function json(body: unknown, status = 200, extra: Record<string, string> = {}): Response {
   return new Response(JSON.stringify(body), {
@@ -42,11 +42,11 @@ function decodeBase64Url(value: string): Uint8Array {
 function decodeJsonPart(value: string): Record<string, unknown> {
   return JSON.parse(new TextDecoder().decode(decodeBase64Url(value))) as Record<string, unknown>;
 }
-async function getJwks(teamDomain: string): Promise<JsonWebKey[]> {
+async function getJwks(teamDomain: string): Promise<AccessJwk[]> {
   if (cachedJwks && cachedJwks.expiresAt > Date.now()) return cachedJwks.keys;
   const response = await fetch(`https://${teamDomain}/cdn-cgi/access/certs`, { headers: { accept: "application/json" }, signal: AbortSignal.timeout(5000) });
   if (!response.ok) throw new Error("Access keyset unavailable");
-  const payload = await response.json() as { keys?: JsonWebKey[] };
+  const payload = await response.json() as { keys?: AccessJwk[] };
   if (!Array.isArray(payload.keys) || payload.keys.length === 0) throw new Error("Access keyset invalid");
   cachedJwks = { keys: payload.keys, expiresAt: Date.now() + 5 * 60_000 };
   return payload.keys;
@@ -79,7 +79,7 @@ async function consumeRateLimit(env: Env, subject: string): Promise<boolean> {
   const digest = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(subject));
   const key = Array.from(new Uint8Array(digest), (byte) => byte.toString(16).padStart(2, "0")).join("");
   const id = env.RATE_LIMITER.idFromName(key);
-  const response = await env.RATE_LIMITER.get(id).fetch("https://rate-limit.internal/consume", { method: "POST" });
+  const response = await env.RATE_LIMITER.get(id).fetch(new Request("https://rate-limit.internal/consume", { method: "POST" }));
   return response.ok && (await response.json() as { allowed?: boolean }).allowed === true;
 }
 
