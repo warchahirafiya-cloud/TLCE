@@ -7,6 +7,11 @@ on:
       - "apps/web/**"
       - "apps/parent/**"
       - "runtime/engine/src/**"
+      - "core/revenue/**"
+      - "core/payments/**"
+      - "infrastructure/revenue/**"
+      - "infrastructure/payments/**"
+      - "docs/architecture/TLCE-PAYMENTS-DECISION.md"
       - "packages/contracts/src/**"
       - "tsconfig.browser.json"
       - "package.json"
@@ -49,6 +54,7 @@ jobs:
           npm install
           npm run typecheck
           npm run test:revenue
+          npm run test:payments
           npm run build:browser
           node --input-type=module -e "import fs from 'node:fs'; for (const file of ['apps/web/data/offers.json','apps/web/data/guides.json','apps/web/store/data/apps.json','docs/architecture/TLCE-STORE-submission.schema.json','docs/architecture/TLCE-REVENUE-event.schema.json']) JSON.parse(fs.readFileSync(file,'utf8'));"
 
