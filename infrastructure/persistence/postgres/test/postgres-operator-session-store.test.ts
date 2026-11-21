@@ -29,7 +29,7 @@ class FakePostgres implements PostgresQueryExecutor {
     values: ReadonlyArray<unknown> = [],
   ): Promise<PostgresQueryResult<Row>> {
     this.calls.push({ text, values });
-    if (text.includes("SELECT session_token_hash")) {
+    if (text.startsWith("SELECT session_token_hash")) {
       return { rows: (this.row ? [this.row] : []) as Row[], rowCount: this.row ? 1 : 0 };
     }
     return { rows: [], rowCount: this.affected };
