@@ -149,7 +149,9 @@ test("revokes a session only after Origin and CSRF validation", async () => {
     "x-tlce-csrf": "c".repeat(43),
   }));
   assert.equal(logout.status, 204);
-  assert.match(logout.headers["set-cookie"], /Max-Age=0/);
+  const setCookie = logout.headers["set-cookie"];
+  assert.ok(setCookie);
+  assert.match(typeof setCookie === "string" ? setCookie : setCookie.join("\n"), /Max-Age=0/);
   assert.equal(await sessions.resolveSession("s".repeat(43)), null);
 });
 
