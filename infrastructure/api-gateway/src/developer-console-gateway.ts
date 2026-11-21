@@ -174,7 +174,13 @@ export class DeveloperConsoleGateway {
     }
     const token = readSessionCookie(header(request.headers, "cookie"));
     if (!token) {
-      return json(204, null, { "set-cookie": clearOperatorSessionCookie() });
+      return Object.freeze({
+        status: 204,
+        headers: Object.freeze({
+          "cache-control": "no-store",
+          "set-cookie": clearOperatorSessionCookie(),
+        }),
+      });
     }
     const csrfToken = header(request.headers, CSRF_HEADER);
     if (!csrfToken || !(await this.options.sessions.validateCsrfToken(token, csrfToken))) {
