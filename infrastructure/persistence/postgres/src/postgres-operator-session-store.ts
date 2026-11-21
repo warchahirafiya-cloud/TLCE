@@ -1,8 +1,8 @@
 import type {
   OperatorSessionRecord,
   OperatorSessionStore,
-} from "../../../core/identity/src/operator-session.js";
-import type { OperatorRole } from "../../../core/identity/src/operator-authorization.js";
+} from "../../../../core/identity/src/operator-session.js";
+import type { OperatorRole } from "../../../../core/identity/src/operator-authorization.js";
 
 export interface PostgresQueryResult<Row extends Record<string, unknown> = Record<string, unknown>> {
   readonly rows: ReadonlyArray<Row>;
