@@ -34,8 +34,19 @@ jobs:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
         run: npx --yes wrangler@4 deploy
+      - name: Check whether Cloudflare Access is configured
+        id: access-check
+        env:
+          CF_ACCESS_TEAM_DOMAIN: ${{ secrets.CF_ACCESS_TEAM_DOMAIN }}
+          CF_ACCESS_AUD: ${{ secrets.CF_ACCESS_AUD }}
+        run: |
+          if [ -n "$CF_ACCESS_TEAM_DOMAIN" ] && [ -n "$CF_ACCESS_AUD" ]; then
+            echo "ready=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "ready=false" >> "$GITHUB_OUTPUT"
+          fi
       - name: Configure Access secrets and activate protected search
-        if: ${{ secrets.CF_ACCESS_TEAM_DOMAIN != '' && secrets.CF_ACCESS_AUD != '' }}
+        if: ${{ steps.access-check.outputs.ready == 'true' }}
         working-directory: infrastructure/production-worker
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
@@ -51,6 +62,6 @@ jobs:
           fi
           npx --yes wrangler@4 deploy
       - name: Report next setup step when Access is not configured
-        if: ${{ secrets.CF_ACCESS_TEAM_DOMAIN == '' || secrets.CF_ACCESS_AUD == '' }}
+        if: ${{ steps.access-check.outputs.ready != 'true' }}
         run: |
           echo "::notice::Worker deployed in safe mode. Enable Cloudflare Access for this Worker, then add CF_ACCESS_TEAM_DOMAIN and CF_ACCESS_AUD repository secrets and rerun this workflow. The protected search route returns 503 until then."
