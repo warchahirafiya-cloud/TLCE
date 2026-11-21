@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { GitHubOAuthProvider, type OAuthHttpClient, type OAuthHttpResponse } from "../src/github-oauth-provider.js";
+import { GitHubOAuthProvider, type GitHubOAuthPolicy, type OAuthHttpClient, type OAuthHttpResponse } from "../src/github-oauth-provider.js";
 import {
   OAuthTransactionService,
   type OAuthTransactionRecord,
@@ -59,9 +59,9 @@ class FakeHttp implements OAuthHttpClient {
   }
 }
 const redirectUri = "https://console.tlce.store/auth/github/callback";
-function fixture(policy = {
-  roles: ["viewer"] as const,
-  allowedModuleIds: ["store"] as const,
+function fixture(policy: GitHubOAuthPolicy = {
+  roles: ["viewer"],
+  allowedModuleIds: ["store"],
 }) {
   const oauthStore = new MemoryOAuthStore();
   const sessionStore = new MemorySessionStore();
