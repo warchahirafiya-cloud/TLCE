@@ -37,3 +37,5 @@ nav a:hover{color:var(--cyan)}
 .orbit-label,.hero-note,.section-heading p,.offer-card p,.guide-card>p:not(.guide-kicker),.guide-card ul,.step-card p,.category-grid p,.faq-section details p{color:var(--muted)}
 :focus-visible{outline-color:#d4b77f!important}
 @media(prefers-reduced-motion:reduce){*,*::before,*::after{scroll-behavior:auto!important;animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important}}
+
+:host{--bg:#080d18;--panel:#101827;--panel-2:#141f30;--line:#ffffff18;--text:#f3f5fa;--muted:#9aa8ba;--cyan:#c7a66a;--violet:#e0c38f;color-scheme:dark}
