@@ -22,7 +22,8 @@ interface RateWindow { startedAt: number; count: number; }
 const WINDOW_MS = 60_000;
 const MAX_REQUESTS = 20;
 const MAX_QUERY_LENGTH = 240;
-interface AccessJwk extends JsonWebKey { kid?: string; kty?: string; }\nlet cachedJwks: { expiresAt: number; keys: AccessJwk[] } | undefined;
+interface AccessJwk extends JsonWebKey { kid?: string; kty?: string; }
+let cachedJwks: { expiresAt: number; keys: AccessJwk[] } | undefined;
 
 function json(body: unknown, status = 200, extra: Record<string, string> = {}): Response {
   return new Response(JSON.stringify(body), {
