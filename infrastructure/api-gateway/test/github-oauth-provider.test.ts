@@ -217,7 +217,12 @@ test("requires exact HTTPS callback configuration", () => {
     transactions: new OAuthTransactionService({ store: new MemoryOAuthStore() }),
     accountLinks: { async findLink() { return null; } },
     sessions: new OperatorSessionService({ store: new MemorySessionStore() }),
-    resolvePolicy: async () => ({ roles: ["viewer"], allowedModuleIds: [], mfaVerifiedForThisAuthentication: false }),
+    mfaChallenges: new MfaChallengeService({
+      store: new MemoryMfaStore(),
+      sessions: new OperatorSessionService({ store: new MemorySessionStore() }),
+      verifier: { async verify() { return true; } },
+    }),
+    resolvePolicy: async () => ({ roles: ["viewer"], allowedModuleIds: [] }),
   }), /HTTPS/);
   void provider;
 });
