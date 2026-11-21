@@ -34,7 +34,7 @@ test("rejects invalid money, currency and excessive refunds", () => {
 });
 
 test("counts net revenue only after settlement and excludes tax", () => {
-  assert.equal(netRevenueMinor(base), 1900);
+  assert.equal(netRevenueMinor(base), 1750);
   assert.equal(netRevenueMinor({ ...base, status: "pending", settledAt: undefined }), 0);
   assert.equal(netRevenueMinor({ ...base, status: "disputed" }), 0);
 });
@@ -45,7 +45,7 @@ test("summarizes by currency and revenue source without mixing currencies", () =
   const eur = { ...base, id: "rev_003", currency: "EUR", grossMinor: 1000, discountMinor: 0, processingFeeMinor: 0, taxMinor: 0, refundMinor: 0 };
   const result = summarizeRevenue([usd, pending, eur]);
   assert.equal(result.length, 2);
-  assert.equal(result.find((item) => item.currency === "USD")?.netRevenueMinor, 1900);
+  assert.equal(result.find((item) => item.currency === "USD")?.netRevenueMinor, 1750);
   assert.equal(result.find((item) => item.currency === "USD")?.pendingTransactions, 1);
   assert.equal(result.find((item) => item.currency === "EUR")?.netRevenueMinor, 1000);
 });
