@@ -5,12 +5,12 @@ import {
   type PostgresQueryExecutor,
   type PostgresQueryResult,
 } from "../src/postgres-operator-session-store.js";
-import type { OperatorSessionRecord } from "../../../core/identity/src/operator-session.js";
+import type { OperatorSessionRecord } from "../../../../core/identity/src/operator-session.js";
 
 const sample: OperatorSessionRecord = Object.freeze({
   sessionTokenHash: "a".repeat(64),
   subject: "operator-42",
-  roles: Object.freeze(["viewer", "operator"]),
+  roles: Object.freeze(["viewer", "operator"] as const),
   allowedModuleIds: Object.freeze(["store", "questpulse"]),
   csrfTokenHash: "b".repeat(64),
   createdAtMs: 1_800_000_000_000,
@@ -29,7 +29,7 @@ class FakePostgres implements PostgresQueryExecutor {
     values: ReadonlyArray<unknown> = [],
   ): Promise<PostgresQueryResult<Row>> {
     this.calls.push({ text, values });
-    if (text.includes("SELECT session_token_hash")) {
+    if (text.startsWith("SELECT session_token_hash")) {
       return { rows: (this.row ? [this.row] : []) as Row[], rowCount: this.row ? 1 : 0 };
     }
     return { rows: [], rowCount: this.affected };

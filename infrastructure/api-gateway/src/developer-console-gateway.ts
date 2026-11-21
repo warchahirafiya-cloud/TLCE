@@ -20,11 +20,12 @@ export interface GatewayRequest {
   readonly method: string;
   readonly url: string;
   readonly headers: Readonly<Record<string, string | undefined>>;
+  readonly body?: string;
 }
 
 export interface GatewayResponse {
   readonly status: number;
-  readonly headers: Readonly<Record<string, string>>;
+  readonly headers: Readonly<Record<string, string | ReadonlyArray<string>>>;
   readonly body?: string;
 }
 

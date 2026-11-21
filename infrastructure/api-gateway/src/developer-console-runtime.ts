@@ -1,5 +1,8 @@
 import type { ControlPlaneReadModel } from "../../../core/control-plane/src/developer-console.js";
 import type { OperatorRole } from "../../../core/identity/src/operator-authorization.js";
+import type { TotpFactorVerifier } from "../../../core/identity/src/mfa-challenge.js";
+import type { TotpKms } from "../../../core/identity/src/totp-provider.js";
+import { KmsBackedTotpProvider } from "../../../core/identity/src/totp-provider.js";
 import type { OAuthHttpClient } from "./github-oauth-provider.js";
 import {
   DeveloperConsoleGateway,
@@ -10,6 +13,7 @@ import { GitHubOAuthProvider } from "./github-oauth-provider.js";
 import { GitHubOAuthRoutes } from "./github-oauth-routes.js";
 import { OperatorSessionService } from "../../../core/identity/src/operator-session.js";
 import { OAuthTransactionService } from "../../../core/identity/src/oauth-transaction.js";
+import { MfaChallengeService } from "../../../core/identity/src/mfa-challenge.js";
 import { DeveloperConsoleService } from "../../../core/control-plane/src/developer-console.js";
 import { PostgresAuditSink } from "../../persistence/postgres/src/postgres-audit-sink.js";
 import {
@@ -18,9 +22,10 @@ import {
 } from "../../persistence/postgres/src/postgres-operator-session-store.js";
 import { PostgresExternalAccountLinkStore } from "../../persistence/postgres/src/postgres-external-account-link-store.js";
 import { PostgresOAuthTransactionStore } from "../../persistence/postgres/src/postgres-oauth-transaction-store.js";
+import { PostgresMfaChallengeStore } from "../../persistence/postgres/src/postgres-mfa-challenge-store.js";
+import { PostgresTotpFactorStore } from "../../persistence/postgres/src/postgres-totp-factor-store.js";
 
-export interface TlceDeveloperConsoleRuntimeOptions {
-  /** Inject a TLS-verified PostgreSQL Pool/Client configured by the host runtime. */
+interface TlceDeveloperConsoleRuntimeBaseOptions {
   readonly database: PostgresQueryExecutor;
   readonly readModel: ControlPlaneReadModel;
   readonly oauthHttp: OAuthHttpClient;
@@ -31,19 +36,20 @@ export interface TlceDeveloperConsoleRuntimeOptions {
   readonly resolveOperatorPolicy: (subject: string) => Promise<{
     readonly roles: ReadonlyArray<OperatorRole>;
     readonly allowedModuleIds: ReadonlyArray<string>;
-    readonly mfaVerifiedForThisAuthentication: boolean;
   }>;
   readonly successPath?: string;
+  readonly mfaPath?: string;
   readonly now?: () => number;
   readonly nowDate?: () => Date;
   readonly createRequestId?: () => string;
 }
 
-/**
- * Compose the private TLCE control-plane runtime without opening a network port.
- * The hosting application must provide TLS, trusted-proxy handling, rate limits,
- * secret injection, migration execution and graceful shutdown.
- */
+/** Production composition uses KMS + PostgreSQL directly; verifier injection remains for isolated tests. */
+export type TlceDeveloperConsoleRuntimeOptions = TlceDeveloperConsoleRuntimeBaseOptions & (
+  | { readonly totpKms: TotpKms; readonly totpIssuer: string; readonly totpVerifier?: never }
+  | { readonly totpVerifier: TotpFactorVerifier; readonly totpKms?: never; readonly totpIssuer?: never }
+);
+
 export function createTlceDeveloperConsoleRuntime(options: TlceDeveloperConsoleRuntimeOptions): {
   handle(request: GatewayRequest): Promise<GatewayResponse>;
 } {
@@ -51,13 +57,27 @@ export function createTlceDeveloperConsoleRuntime(options: TlceDeveloperConsoleR
   const auditSink = new PostgresAuditSink(options.database);
   const externalLinks = new PostgresExternalAccountLinkStore(options.database);
   const oauthTransactionStore = new PostgresOAuthTransactionStore(options.database);
-
+  const mfaStore = new PostgresMfaChallengeStore(options.database);
+  const totpVerifier: TotpFactorVerifier = options.totpKms
+    ? new KmsBackedTotpProvider({
+        store: new PostgresTotpFactorStore(options.database),
+        kms: options.totpKms,
+        issuer: options.totpIssuer,
+        ...(options.now ? { now: options.now } : {}),
+      })
+    : options.totpVerifier;
   const sessions = new OperatorSessionService({
     store: sessionStore,
     ...(options.now ? { now: options.now } : {}),
   });
   const transactions = new OAuthTransactionService({
     store: oauthTransactionStore,
+    ...(options.now ? { now: options.now } : {}),
+  });
+  const mfaChallenges = new MfaChallengeService({
+    store: mfaStore,
+    sessions,
+    verifier: totpVerifier,
     ...(options.now ? { now: options.now } : {}),
   });
   const consoleService = new DeveloperConsoleService({
@@ -73,12 +93,16 @@ export function createTlceDeveloperConsoleRuntime(options: TlceDeveloperConsoleR
     transactions,
     accountLinks: externalLinks,
     sessions,
+    mfaChallenges,
     resolvePolicy: options.resolveOperatorPolicy,
     ...(options.nowDate ? { now: options.nowDate } : {}),
   });
   const oauthRoutes = new GitHubOAuthRoutes({
     provider,
+    mfaChallenges,
+    allowedOrigins: options.allowedOrigins,
     ...(options.successPath ? { successPath: options.successPath } : {}),
+    ...(options.mfaPath ? { mfaPath: options.mfaPath } : {}),
   });
   const gateway = new DeveloperConsoleGateway({
     sessions,
@@ -86,12 +110,13 @@ export function createTlceDeveloperConsoleRuntime(options: TlceDeveloperConsoleR
     allowedOrigins: options.allowedOrigins,
     ...(options.createRequestId ? { createRequestId: options.createRequestId } : {}),
   });
-
   return Object.freeze({
     async handle(request: GatewayRequest): Promise<GatewayResponse> {
       const oauthResponse = await oauthRoutes.handle({
         method: request.method,
         url: request.url,
+        headers: request.headers,
+        ...(request.body !== undefined ? { body: request.body } : {}),
       });
       if (oauthResponse) return oauthResponse;
       return gateway.handle(request);
