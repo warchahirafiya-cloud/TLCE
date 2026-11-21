@@ -8,5 +8,6 @@ Architecture and implementation work is maintained on dedicated feature branches
 - [Implementation roadmap](docs/IMPLEMENTATION_ROADMAP.md)
 - [QuestPulse integration contract](docs/QUESTPULSE_INTEGRATION.md)
 - [Advanced serverless and edge design](docs/ADVANCED_SERVERLESS_EDGE.md)
+- [Supabase-first infrastructure decision](docs/INFRASTRUCTURE_DECISION_SUPABASE.md)
 
 The current feature branch is an engineering foundation, not a production deployment. See the build status and integration contract for verified capabilities and outstanding gates.
