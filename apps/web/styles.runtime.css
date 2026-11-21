@@ -7,7 +7,7 @@
 
 /* TLCE Premium Dark visual system — preserves existing QuestPulse behavior */
 :root{--bg:#080d18;--panel:#101827;--panel-2:#141f30;--line:#ffffff18;--text:#f3f5fa;--muted:#9aa8ba;--cyan:#c7a66a;--violet:#e0c38f;--qp-accent:#c7a66a;color-scheme:dark}
-body{background:radial-gradient(ellipse at 82% 0%,#1b2940 0,transparent 35%),radial-gradient(ellipse at 0 55%,#15223670,transparent 34%),var(--bg);color:var(--text)}
+:host{background:radial-gradient(ellipse at 82% 0%,#1b2940 0,transparent 35%),radial-gradient(ellipse at 0 55%,#15223670,transparent 34%),var(--bg);color:var(--text)}
 .site-header{background:#080d18ed;border-bottom-color:var(--line)}
 .brand-mark{background:linear-gradient(135deg,#d4b77f,#ad8950);color:#111722}
 .accent{color:var(--cyan)}
