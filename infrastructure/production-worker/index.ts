@@ -69,8 +69,8 @@ async function verifyAccessJwt(token: string, env: Env): Promise<string | null> 
     const jwk = jwks.find((key) => key.kid === header.kid && key.kty === "RSA");
     if (!jwk) return null;
     const key = await crypto.subtle.importKey("jwk", jwk, { name: "RSASSA-PKCS1-v1_5", hash: "SHA-256" }, false, ["verify"]);
-    const signingInput = new TextEncoder().encode(`${parts[0]}.${parts[1]}`);
-    const signature = decodeBase64Url(parts[2]!);
+    const signingInput = new TextEncoder().encode(`${parts[0]}.${parts[1]}`).buffer as ArrayBuffer;
+    const signature = decodeBase64Url(parts[2]!).slice().buffer as ArrayBuffer;
     return await crypto.subtle.verify("RSASSA-PKCS1-v1_5", key, signature, signingInput) ? claims.sub : null;
   } catch {
     return null;
