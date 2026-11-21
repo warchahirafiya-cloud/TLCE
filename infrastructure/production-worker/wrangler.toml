@@ -1,0 +1,16 @@
+name = "tlce-integration-api"
+main = "index.ts"
+compatibility_date = "2026-11-21"
+workers_dev = true
+preview_urls = false
+
+[vars]
+TLCE_ORIGIN = "https://tlce.store"
+
+[[durable_objects.bindings]]
+name = "RATE_LIMITER"
+class_name = "RateLimiter"
+
+[[migrations]]
+tag = "v1"
+new_sqlite_classes = ["RateLimiter"]

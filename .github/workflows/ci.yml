@@ -28,3 +28,5 @@ jobs:
         run: npm run typecheck
       - name: Unit tests
         run: npm test
+      - name: Validate production Worker bundle
+        run: npx --yes wrangler@4 deploy --dry-run --config infrastructure/production-worker/wrangler.toml
