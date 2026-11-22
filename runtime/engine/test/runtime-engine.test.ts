@@ -155,3 +155,69 @@ test("rejects an empty request identifier", async () => {
   const engine = new RuntimeEngine(registry, { requestIdFactory: () => " " });
   await assert.rejects(() => engine.startModule("quest-pulse"), /non-empty string/);
 });
+
+
+test("marks a failed stop inactive and allows an explicit stop retry", async () => {
+  let stopCount = 0;
+  const registry = new ModuleRegistry();
+  registry.register({ ...manifest, requestedPermissions: [] }, {
+    async initialize() {}, async start() {},
+    async health() { return { state: "ready", checkedAt: new Date(0).toISOString() }; },
+    async stop() {
+      stopCount += 1;
+      if (stopCount === 1) throw new Error("stop failed");
+    },
+  });
+  const engine = new RuntimeEngine(registry);
+  await engine.startModule("quest-pulse");
+  await assert.rejects(() => engine.stopModule("quest-pulse"), /stop failed/);
+  assert.equal(engine.isActive("quest-pulse"), false);
+  assert.equal(engine.lifecycleState("quest-pulse"), "stop_failed");
+  await assert.rejects(() => engine.startModule("quest-pulse"), /cleanup is unresolved/);
+  await engine.stopModule("quest-pulse");
+  assert.equal(engine.lifecycleState("quest-pulse"), "stopped");
+  assert.equal(stopCount, 2);
+});
+
+test("start requested during stop waits and performs a fresh start", async () => {
+  let stopCount = 0;
+  let startCount = 0;
+  let releaseStop!: () => void;
+  const stopGate = new Promise<void>((resolve) => { releaseStop = resolve; });
+  const registry = new ModuleRegistry();
+  registry.register({ ...manifest, requestedPermissions: [] }, {
+    async initialize() {},
+    async start() { startCount += 1; },
+    async health() { return { state: "ready", checkedAt: new Date(0).toISOString() }; },
+    async stop() { stopCount += 1; await stopGate; },
+  });
+  const engine = new RuntimeEngine(registry);
+  await engine.startModule("quest-pulse");
+  const stopping = engine.stopModule("quest-pulse");
+  const starting = engine.startModule("quest-pulse");
+  await Promise.resolve();
+  assert.equal(engine.lifecycleState("quest-pulse"), "stopping");
+  releaseStop();
+  await Promise.all([stopping, starting]);
+  assert.equal(stopCount, 1);
+  assert.equal(startCount, 2);
+  assert.equal(engine.isActive("quest-pulse"), true);
+  assert.equal(engine.lifecycleState("quest-pulse"), "ready");
+});
+
+test("restart performs stop then a complete new start", async () => {
+  const calls: string[] = [];
+  const registry = new ModuleRegistry();
+  registry.register({ ...manifest, requestedPermissions: [] }, {
+    async initialize() { calls.push("initialize"); },
+    async start() { calls.push("start"); },
+    async health() { return { state: "ready", checkedAt: new Date(0).toISOString() }; },
+    async stop() { calls.push("stop"); },
+  });
+  const engine = new RuntimeEngine(registry);
+  await engine.startModule("quest-pulse");
+  await engine.restartModule("quest-pulse");
+  assert.deepEqual(calls, ["initialize", "start", "stop", "initialize", "start"]);
+  assert.equal(engine.isActive("quest-pulse"), true);
+  assert.equal(engine.lifecycleState("quest-pulse"), "ready");
+});
