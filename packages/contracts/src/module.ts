@@ -1,4 +1,13 @@
-export type ModuleLifecycleState = "registered" | "initialized" | "ready" | "degraded" | "stopped" | "failed";
+export type ModuleLifecycleState =
+  | "registered"
+  | "initialized"
+  | "starting"
+  | "ready"
+  | "degraded"
+  | "stopping"
+  | "stop_failed"
+  | "stopped"
+  | "failed";
 
 export interface ModuleDependency {
   moduleId: string;
