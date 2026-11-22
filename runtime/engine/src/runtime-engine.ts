@@ -5,15 +5,18 @@ export interface RuntimeOptions {
   requestIdFactory?: () => string;
   permissionPolicy?: (moduleId: string, requested: ReadonlyArray<ModulePermission>) => ReadonlyArray<ModulePermission>;
 }
+
 function copyPermissions(permissions: ReadonlyArray<ModulePermission>): ModulePermission[] {
   return permissions.map((permission) => ({ resource: permission.resource, actions: [...permission.actions] }));
 }
+
 function freezePermissions(permissions: ModulePermission[]): ReadonlyArray<ModulePermission> {
   for (const permission of permissions) { Object.freeze(permission.actions); Object.freeze(permission); }
   return Object.freeze(permissions);
 }
+
 function validateHealth(health: ModuleHealth, moduleId: string): ModuleHealth {
-  const states: ModuleLifecycleState[] = ["registered", "initialized", "ready", "degraded", "stopped", "failed"];
+  const states: ModuleLifecycleState[] = ["registered", "initialized", "starting", "ready", "degraded", "stopping", "stop_failed", "stopped", "failed"];
   if (!health || !states.includes(health.state) || typeof health.checkedAt !== "string" ||
       Number.isNaN(Date.parse(health.checkedAt)) ||
       (health.message !== undefined && typeof health.message !== "string")) {
@@ -24,8 +27,7 @@ function validateHealth(health: ModuleHealth, moduleId: string): ModuleHealth {
 
 export class RuntimeEngine {
   private readonly active = new Set<string>();
-  private readonly starting = new Map<string, Promise<void>>();
-  private readonly stopping = new Map<string, Promise<void>>();
+  private readonly operations = new Map<string, Promise<void>>();
   private readonly states = new Map<string, ModuleLifecycleState>();
   private readonly requestIdFactory: () => string;
   private readonly permissionPolicy: NonNullable<RuntimeOptions["permissionPolicy"]>;
@@ -38,28 +40,50 @@ export class RuntimeEngine {
   async startModule(moduleId: string): Promise<void> {
     if (!this.registry.get(moduleId)) throw new Error(`Unknown module: ${moduleId}`);
     for (const registered of this.registry.resolveStartOrder(moduleId)) {
-      await this.startSingleModule(registered.manifest.id);
+      await this.runExclusive(registered.manifest.id, () => this.startSingleModule(registered.manifest.id));
     }
   }
 
-  private startSingleModule(moduleId: string): Promise<void> {
-    if (this.active.has(moduleId)) return Promise.resolve();
-    const pending = this.starting.get(moduleId);
-    if (pending) return pending;
-    const stopping = this.stopping.get(moduleId);
-    if (stopping) return stopping.then(() => this.startSingleModule(moduleId));
+  async stopModule(moduleId: string): Promise<void> {
+    if (!this.registry.get(moduleId)) throw new Error(`Unknown module: ${moduleId}`);
+    await this.runExclusive(moduleId, () => this.stopSingleModule(moduleId));
+  }
 
-    this.states.set(moduleId, "initialized");
-    const operation = this.performStartSingleModule(moduleId);
-    this.starting.set(moduleId, operation);
-    return operation.finally(() => {
-      if (this.starting.get(moduleId) === operation) this.starting.delete(moduleId);
+  async restartModule(moduleId: string): Promise<void> {
+    if (!this.registry.get(moduleId)) throw new Error(`Unknown module: ${moduleId}`);
+    await this.runExclusive(moduleId, async () => {
+      await this.stopSingleModule(moduleId);
+      await this.startSingleModule(moduleId);
     });
   }
 
-  private async performStartSingleModule(moduleId: string): Promise<void> {
+  /**
+   * Serialize lifecycle mutations per module. A rejected operation does not poison
+   * the queue; later recovery attempts are allowed to proceed.
+   */
+  private async runExclusive<T>(moduleId: string, operation: () => Promise<T>): Promise<T> {
+    const previous = this.operations.get(moduleId) ?? Promise.resolve();
+    const current = previous.catch(() => undefined).then(operation);
+    const settled = current.then(() => undefined, () => undefined);
+    this.operations.set(moduleId, settled);
+    try {
+      return await current;
+    } finally {
+      if (this.operations.get(moduleId) === settled) this.operations.delete(moduleId);
+    }
+  }
+
+  private async startSingleModule(moduleId: string): Promise<void> {
     const registered = this.registry.get(moduleId);
     if (!registered) throw new Error(`Unknown module: ${moduleId}`);
+
+    const state = this.lifecycleState(moduleId);
+    if (this.active.has(moduleId) && (state === "ready" || state === "degraded")) return;
+    if (state === "stop_failed") {
+      throw new Error(`Cannot start module while previous stop cleanup is unresolved: ${moduleId}`);
+    }
+
+    this.states.set(moduleId, "starting");
     try {
       const requested = copyPermissions(registered.manifest.requestedPermissions);
       const policyResult = this.permissionPolicy(moduleId, copyPermissions(requested));
@@ -90,8 +114,32 @@ export class RuntimeEngine {
       this.states.set(moduleId, "ready");
     } catch (error) {
       this.active.delete(moduleId);
-      this.states.set(moduleId, "failed");
-      try { await registered.implementation.stop(); } catch { /* preserve original failure */ }
+      try {
+        await registered.implementation.stop();
+        this.states.set(moduleId, "failed");
+      } catch {
+        this.states.set(moduleId, "stop_failed");
+      }
+      throw error;
+    }
+  }
+
+  private async stopSingleModule(moduleId: string): Promise<void> {
+    const registered = this.registry.get(moduleId);
+    if (!registered) throw new Error(`Unknown module: ${moduleId}`);
+
+    const state = this.lifecycleState(moduleId);
+    if (!this.active.has(moduleId) && state !== "stop_failed") return;
+
+    this.states.set(moduleId, "stopping");
+    try {
+      await registered.implementation.stop();
+      this.active.delete(moduleId);
+      this.states.set(moduleId, "stopped");
+    } catch (error) {
+      // A failed stop is not an active/healthy state. Keep it explicitly retryable.
+      this.active.delete(moduleId);
+      this.states.set(moduleId, "stop_failed");
       throw error;
     }
   }
@@ -100,31 +148,22 @@ export class RuntimeEngine {
     const registered = this.registry.get(moduleId);
     if (!registered) throw new Error(`Unknown module: ${moduleId}`);
     const health = validateHealth(await registered.implementation.health(), moduleId);
-    if (this.active.has(moduleId)) this.states.set(moduleId, health.state);
+    if (this.active.has(moduleId)) {
+      if (health.state === "failed" || health.state === "stopped" || health.state === "stop_failed") {
+        this.active.delete(moduleId);
+        this.states.set(moduleId, health.state);
+      } else if (health.state === "ready" || health.state === "degraded") {
+        this.states.set(moduleId, health.state);
+      }
+    }
     return health;
   }
 
-  async stopModule(moduleId: string): Promise<void> {
-    const registered = this.registry.get(moduleId);
-    if (!registered) throw new Error(`Unknown module: ${moduleId}`);
-    const starting = this.starting.get(moduleId);
-    if (starting) { try { await starting; } catch { return; } }
-    const pending = this.stopping.get(moduleId);
-    if (pending) return pending;
-    if (!this.active.has(moduleId)) return;
-
-    const operation = (async () => {
-      await registered.implementation.stop();
-      this.active.delete(moduleId);
-      this.states.set(moduleId, "stopped");
-    })();
-    this.stopping.set(moduleId, operation);
-    try { await operation; }
-    catch (error) { this.states.set(moduleId, "failed"); throw error; }
-    finally { if (this.stopping.get(moduleId) === operation) this.stopping.delete(moduleId); }
+  isActive(moduleId: string): boolean {
+    const state = this.states.get(moduleId);
+    return this.active.has(moduleId) && (state === "ready" || state === "degraded");
   }
 
-  isActive(moduleId: string): boolean { return this.active.has(moduleId); }
   lifecycleState(moduleId: string): ModuleLifecycleState {
     if (!this.registry.get(moduleId)) throw new Error(`Unknown module: ${moduleId}`);
     return this.states.get(moduleId) ?? "registered";
