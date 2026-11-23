@@ -53,7 +53,7 @@ export async function createR2PresignedPut(input: {
   const canonicalHeaders = [
     `content-type:${input.contentType.trim()}\n`,
     `host:${host}\n`,
-    "x-amz-meta-ownerhash:OWNER_HASH_PLACEHOLDER\n",
+    `x-amz-meta-ownerhash:${input.ownerHash}\n`,
     "x-amz-meta-status:quarantined\n",
   ].join("");
   const canonicalRequest = [
