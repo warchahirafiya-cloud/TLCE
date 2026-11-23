@@ -43,3 +43,9 @@ Before enabling user-facing file downloads or processing:
 6. Delete or retain malicious/failed scans under a documented retention policy.
 
 Cloudflare WAF Malicious Uploads Detection is a managed option but is Enterprise + paid add-on, not a free Worker feature.
+
+## Upload lifecycle detail
+
+The authenticated API issues short-lived R2 presigned PUT grants bound to a random quarantine key, MIME type, owner hash and quarantine status. A completion call verifies actual object size and metadata before sending a Queue message. The consumer validates ownership metadata, size and magic bytes, deletes malformed objects, and leaves structurally valid objects quarantined. A six-hour Cron Trigger deletes quarantine objects older than seven days. No malware-clean verdict or production promotion is implemented; this remains blocked on an approved antivirus scanner and a separately reviewed release workflow.
+
+For strict validation before any object is written to R2, use the Worker-proxy upload route, which validates actual request bytes and magic numbers before storage. Presigned direct PUT is an efficiency path and enforces declared size at grant time plus actual size at completion, not at the R2 ingress boundary.
