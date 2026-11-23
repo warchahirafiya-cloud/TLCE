@@ -189,7 +189,7 @@ async function signedHeaders(url: URL, method: string, bodyText: string, keyId: 
   const timestamp = String(Math.floor(Date.now() / 1000));
   const nonce = crypto.randomUUID();
   const bodyHash = hex(await crypto.subtle.digest("SHA-256", encoder.encode(bodyText)));
-  const canonical = [method.toUpperCase(), url.pathname + url.search, timestamp, nonce, bodyHash].join("\\n");
+  const canonical = [method.toUpperCase(), url.pathname + url.search, timestamp, nonce, bodyHash].join("\n");
   const key = await crypto.subtle.importKey("raw", fromBase64Url(secretB64Url), { name: "HMAC", hash: "SHA-256" }, false, ["sign"]);
   const signature = hex(await crypto.subtle.sign("HMAC", key, encoder.encode(canonical)));
   return {
