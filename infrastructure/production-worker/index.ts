@@ -583,7 +583,10 @@ export default {
         // Structural validation is not malware scanning. Never promote based on magic bytes alone.
         console.info(JSON.stringify({ event: "quarantine_validation_structural_pass", outcome: "pending_trusted_scanner" }));
         message.ack();
-      } catch {\n        console.warn(JSON.stringify({ event: "quarantine_validation_retry", reason: "processing_error" }));\n        message.retry({ delaySeconds: 60 });\n      }
+      } catch {
+        console.warn(JSON.stringify({ event: "quarantine_validation_retry", reason: "processing_error" }));
+        message.retry({ delaySeconds: 60 });
+      }
     }
   },
 
