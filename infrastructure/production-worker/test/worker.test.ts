@@ -39,9 +39,23 @@ test("CORS preflight is restricted to the configured site origin", async () => {
 
 class MemoryStorage {
   private readonly values = new Map<string, unknown>();
+  private alarmAt: number | null = null;
+  private transactionTail: Promise<void> = Promise.resolve();
   async get<T>(key: string): Promise<T | undefined> { return this.values.get(key) as T | undefined; }
   async put<T>(key: string, value: T): Promise<void> { this.values.set(key, value); }
-  async transaction<T>(callback: (txn: MemoryStorage) => Promise<T>): Promise<T> { return callback(this); }
+  async delete(key: string): Promise<boolean> { return this.values.delete(key); }
+  async list<T>(options?: { prefix?: string }): Promise<Map<string, T>> {
+    return new Map([...this.values.entries()].filter(([key]) => !options?.prefix || key.startsWith(options.prefix)) as [string, T][]);
+  }
+  async getAlarm(): Promise<number | null> { return this.alarmAt; }
+  async setAlarm(value: number | Date): Promise<void> { this.alarmAt = value instanceof Date ? value.getTime() : value; }
+  async transaction<T>(callback: (txn: MemoryStorage) => Promise<T>): Promise<T> {
+    let release!: () => void;
+    const previous = this.transactionTail;
+    this.transactionTail = new Promise<void>((resolve) => { release = resolve; });
+    await previous;
+    try { return await callback(this); } finally { release(); }
+  }
 }
 
 test("Durable Object enforces a fixed per-object request window", async () => {
@@ -66,6 +80,14 @@ test("NonceTracker consumes a nonce once and rejects replay", async () => {
   assert.equal((await first.json() as { allowed: boolean }).allowed, true);
   assert.equal(replay.status, 409);
   assert.equal((await replay.json() as { allowed: boolean }).allowed, false);
+});
+
+test("NonceTracker allows only one concurrent consumer for the same nonce", async () => {
+  const tracker = new NonceTracker({ storage: new MemoryStorage() } as never);
+  const body = JSON.stringify({ nonce: "a9e30b15-0b7d-4c5a-9c4a-7b1f6d45a9f1", expiresAt: Math.floor(Date.now() / 1000) + 60 });
+  const makeRequest = () => new Request("https://nonce-tracker.internal/consume", { method: "POST", body });
+  const responses = await Promise.all([tracker.fetch(makeRequest()), tracker.fetch(makeRequest())]);
+  assert.deepEqual(responses.map((response) => response.status).sort(), [200, 409]);
 });
 
 test("NonceTracker rejects expired and overlong nonce windows", async () => {
