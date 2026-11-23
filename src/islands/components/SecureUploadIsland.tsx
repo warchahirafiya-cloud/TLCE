@@ -3,6 +3,29 @@ import { useState } from "preact/hooks";
 type PreviewStatus = "idle" | "invalid" | "ready" | "processing" | "complete";
 const MAX_FILE_BYTES = 5 * 1024 * 1024;
 const ACCEPTED_TYPES = new Set(["image/png", "image/jpeg", "application/pdf"]);
+const ACCEPTED_EXTENSIONS = new Map([
+  [".png", "image/png"],
+  [".jpg", "image/jpeg"],
+  [".jpeg", "image/jpeg"],
+  [".pdf", "application/pdf"],
+]);
+
+function isAcceptedFile(candidate: File): boolean {
+  const reportedType = candidate.type.trim().toLowerCase();
+
+  // Trust a reported MIME type for client-side filtering; use the filename
+  // extension only when the browser provides no MIME type (common on mobile).
+  if (reportedType) return ACCEPTED_TYPES.has(reportedType);
+
+  const extension = candidate.name.toLowerCase().match(/\\.[^.]+$/)?.[0] ?? "";
+  return ACCEPTED_EXTENSIONS.has(extension);
+}
+
+function getFileTypeLabel(candidate: File): string {
+  if (candidate.type) return candidate.type;
+  const extension = candidate.name.toLowerCase().match(/\\.[^.]+$/)?.[0] ?? "";
+  return ACCEPTED_EXTENSIONS.get(extension) ?? "نوع غير محدد";
+}
 
 function formatBytes(bytes: number): string {
   if (bytes < 1024) return `${bytes} B`;
@@ -24,16 +47,16 @@ export function SecureUploadIsland() {
       setMessage("اسحب ملفاً إلى المنطقة أو اختره من جهازك.");
       return;
     }
-    if (!ACCEPTED_TYPES.has(candidate.type)) {
-      setFile(null);
-      setStatus("invalid");
-      setMessage("نوع الملف غير مدعوم. الأنواع المسموحة: PNG وJPEG وPDF.");
-      return;
-    }
     if (candidate.size > MAX_FILE_BYTES) {
       setFile(null);
       setStatus("invalid");
       setMessage("حجم الملف يتجاوز الحد المسموح وهو 5 MiB.");
+      return;
+    }
+    if (!isAcceptedFile(candidate)) {
+      setFile(null);
+      setStatus("invalid");
+      setMessage("نوع الملف غير مدعوم. الأنواع المسموحة: PNG وJPEG وPDF.");
       return;
     }
     setFile(candidate);
@@ -81,13 +104,18 @@ export function SecureUploadIsland() {
         onDragOver={(event) => event.preventDefault()}
         onDrop={(event) => { event.preventDefault(); selectFile(event.dataTransfer.files?.[0] ?? null); }}>
         <input class="sr-only" type="file" accept=".png,.jpg,.jpeg,.pdf,image/png,image/jpeg,application/pdf" disabled={status === "processing"}
-          onChange={(event) => selectFile(event.currentTarget.files?.[0] ?? null)} />
+          onChange={(event) => {
+            const input = event.currentTarget;
+            selectFile(input.files?.[0] ?? null);
+            // Clearing the native input allows selecting the same file again.
+            input.value = "";
+          }} />
         <span class="grid size-12 place-items-center rounded-2xl bg-tlce-accent/20 text-2xl text-tlce-glow" aria-hidden="true">↑</span>
         <span class="grid gap-1"><strong class="text-base">اسحب الملف هنا أو اضغط للاختيار</strong><span class="text-xs text-slate-400">PNG · JPEG · PDF — الحد الأقصى 5 MiB</span></span>
       </label>
 
       {file && <div class="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-white/10 bg-tlce-ink/70 p-4">
-        <div class="min-w-0"><p class="truncate font-semibold">{file.name}</p><p class="mt-1 text-xs text-slate-400">{file.type} · {formatBytes(file.size)}</p></div>
+        <div class="min-w-0"><p class="truncate font-semibold">{file.name}</p><p class="mt-1 text-xs text-slate-400">{getFileTypeLabel(file)} · {formatBytes(file.size)}</p></div>
         <button class="rounded-lg border border-white/15 px-3 py-2 text-sm text-slate-200 hover:bg-white/10 disabled:opacity-50" type="button" onClick={reset} disabled={status === "processing"}>إزالة الملف</button>
       </div>}
 
