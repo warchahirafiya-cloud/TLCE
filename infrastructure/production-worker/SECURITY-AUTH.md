@@ -16,7 +16,7 @@ The browser-facing identity provider is Cloudflare Access. The Worker validates 
 
 Email and display name are identity attributes, not administrator privileges. They must not be used as an authorization decision unless an explicit server-side allowlist or role mapping is added.
 
-Protected API handlers call `requireIdentity()`. This applies to search, AI chat, presigned upload creation, upload completion and Worker-proxy upload. Every authenticated principal is also subject to the Durable Object rate limiter (20 requests per minute).
+Protected API handlers call `requireIdentity()`. This applies to search, AI chat, presigned upload creation, upload completion and Worker-proxy upload. Every authenticated principal is also subject to the separate `RateLimiter` Durable Object (20 requests per minute).
 
 The browser uses its Access-authenticated session/cookie flow. Do not issue a custom TLCE bearer token from a public login route and never return `TLCE_API_KEYS_JSON`, R2 credentials, AI provider keys, or any other Worker secret.
 
@@ -28,7 +28,7 @@ The existing HMAC-SHA256 implementation is intentionally separate from browser s
 - Each key must decode from base64url to at least 32 random bytes.
 - Signatures bind method, path/query, timestamp, unique nonce and SHA-256 digest of the exact request body.
 - Timestamp skew is limited to five minutes.
-- Nonces are consumed atomically through the Durable Object to prevent replay. Each nonce uses its own storage key with a 600-second storage TTL; there is no bounded 256-entry list that can evict a still-live nonce under high request volume.
+- Nonces are consumed atomically through the dedicated `NonceTracker` Durable Object namespace. Each nonce uses its own storage key and a TTL bounded by the request's accepted replay window; there is no bounded list that can evict a still-live nonce under high request volume. `RateLimiter` is a separate Durable Object used only for per-principal request counters.
 - HMAC callers are scoped to `POST /api/files/presign` and `POST /api/files/complete`; HMAC does not grant access to AI chat, search or proxy upload.
 - HMAC-authenticated requests are also rate-limited by principal.
 
@@ -55,3 +55,10 @@ There is not yet an application-level role/permission matrix or an admin-only ro
 No `/api/auth/login` route, `ADMIN_USER`, `ADMIN_PASS`, or custom bearer-session issuer is added. The suggested pattern that compares a submitted password with a Worker secret and returns `API_SECRET_KEY` would disclose a global credential to the browser; it is not a secure HMAC session design.
 
 No role identities were invented for this project. An application-level RBAC layer requires an explicit administrator allowlist/group and a permission matrix before it can be safely enabled.
+
+
+## Quarantine queue processing
+
+The Queue consumer validates the object key namespace, expected size, owner metadata, quarantine status, and file magic bytes for PNG, JPEG, and PDF. It deletes objects that fail these checks and acknowledges structurally valid objects while leaving them quarantined.
+
+**This is structural validation, not antivirus/malware scanning.** A structurally valid file is not promoted or made downloadable. A trusted malware scanner integration and an explicit release workflow are still required before any object can leave quarantine. The current Queue consumer intentionally does not claim that a file is malware-free.
