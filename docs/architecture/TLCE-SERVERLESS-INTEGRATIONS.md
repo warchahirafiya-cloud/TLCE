@@ -20,7 +20,7 @@ Private R2 bucket: tlce-private-uploads
 
 ## Service decisions
 
-- **LLM:** Workers AI is the default low-ops option. Groq and Gemini are optional server-side adapters. No Ollama, self-hosted Dify, or public provider keys in the browser.
+- **LLM:** Workers AI is the default low-ops option (model: `@cf/meta/llama-3.3-70b-instruct-fp8-fast`). Groq uses the current `openai/gpt-oss-120b` model identifier. Groq and Gemini are optional server-side adapters. No Ollama, self-hosted Dify, or public provider keys in the browser.
 - **Automation:** Cron Triggers and authenticated webhook routes cover simple schedules/events. Use Queues for asynchronous fan-out/retries when a real workload requires them. n8n is deferred until its visual workflow features justify separate hosting or a hosted plan.
 - **Files:** R2 stores uploads privately in quarantine. A Worker can validate size, allowed file signatures, ownership metadata and hashes, but it cannot provide ClamAV-equivalent malware detection by itself. Do not release files without AV scanning.
 - **Frontend:** no secrets, no privileged authorization logic, and no direct browser-to-provider calls.
