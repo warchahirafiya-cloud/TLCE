@@ -202,19 +202,30 @@ async function requireIdentity(request: Request, env: Env): Promise<{ subject: s
   }
   return { subject };
 }
+async function withTimeout<T>(operation: Promise<T>, timeoutMs: number): Promise<T> {
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  try {
+    return await Promise.race([
+      operation,
+      new Promise<T>((_, reject) => {
+        timer = setTimeout(() => reject(new Error("Operation timed out")), timeoutMs);
+      }),
+    ]);
+  } finally {
+    if (timer !== undefined) clearTimeout(timer);
+  }
+}
+
 async function runAi(prompt: string, env: Env): Promise<string> {
   const provider = (env.AI_PROVIDER ?? "workers-ai").toLowerCase();
   if (provider === "workers-ai") {
     if (!env.AI) throw new Error("Workers AI binding is not configured");
-    const result = await Promise.race([
-      env.AI.run(env.AI_MODEL ?? "@cf/meta/llama-3.3-70b-instruct-fp8-fast", {
-        messages: [
-          { role: "system", content: "You are the TLCE assistant. Be accurate, concise, and clearly state uncertainty." },
-          { role: "user", content: prompt },
-        ],
-      }),
-      new Promise<never>((_, reject) => setTimeout(() => reject(new Error("Workers AI timeout")), 7_000)),
-    ]) as { response?: string };
+    const result = await withTimeout(env.AI.run(env.AI_MODEL ?? "@cf/meta/llama-3.3-70b-instruct-fp8-fast", {
+      messages: [
+        { role: "system", content: "You are the TLCE assistant. Be accurate, concise, and clearly state uncertainty." },
+        { role: "user", content: prompt },
+      ],
+    }), 7_000) as { response?: string };
     if (typeof result?.response !== "string" || !result.response) throw new Error("Workers AI returned no text");
     return result.response;
   }
