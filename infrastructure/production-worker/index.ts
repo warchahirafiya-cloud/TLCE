@@ -147,6 +147,34 @@ function safeEqual(a: string, b: string): boolean {
   for (let i = 0; i < a.length; i += 1) diff |= a.charCodeAt(i) ^ b.charCodeAt(i);
   return diff === 0;
 }
+async function readBodyBounded(request: Request, maxBytes: number): Promise<Uint8Array | null> {
+  const reader = request.clone().body?.getReader();
+  if (!reader) return new Uint8Array();
+  const chunks: Uint8Array[] = [];
+  let total = 0;
+  try {
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      total += value.byteLength;
+      if (total > maxBytes) {
+        await reader.cancel();
+        return null;
+      }
+      chunks.push(value);
+    }
+  } finally {
+    reader.releaseLock();
+  }
+  const body = new Uint8Array(total);
+  let offset = 0;
+  for (const chunk of chunks) {
+    body.set(chunk, offset);
+    offset += chunk.byteLength;
+  }
+  return body;
+}
+
 async function verifyApiSignature(request: Request, env: Env): Promise<string | null> {
   const requestUrl = new URL(request.url);
   if (!["/api/files/presign", "/api/files/complete"].includes(requestUrl.pathname)) return null;
@@ -166,8 +194,8 @@ async function verifyApiSignature(request: Request, env: Env): Promise<string | 
   let secret: Uint8Array;
   try { secret = decodeBase64Url(encodedSecret); } catch { return null; }
   if (secret.byteLength < 32) return null;
-  const body = await request.clone().arrayBuffer();
-  if (body.byteLength > 64 * 1024) return null;
+  const body = await readBodyBounded(request, 64 * 1024);
+  if (!body) return null;
   const bodyHash = bytesToHex(await crypto.subtle.digest("SHA-256", body));
   const canonical = [request.method.toUpperCase(), requestUrl.pathname + requestUrl.search, timestamp, nonce, bodyHash].join("\n");
   const cryptoKey = await crypto.subtle.importKey("raw", secret, { name: "HMAC", hash: "SHA-256" }, false, ["sign"]);
