@@ -45,6 +45,7 @@ test("static artifact retains TLCE, QuestPulse and Store routes", async () => {
 test("all HTML routes receive a same-origin island bridge entry", async () => {
   const pages = await htmlFiles(root);
   assert.ok(pages.length >= 6, "Expected parent, QuestPulse and store HTML pages");
+  await readFile(path.join(root, ".nojekyll"));
   for (const file of pages) {
     const html = await readFile(file, "utf8");
     assert.match(html, /data-tlce-islands-entry/);
