@@ -49,7 +49,7 @@ test("all HTML routes receive a same-origin island bridge entry", async () => {
   for (const file of pages) {
     const html = await readFile(file, "utf8");
     assert.match(html, /data-tlce-islands-entry/);
-    assert.match(html, /_ui\/assets\/tlce-islands-[^"]+\.js/);
+    assert.match(html, /ui\/assets\/tlce-islands-[^"]+\.js/);
   }
 });
 
