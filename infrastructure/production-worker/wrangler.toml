@@ -21,9 +21,17 @@ bucket_name = "tlce-private-uploads"
 name = "RATE_LIMITER"
 class_name = "RateLimiter"
 
+[[durable_objects.bindings]]
+name = "NONCE_TRACKER"
+class_name = "NonceTracker"
+
 [[migrations]]
 tag = "v1"
 new_sqlite_classes = ["RateLimiter"]
+
+[[migrations]]
+tag = "v2"
+new_sqlite_classes = ["NonceTracker"]
 
 [triggers]
 crons = ["0 */6 * * *"]
