@@ -1,12 +1,13 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import worker, { RateLimiter, allowedMime, detectAllowedFile, runAiWithFallback, verifyApiSignature, verifyMagic } from "../index.js";
+import worker, { NonceTracker, RateLimiter, allowedMime, detectAllowedFile, runAiWithFallback, verifyApiSignature, verifyMagic } from "../index.js";
 
 const env = {
   TLCE_ORIGIN: "https://tlce.store",
   CF_ACCESS_TEAM_DOMAIN: "",
   CF_ACCESS_AUD: "",
   RATE_LIMITER: { idFromName: () => "stub", get: () => ({ fetch: async () => new Response(JSON.stringify({ allowed: true })) }) },
+  NONCE_TRACKER: { idFromName: () => "stub", get: () => ({ fetch: async () => new Response(JSON.stringify({ allowed: true })) }) },
 };
 
 test("health endpoint returns only non-sensitive liveness metadata", async () => {
@@ -55,15 +56,31 @@ test("Durable Object enforces a fixed per-object request window", async () => {
   assert.equal((await blocked.json() as { allowed: boolean }).allowed, false);
 });
 
-test("Durable Object consumes a nonce once and rejects replay", async () => {
-  const limiter = new RateLimiter({ storage: new MemoryStorage() } as never);
+test("NonceTracker consumes a nonce once and rejects replay", async () => {
+  const tracker = new NonceTracker({ storage: new MemoryStorage() } as never);
   const body = JSON.stringify({ nonce: "f9e30b15-0b7d-4c5a-9c4a-7b1f6d45a9f1", expiresAt: Math.floor(Date.now() / 1000) + 60 });
-  const first = await limiter.fetch(new Request("https://rate-limit.internal/nonce", { method: "POST", body }));
-  const replay = await limiter.fetch(new Request("https://rate-limit.internal/nonce", { method: "POST", body }));
+  const makeRequest = () => new Request("https://nonce-tracker.internal/consume", { method: "POST", body });
+  const first = await tracker.fetch(makeRequest());
+  const replay = await tracker.fetch(makeRequest());
   assert.equal(first.status, 200);
   assert.equal((await first.json() as { allowed: boolean }).allowed, true);
   assert.equal(replay.status, 409);
   assert.equal((await replay.json() as { allowed: boolean }).allowed, false);
+});
+
+test("NonceTracker rejects expired and overlong nonce windows", async () => {
+  const tracker = new NonceTracker({ storage: new MemoryStorage() } as never);
+  const now = Math.floor(Date.now() / 1000);
+  const expired = await tracker.fetch(new Request("https://nonce-tracker.internal/consume", {
+    method: "POST",
+    body: JSON.stringify({ nonce: "f9e30b15-0b7d-4c5a-9c4a-7b1f6d45a9f2", expiresAt: now }),
+  }));
+  const tooLong = await tracker.fetch(new Request("https://nonce-tracker.internal/consume", {
+    method: "POST",
+    body: JSON.stringify({ nonce: "f9e30b15-0b7d-4c5a-9c4a-7b1f6d45a9f3", expiresAt: now + 601 }),
+  }));
+  assert.equal(expired.status, 400);
+  assert.equal(tooLong.status, 400);
 });
 
 test("file MIME allowlist rejects unapproved and non-string values", () => {
@@ -167,10 +184,10 @@ test("HMAC API signature is scoped, body-bound and replay protected", async () =
   const signatureBuffer = await crypto.subtle.sign("HMAC", key, new TextEncoder().encode(canonical).buffer as ArrayBuffer);
   const signature = Array.from(new Uint8Array(signatureBuffer), (byte) => byte.toString(16).padStart(2, "0")).join("");
 
-  const limiter = new RateLimiter({ storage: new MemoryStorage() } as never);
+  const tracker = new NonceTracker({ storage: new MemoryStorage() } as never);
   const signedEnv = {
     TLCE_API_KEYS_JSON: JSON.stringify({ [keyId]: secret }),
-    RATE_LIMITER: { idFromName: () => "nonce-store", get: () => ({ fetch: (request: Request) => limiter.fetch(request) }) },
+    NONCE_TRACKER: { idFromName: () => "nonce-store", get: () => ({ fetch: (request: Request) => tracker.fetch(request) }) },
   };
   const makeRequest = (body = bodyText) => new Request(url, {
     method: "POST",
