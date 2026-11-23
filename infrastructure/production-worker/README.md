@@ -147,3 +147,28 @@ npx wrangler secret put R2_SECRET_ACCESS_KEY
 npx wrangler secret put R2_BUCKET_NAME
 ```
 Never commit R2 credentials. Prefer separate credentials for a future production bucket. The current code intentionally has no production-bucket binding and no release route.
+
+
+## Server-to-server API key authentication
+
+Cloudflare Access JWT remains the preferred browser-facing identity mechanism. For trusted server-to-server callers only, protected routes also accept an HMAC-signed request when no Access assertion is supplied. **Never put this key material in GitHub Pages, browser JavaScript, mobile bundles, or public repositories.**
+
+Store `TLCE_API_KEYS_JSON` as a Worker secret containing a JSON map from key ID to a base64url-encoded random secret of at least 32 bytes, for example structurally:
+
+```json
+{"automation-prod":"<base64url-encoded-32-byte-secret>"}
+```
+
+The request must include:
+- `x-tlce-key-id`
+- `x-tlce-timestamp` (Unix seconds; maximum clock skew 5 minutes)
+- `x-tlce-nonce` (unique random UUID)
+- `x-tlce-signature` (lowercase/uppercase hex HMAC-SHA256)
+
+The signed canonical string is the uppercase HTTP method, URL pathname, timestamp, nonce, and SHA-256 hex digest of the exact request body, joined by newline characters. HMAC uses the decoded per-key secret. Nonces are consumed atomically by the existing Durable Object and requests then pass through the same 20/minute per-principal limiter. Rotate keys by adding a new key ID, migrating callers, then removing the old ID from the secret. API keys do not replace user identity or authorization policy for browser users.
+
+## AI provider fallback
+
+`AI_PROVIDER` chooses the primary provider. `AI_FALLBACK_PROVIDERS` is a comma-separated server-side ordered fallback list; default: `workers-ai,groq,gemini`. The primary is tried first, followed by unique fallback entries. Each provider attempt is bounded to approximately 7 seconds; external fetches use abortable request timeouts. Workers AI binding calls are raced against a deadline, but the underlying model invocation may continue because the binding does not expose request cancellation. Provider credentials remain Worker secrets. If all providers fail, the browser receives one generic unavailable response.
+
+Fallback can incur usage charges with configured external providers. Keep only providers that have passed privacy, terms, budget and operational review in the fallback list.
