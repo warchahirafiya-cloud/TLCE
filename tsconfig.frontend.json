@@ -22,8 +22,9 @@
     "isolatedModules": true
   },
   "include": [
-    "src/**/*.ts",
-    "src/**/*.tsx",
+    "src/islands/**/*.ts",
+    "src/islands/**/*.tsx",
+    "src/services/**/*.ts",
     "vite.config.ts"
   ],
   "exclude": [
