@@ -28,6 +28,7 @@ export async function createR2PresignedPut(input: {
   bucket: string;
   key: string;
   contentType: string;
+  ownerHash: string;
   expiresSeconds?: number;
 }): Promise<string> {
   const now = new Date();
