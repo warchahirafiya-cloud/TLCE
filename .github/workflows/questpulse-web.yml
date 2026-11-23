@@ -36,5 +36,32 @@ jobs:
       - name: Validate content catalogues
         run: |
           node --input-type=module -e "import fs from 'node:fs'; const offers=JSON.parse(fs.readFileSync('apps/web/data/offers.json','utf8')); const guides=JSON.parse(fs.readFileSync('apps/web/data/guides.json','utf8')); if(!Array.isArray(offers)||!Array.isArray(guides)||guides.length<1) process.exit(1); console.log('Offers:',offers.length,'Guides:',guides.length)"
+      - name: Assemble and validate Pages artifact
+        run: |
+          mkdir -p site/web site/runtime site/store site/questpulse
+          cp -R apps/web/. site/web/
+          cp -R apps/web/store/. site/store/
+          cp -R apps/web/questpulse/. site/questpulse/
+          sed -i 's|href="../styles.css"|href="../web/styles.css"|g; s|src="../questpulse.js"|src="../web/questpulse.js"|g' site/questpulse/index.html
+          cp apps/web/favicon.svg site/favicon.svg
+          cp apps/parent/index.html apps/parent/404.html apps/parent/bootstrap.js apps/parent/styles.css site/
+          cp -R dist/browser/runtime site/
+          sed -i 's|__TLCE_BASE_HREF__|/|g' site/index.html site/404.html
+          node --input-type=module <<'NODE'
+          import assert from "node:assert/strict";
+          import fs from "node:fs";
+          const homepage = fs.readFileSync("site/index.html", "utf8");
+          const questpulse = fs.readFileSync("site/questpulse/index.html", "utf8");
+          assert.match(homepage, /منظومة رقمية/);
+          assert.match(homepage, /href="\.\/questpulse\//);
+          assert.match(questpulse, /https:\/\/tlce\.store\/questpulse\//);
+          assert.match(questpulse, /\.\.\/web\/styles\.css/);
+          assert.match(questpulse, /\.\.\/web\/questpulse\.js/);
+          for (const file of ["site/questpulse/index.html", "site/web/styles.css", "site/web/questpulse.js", "site/web/data/offers.json", "site/web/data/guides.json", "site/store/index.html", "site/runtime/engine/src/index.js"]) {
+            assert.ok(fs.existsSync(file), `Missing Pages artifact: ${file}`);
+          }
+          console.log("Pages artifact assembly passed: parent homepage, QuestPulse route and assets.");
+          NODE
+
       - name: Run browser tests
         run: node --test apps/web/test/*.test.mjs apps/parent/test/*.test.mjs

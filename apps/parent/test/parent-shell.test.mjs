@@ -53,4 +53,6 @@ test("Pages build publishes QuestPulse at its canonical directory route", async 
   assert.match(workflow, /mkdir -p[^\n]*site\/questpulse/);
   assert.match(workflow, /cp -R apps\/web\/questpulse\/\. site\/questpulse\//);
   assert.match(workflow, /get\("questpulse\/",/);
+  const webWorkflow = await readFile(new URL("../../../.github/workflows/questpulse-web.yml", import.meta.url), "utf8");
+  assert.match(webWorkflow, /Assemble and validate Pages artifact/);
 });
