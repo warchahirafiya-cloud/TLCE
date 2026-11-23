@@ -6,6 +6,15 @@ preview_urls = false
 
 [vars]
 TLCE_ORIGIN = "https://tlce.store"
+AI_PROVIDER = "workers-ai"
+AI_MODEL = "@cf/meta/llama-3.1-8b-instruct"
+
+[ai]
+binding = "AI"
+
+[[r2_buckets]]
+binding = "UPLOADS"
+bucket_name = "tlce-private-uploads"
 
 [[durable_objects.bindings]]
 name = "RATE_LIMITER"
@@ -14,3 +23,6 @@ class_name = "RateLimiter"
 [[migrations]]
 tag = "v1"
 new_sqlite_classes = ["RateLimiter"]
+
+[triggers]
+crons = ["0 */6 * * *"]
