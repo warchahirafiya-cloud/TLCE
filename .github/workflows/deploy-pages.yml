@@ -64,9 +64,14 @@ jobs:
 
       - name: Assemble TLCE parent and QuestPulse site
         run: |
-          mkdir -p site/web site/runtime site/store
+          mkdir -p site/web site/runtime site/store site/questpulse
           cp -R apps/web/. site/web/
           cp -R apps/web/store/. site/store/
+          cp -R apps/web/questpulse/. site/questpulse/
+          sed -i 's|href="../styles.css"|href="../web/styles.css"|g; s|src="../questpulse.js"|src="../web/questpulse.js"|g' site/questpulse/index.html
+          test -s site/questpulse/index.html
+          grep -q '../web/styles.css' site/questpulse/index.html
+          grep -q '../web/questpulse.js' site/questpulse/index.html
           cp apps/web/favicon.svg site/favicon.svg
           cp apps/parent/index.html apps/parent/404.html apps/parent/bootstrap.js apps/parent/styles.css site/
           cp -R dist/browser/runtime site/
@@ -140,6 +145,8 @@ jobs:
           assert.match(html, /THE LAST COSMIC EXPLOSION/);
           assert.match(html, /QuestPulse/);
           assert.match(html, /TLCE STORE/);
+          assert.match(html, /منظومة رقمية/);
+          assert.match(html, /href="\.\/questpulse\//);
           assert.match(html, /https:\/\/tlce\.store\/#organization/);
           const csp = html.match(/<meta[^>]+http-equiv=["']Content-Security-Policy["'][^>]+>/i)?.[0];
           assert.ok(csp, "Deployed HTML must include the Content Security Policy meta tag");
@@ -148,7 +155,17 @@ jobs:
           }
           assert.ok(!csp.includes("'unsafe-inline'"), "Deployed CSP must not allow unsafe inline execution");
 
+          const questpulsePage = await get("questpulse/", /text\/html/i);
+          const questpulseHtml = await questpulsePage.text();
+          assert.match(questpulseHtml, /QuestPulse/);
+          assert.match(questpulseHtml, /https:\/\/tlce\.store\/questpulse\//);
+          assert.match(questpulseHtml, /\.\.\/web\/styles\.css/);
+          assert.match(questpulseHtml, /\.\.\/web\/questpulse\.js/);
+
           const assets = [
+            ["questpulse/", /text\/html/i],
+            ["web/styles.css", /text\/css/i],
+            ["web/questpulse.js", /javascript/i],
             ["styles.css", /text\/css/i],
             ["bootstrap.js", /javascript/i],
             ["runtime/engine/src/index.js", /javascript/i],

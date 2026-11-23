@@ -5,6 +5,9 @@ const status = document.querySelector("#runtime-status");
 
 if (!root || !status) throw new Error("TLCE parent shell is missing its runtime mount points");
 
+const homeMarkup = root.innerHTML;
+function restoreHome() { root.innerHTML = homeMarkup; }
+
 
 const menuButton = document.querySelector("#menu-toggle");
 const drawer = document.querySelector("#site-drawer");
@@ -67,8 +70,8 @@ const router = createTLCEApplicationRouter({
   basePath: new URL(".", import.meta.url).pathname.replace(/\/$/, ""),
   onNotFound(pathname) {
     if (pathname === "/") {
-      root.replaceChildren();
-      status.textContent = "مساحة النشر جاهزة";
+      restoreHome();
+      status.textContent = "منظومة TLCE جاهزة";
       return;
     }
     root.innerHTML = '<div class="welcome"><p class="eyebrow"><span></span> 404 · ROUTE NOT FOUND</p><h1>المسار غير موجود</h1><p>لم يتم تسجيل هذه الوحدة داخل TLCE.</p><a class="launch-link" href="./" data-route="/">العودة للرئيسية</a></div>';
