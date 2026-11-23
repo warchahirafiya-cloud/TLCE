@@ -172,3 +172,34 @@ The signed canonical string is the uppercase HTTP method, URL pathname plus quer
 `AI_PROVIDER` chooses the primary provider. `AI_FALLBACK_PROVIDERS` is a comma-separated server-side ordered fallback list; default: `workers-ai,groq,gemini`. The primary is tried first, followed by unique fallback entries. Each provider attempt is bounded to approximately 7 seconds; external fetches use abortable request timeouts. Workers AI binding calls are raced against a deadline, but the underlying model invocation may continue because the binding does not expose request cancellation. Provider credentials remain Worker secrets. If all providers fail, the browser receives one generic unavailable response.
 
 Fallback can incur usage charges with configured external providers. Keep only providers that have passed privacy, terms, budget and operational review in the fallback list.
+
+Server-side TypeScript signing example (run only in a trusted backend, never in the browser):
+
+```ts
+const encoder = new TextEncoder();
+const hex = (buffer: ArrayBuffer) =>
+  Array.from(new Uint8Array(buffer), (b) => b.toString(16).padStart(2, "0")).join("");
+const fromBase64Url = (value: string) => {
+  const normalized = value.replace(/-/g, "+").replace(/_/g, "/");
+  const binary = atob(normalized.padEnd(Math.ceil(normalized.length / 4) * 4, "="));
+  return Uint8Array.from(binary, (char) => char.charCodeAt(0));
+};
+
+async function signedHeaders(url: URL, method: string, bodyText: string, keyId: string, secretB64Url: string) {
+  const timestamp = String(Math.floor(Date.now() / 1000));
+  const nonce = crypto.randomUUID();
+  const bodyHash = hex(await crypto.subtle.digest("SHA-256", encoder.encode(bodyText)));
+  const canonical = [method.toUpperCase(), url.pathname + url.search, timestamp, nonce, bodyHash].join("\\n");
+  const key = await crypto.subtle.importKey("raw", fromBase64Url(secretB64Url), { name: "HMAC", hash: "SHA-256" }, false, ["sign"]);
+  const signature = hex(await crypto.subtle.sign("HMAC", key, encoder.encode(canonical)));
+  return {
+    "content-type": "application/json",
+    "x-tlce-key-id": keyId,
+    "x-tlce-timestamp": timestamp,
+    "x-tlce-nonce": nonce,
+    "x-tlce-signature": signature,
+  };
+}
+```
+
+Pass the exact same `bodyText` string to `fetch` as the request body; changing whitespace or JSON serialization changes the body digest and invalidates the signature. Keep the secret only in the backend secret manager.
