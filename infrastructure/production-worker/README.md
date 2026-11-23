@@ -56,7 +56,8 @@ npx wrangler secret put CF_ACCESS_AUD
 # Optional, only for the selected provider:
 npx wrangler secret put GROQ_API_KEY
 npx wrangler secret put GEMINI_API_KEY
-# Optional scheduled webhook:
+# Optional scheduled webhook (both are required to activate the cron dispatch):
+npx wrangler secret put AUTOMATION_WEBHOOK_URL
 npx wrangler secret put AUTOMATION_WEBHOOK_SECRET
 ```
 
