@@ -1,18 +1,18 @@
 import { h, render, type ComponentType } from "preact";
 
 type IslandProps = Record<string, unknown>;
-type IslandComponent = ComponentType<IslandProps>;
+type IslandComponent = ComponentType<any>;
 
 const registry = new Map<string, IslandComponent>();
 const cleanupByHost = new WeakMap<HTMLElement, () => void>();
 const stylesheetUrl = new URL("./tlce-islands.css", import.meta.url).href;
 
-export function registerIsland(name: string, component: IslandComponent): void {
+export function registerIsland<P extends object>(name: string, component: ComponentType<P>): void {
   if (!/^[a-z][a-z0-9-]{1,63}$/.test(name)) {
     throw new Error("Island names must be lowercase kebab-case identifiers");
   }
   if (registry.has(name)) throw new Error(`Island already registered: ${name}`);
-  registry.set(name, component);
+  registry.set(name, component as IslandComponent);
 }
 
 export function mountIsland(
