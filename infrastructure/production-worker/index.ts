@@ -148,6 +148,8 @@ function safeEqual(a: string, b: string): boolean {
   return diff === 0;
 }
 async function verifyApiSignature(request: Request, env: Env): Promise<string | null> {
+  const requestUrl = new URL(request.url);
+  if (!["/api/files/presign", "/api/files/complete"].includes(requestUrl.pathname)) return null;
   const keyId = request.headers.get("x-tlce-key-id");
   const timestamp = request.headers.get("x-tlce-timestamp");
   const nonce = request.headers.get("x-tlce-nonce");
@@ -167,7 +169,7 @@ async function verifyApiSignature(request: Request, env: Env): Promise<string | 
   const body = await request.clone().arrayBuffer();
   if (body.byteLength > 64 * 1024) return null;
   const bodyHash = bytesToHex(await crypto.subtle.digest("SHA-256", body));
-  const canonical = [request.method.toUpperCase(), new URL(request.url).pathname, timestamp, nonce, bodyHash].join("\n");
+  const canonical = [request.method.toUpperCase(), requestUrl.pathname + requestUrl.search, timestamp, nonce, bodyHash].join("\n");
   const cryptoKey = await crypto.subtle.importKey("raw", secret, { name: "HMAC", hash: "SHA-256" }, false, ["sign"]);
   const expected = bytesToHex(await crypto.subtle.sign("HMAC", cryptoKey, new TextEncoder().encode(canonical)));
   if (!/^[a-f0-9]{64}$/i.test(supplied) || !safeEqual(expected, supplied.toLowerCase())) return null;
@@ -523,7 +525,7 @@ export default {
         if (job.type !== "inspect-quarantine-object" || !job.objectKey || !job.ownerHash || !env.UPLOADS ||
             !job.objectKey.startsWith("quarantine/") || job.objectKey.includes("..")) { message.ack(); continue; }
         const object = await env.UPLOADS.get(job.objectKey);
-        if (!object || object.size !== job.expectedSize || object.size > MAX_UPLOAD_BYTES || (object.customMetadata?.ownerHash ?? object.customMetadata?.ownerhash) !== job.ownerHash || object.customMetadata?.status !== "quarantined") {
+        if (!object || object.size !== job.expectedSize || object.size < 1 || object.size > MAX_UPLOAD_BYTES || (object.customMetadata?.ownerHash ?? object.customMetadata?.ownerhash) !== job.ownerHash || object.customMetadata?.status !== "quarantined") {
           if (object) await env.UPLOADS.delete(job.objectKey);
           message.ack();
           continue;
