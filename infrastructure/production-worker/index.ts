@@ -151,12 +151,15 @@ async function runAi(prompt: string, env: Env): Promise<string> {
   const provider = (env.AI_PROVIDER ?? "workers-ai").toLowerCase();
   if (provider === "workers-ai") {
     if (!env.AI) throw new Error("Workers AI binding is not configured");
-    const result = await env.AI.run(env.AI_MODEL ?? "@cf/meta/llama-3.3-70b-instruct-fp8-fast", {
-      messages: [
-        { role: "system", content: "You are the TLCE assistant. Be accurate, concise, and clearly state uncertainty." },
-        { role: "user", content: prompt },
-      ],
-    }) as { response?: string };
+    const result = await Promise.race([
+      env.AI.run(env.AI_MODEL ?? "@cf/meta/llama-3.3-70b-instruct-fp8-fast", {
+        messages: [
+          { role: "system", content: "You are the TLCE assistant. Be accurate, concise, and clearly state uncertainty." },
+          { role: "user", content: prompt },
+        ],
+      }),
+      new Promise<never>((_, reject) => setTimeout(() => reject(new Error("Workers AI timeout")), 20_000)),
+    ]) as { response?: string };
     if (typeof result?.response !== "string" || !result.response) throw new Error("Workers AI returned no text");
     return result.response;
   }
@@ -282,7 +285,7 @@ async function completeUpload(body: { objectKey?: unknown }, env: Env, subject: 
 }
 
 async function uploadToQuarantine(request: Request, env: Env, subject: string): Promise<Response> {
-  if (!env.UPLOADS) return json({ error: "File storage is not configured" }, 503);
+  if (!env.UPLOADS || !env.UPLOAD_JOBS) return json({ error: "File storage or inspection queue is not configured" }, 503);
   const declaredLength = Number(request.headers.get("content-length") ?? "0");
   if (!Number.isFinite(declaredLength) || declaredLength <= 0 || declaredLength > MAX_UPLOAD_BYTES) {
     return json({ error: "File must be between 1 byte and 5 MiB" }, 413);
