@@ -178,7 +178,7 @@ async function readBodyBounded(request: Request, maxBytes: number): Promise<Uint
   return body;
 }
 
-async function verifyApiSignature(request: Request, env: Env): Promise<string | null> {
+export async function verifyApiSignature(request: Request, env: Env): Promise<string | null> {
   const requestUrl = new URL(request.url);
   if (!["/api/files/presign", "/api/files/complete"].includes(requestUrl.pathname)) return null;
   const keyId = request.headers.get("x-tlce-key-id");
