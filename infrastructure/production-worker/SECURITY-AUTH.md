@@ -10,7 +10,11 @@ The browser-facing identity provider is Cloudflare Access. The Worker validates 
 - issuer matches `CF_ACCESS_TEAM_DOMAIN`;
 - audience matches `CF_ACCESS_AUD`;
 - expiry and not-before timestamps;
-- non-empty subject claim.
+- non-empty subject claim;
+- future-issued `iat` values are rejected;
+- after signature verification, the Worker exposes only signed identity claims (`sub`, bounded `email`, and bounded `name/common_name`) to application code. The stable `sub` remains the rate-limit and ownership principal.
+
+Email and display name are identity attributes, not administrator privileges. They must not be used as an authorization decision unless an explicit server-side allowlist or role mapping is added.
 
 Protected API handlers call `requireIdentity()`. This applies to search, AI chat, presigned upload creation, upload completion and Worker-proxy upload. Every authenticated principal is also subject to the Durable Object rate limiter (20 requests per minute).
 
@@ -24,7 +28,7 @@ The existing HMAC-SHA256 implementation is intentionally separate from browser s
 - Each key must decode from base64url to at least 32 random bytes.
 - Signatures bind method, path/query, timestamp, unique nonce and SHA-256 digest of the exact request body.
 - Timestamp skew is limited to five minutes.
-- Nonces are consumed atomically through the Durable Object to prevent replay.
+- Nonces are consumed atomically through the Durable Object to prevent replay. Each nonce uses its own storage key with a 600-second storage TTL; there is no bounded 256-entry list that can evict a still-live nonce under high request volume.
 - HMAC callers are scoped to `POST /api/files/presign` and `POST /api/files/complete`; HMAC does not grant access to AI chat, search or proxy upload.
 - HMAC-authenticated requests are also rate-limited by principal.
 
