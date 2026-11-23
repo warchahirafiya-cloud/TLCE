@@ -165,7 +165,7 @@ The request must include:
 - `x-tlce-nonce` (unique random UUID)
 - `x-tlce-signature` (lowercase/uppercase hex HMAC-SHA256)
 
-The signed canonical string is the uppercase HTTP method, URL pathname, timestamp, nonce, and SHA-256 hex digest of the exact request body, joined by newline characters. HMAC uses the decoded per-key secret. Nonces are consumed atomically by the existing Durable Object and requests then pass through the same 20/minute per-principal limiter. Rotate keys by adding a new key ID, migrating callers, then removing the old ID from the secret. API keys do not replace user identity or authorization policy for browser users.
+The signed canonical string is the uppercase HTTP method, URL pathname plus query string, timestamp, nonce, and SHA-256 hex digest of the exact request body, joined by newline characters. API-key authentication is deliberately scoped to `POST /api/files/presign` and `POST /api/files/complete`; it cannot call the AI, search, or proxy-upload routes. HMAC uses the decoded per-key secret. Nonces are consumed atomically by the existing Durable Object and requests then pass through the same 20/minute per-principal limiter. Rotate keys by adding a new key ID, migrating callers, then removing the old ID from the secret. API keys do not replace user identity or authorization policy for browser users.
 
 ## AI provider fallback
 
