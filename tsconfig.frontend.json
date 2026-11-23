@@ -9,9 +9,17 @@
     "skipLibCheck": true,
     "jsx": "react-jsx",
     "jsxImportSource": "preact",
-    "lib": ["ES2022", "DOM", "DOM.Iterable"],
-    "types": ["node", "vite/client"],
-    "forceConsistentCasingInFileNames": true
+    "lib": [
+      "ES2022",
+      "DOM",
+      "DOM.Iterable"
+    ],
+    "types": [
+      "node",
+      "vite/client"
+    ],
+    "forceConsistentCasingInFileNames": true,
+    "isolatedModules": true
   },
   "include": [
     "src/**/*.ts",
