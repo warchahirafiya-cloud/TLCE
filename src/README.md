@@ -12,7 +12,7 @@ The existing page sources remain in `apps/parent/` and `apps/web/`. They are cop
 
 ## Preact island bridge
 
-The bridge is built from `src/islands/entry.tsx`. Components register by name and mount only into explicit `[data-tlce-island]` hosts. Each island gets a Shadow DOM root and a same-origin Tailwind stylesheet link. This keeps Tailwind preflight and utility styles from changing the legacy page CSS and remains compatible with the current `style-src 'self'` CSP.
+The bridge is built from `src/islands/entry.tsx`. The registered islands are `runtime-badge`, `secure-upload` and `ai-chat`; they mount only into explicit `[data-tlce-island]` hosts. For example, a future page can add `<div data-tlce-island="secure-upload"></div>` or `<div data-tlce-island="ai-chat"></div>`. Each island gets a Shadow DOM root and a same-origin Tailwind stylesheet link. This keeps Tailwind preflight and utility styles from changing the legacy page CSS and remains compatible with the current `style-src 'self'` CSP. The secure upload island only submits to the Worker quarantine route; it does not mark files as clean or expose them for download.
 
 Run `npm run dev:ui` and open `/src/islands/dev.html` for a local island preview. This command compiles the Tailwind stylesheet into an ignored development-only file before starting Vite.
 
