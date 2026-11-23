@@ -12,9 +12,9 @@ The existing page sources remain in `apps/parent/` and `apps/web/`. They are cop
 
 ## Preact island bridge
 
-The bridge is built from `src/islands/entry.tsx`. The registered islands are `runtime-badge`, `secure-upload` and `ai-chat`; they mount only into explicit `[data-tlce-island]` hosts. For example, a future page can add `<div data-tlce-island="secure-upload"></div>` or `<div data-tlce-island="ai-chat"></div>`. Each island gets a Shadow DOM root and a same-origin Tailwind stylesheet link. This keeps Tailwind preflight and utility styles from changing the legacy page CSS and remains compatible with the current `style-src 'self'` CSP. The secure upload island only submits to the Worker quarantine route; it does not mark files as clean or expose them for download.
+The bridge is built from `src/islands/entry.tsx`. The registered islands are `runtime-badge`, `secure-upload` and `ai-chat`; they mount only into explicit `[data-tlce-island]` hosts. For example, a future page can add `<div data-tlce-island="secure-upload"></div>` or `<div data-tlce-island="ai-chat"></div>`. Each island gets a Shadow DOM root and a same-origin Tailwind stylesheet link. This keeps Tailwind preflight and utility styles from changing the legacy page CSS and remains compatible with the current `style-src 'self'` CSP. The QuestPulse secure-upload island is currently a local-only visual QA surface. It validates the selected file type and size in the browser and simulates progress; it does not call the Worker, transmit file bytes, create an R2 object, or claim malware-clean status.
 
-Run `npm run dev:ui` and open `/src/islands/dev.html` for a local island preview. This command compiles the Tailwind stylesheet into an ignored development-only file before starting Vite.
+Run `npm run dev:ui`, then open `http://localhost:5173/apps/web/questpulse/`. Vite injects the island entry only for this development route; the normal static build continues to inject its hashed production asset through `scripts/assemble-pages.mjs`. The preview can be exercised without Cloudflare Access, Worker credentials, R2, or network upload endpoints. The command compiles Tailwind into an ignored development-only stylesheet before starting Vite.
 
 ## Worker API client
 
@@ -34,5 +34,5 @@ Direct-to-R2 presigned PUT is optional and uses `credentials: omit`; it requires
 - The PR validation workflow builds and uploads a seven-day preview artifact only. It does not deploy GitHub Pages.
 - The existing Pages deployment workflow now consumes `dist/pages/`, but its deploy job is restricted to `refs/heads/main`.
 - No production deployment is triggered by this feature branch or its pull request.
-- The Worker routes are wrapped in a client module but are not automatically invoked by the existing UI. No upload/chat UI or release capability is enabled.
+- The secure-upload island is a local-only visual prototype and does not invoke Worker routes. No production upload/chat release capability is enabled.
 - Quarantine status is not a malware-clean verdict. No file is presented as trusted or downloadable.
