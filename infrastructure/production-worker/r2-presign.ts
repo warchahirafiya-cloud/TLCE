@@ -2,18 +2,18 @@ const encoder = new TextEncoder();
 const AWS_REGION = "auto";
 const SERVICE = "s3";
 
-function hex(bytes: ArrayBuffer): string {
+function bufferSource(bytes: Uint8Array): ArrayBuffer {\n  return new Uint8Array(bytes).buffer as ArrayBuffer;\n}\nfunction hex(bytes: ArrayBuffer): string {
   return Array.from(new Uint8Array(bytes), (value) => value.toString(16).padStart(2, "0")).join("");
 }
 function encode(value: string): string {
   return encodeURIComponent(value).replace(/[!'()*]/g, (char) => `%${char.charCodeAt(0).toString(16).toUpperCase()}`);
 }
 function sha256(value: string): Promise<ArrayBuffer> {
-  return crypto.subtle.digest("SHA-256", encoder.encode(value));
+  return crypto.subtle.digest("SHA-256", bufferSource(encoder.encode(value)));
 }
 async function hmac(key: ArrayBuffer | Uint8Array, value: string): Promise<ArrayBuffer> {
-  const imported = await crypto.subtle.importKey("raw", key, { name: "HMAC", hash: "SHA-256" }, false, ["sign"]);
-  return crypto.subtle.sign("HMAC", imported, encoder.encode(value));
+  const imported = await crypto.subtle.importKey("raw", key instanceof Uint8Array ? bufferSource(key) : key, { name: "HMAC", hash: "SHA-256" }, false, ["sign"]);
+  return crypto.subtle.sign("HMAC", imported, bufferSource(encoder.encode(value)));
 }
 async function signingKey(secret: string, date: string): Promise<ArrayBuffer> {
   const dateKey = await hmac(encoder.encode(`AWS4${secret}`), date);
