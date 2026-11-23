@@ -298,7 +298,7 @@ async function runAi(prompt: string, env: Env): Promise<string> {
   }
   throw new Error("Unsupported AI provider");
 }
-async function runAiWithFallback(prompt: string, env: Env): Promise<{ provider: string; answer: string }> {
+export async function runAiWithFallback(prompt: string, env: Env): Promise<{ provider: string; answer: string }> {
   const configured = (env.AI_FALLBACK_PROVIDERS ?? "workers-ai,groq,gemini")
     .split(",").map((value) => value.trim().toLowerCase()).filter(Boolean);
   const primary = (env.AI_PROVIDER ?? "workers-ai").toLowerCase();
@@ -317,7 +317,7 @@ async function runAiWithFallback(prompt: string, env: Env): Promise<{ provider: 
   throw new Error("All configured AI providers failed");
 }
 
-function detectAllowedFile(bytes: Uint8Array): { mime: string; extension: string } | null {
+export function detectAllowedFile(bytes: Uint8Array): { mime: string; extension: string } | null {
   if (bytes.length >= 8 && bytes[0] === 0x89 && bytes[1] === 0x50 && bytes[2] === 0x4e && bytes[3] === 0x47 &&
       bytes[4] === 0x0d && bytes[5] === 0x0a && bytes[6] === 0x1a && bytes[7] === 0x0a) return { mime: "image/png", extension: "png" };
   if (bytes.length >= 3 && bytes[0] === 0xff && bytes[1] === 0xd8 && bytes[2] === 0xff) return { mime: "image/jpeg", extension: "jpg" };
@@ -325,13 +325,13 @@ function detectAllowedFile(bytes: Uint8Array): { mime: string; extension: string
   return null;
 }
 
-function allowedMime(value: unknown): { mime: string; extension: string } | null {
+export function allowedMime(value: unknown): { mime: string; extension: string } | null {
   if (value === "image/png") return { mime: "image/png", extension: "png" };
   if (value === "image/jpeg") return { mime: "image/jpeg", extension: "jpg" };
   if (value === "application/pdf") return { mime: "application/pdf", extension: "pdf" };
   return null;
 }
-function verifyMagic(bytes: Uint8Array, mime: string): boolean {
+export function verifyMagic(bytes: Uint8Array, mime: string): boolean {
   if (mime === "image/png") return bytes.length >= 8 && [0x89,0x50,0x4e,0x47,0x0d,0x0a,0x1a,0x0a].every((v,i)=>bytes[i]===v);
   if (mime === "image/jpeg") return bytes.length >= 3 && bytes[0]===0xff && bytes[1]===0xd8 && bytes[2]===0xff;
   if (mime === "application/pdf") return bytes.length >= 5 && bytes[0]===0x25 && bytes[1]===0x50 && bytes[2]===0x44 && bytes[3]===0x46 && bytes[4]===0x2d;
@@ -524,8 +524,8 @@ export default {
         return json({ error: "prompt must contain 1–8000 characters" }, 400, cors);
       }
       try {
-        const answer = await runAi(body.prompt.trim(), env);
-        return json({ provider: env.AI_PROVIDER ?? "workers-ai", answer }, 200, cors);
+        const result = await runAiWithFallback(body.prompt.trim(), env);
+        return json(result, 200, cors);
       } catch {
         return json({ error: "AI provider unavailable or not configured" }, 502, cors);
       }
