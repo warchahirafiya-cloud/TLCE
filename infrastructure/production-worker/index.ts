@@ -32,6 +32,9 @@ interface Env {
   AI_MODEL?: string;
   GROQ_API_KEY?: string;
   GEMINI_API_KEY?: string;
+  /** JSON map of server-to-server key IDs to base64url-encoded 32-byte HMAC secrets. Never expose to Pages. */
+  TLCE_API_KEYS_JSON?: string;
+  AI_FALLBACK_PROVIDERS?: string;
   UPLOADS?: R2BucketLike;
   AUTOMATION_WEBHOOK_URL?: string;
   AUTOMATION_WEBHOOK_SECRET?: string;
@@ -132,14 +135,63 @@ async function consumeRateLimit(env: Env, subject: string): Promise<boolean> {
   const response = await env.RATE_LIMITER.get(id).fetch(new Request("https://rate-limit.internal/consume", { method: "POST" }));
   return response.ok && (await response.json() as { allowed?: boolean }).allowed === true;
 }
-async function requireIdentity(request: Request, env: Env): Promise<{ subject: string } | { response: Response }> {
+
+const API_SIGNATURE_WINDOW_SECONDS = 300;
+const API_NONCE_WINDOW_SECONDS = 600;
+function bytesToHex(bytes: ArrayBuffer): string {
+  return Array.from(new Uint8Array(bytes), (byte) => byte.toString(16).padStart(2, "0")).join("");
+}
+function safeEqual(a: string, b: string): boolean {
+  if (a.length !== b.length) return false;
+  let diff = 0;
+  for (let i = 0; i < a.length; i += 1) diff |= a.charCodeAt(i) ^ b.charCodeAt(i);
+  return diff === 0;
+}
+async function verifyApiSignature(request: Request, env: Env): Promise<string | null> {
+  const keyId = request.headers.get("x-tlce-key-id");
+  const timestamp = request.headers.get("x-tlce-timestamp");
+  const nonce = request.headers.get("x-tlce-nonce");
+  const supplied = request.headers.get("x-tlce-signature");
+  if (!keyId || !timestamp || !nonce || !supplied || !env.TLCE_API_KEYS_JSON) return null;
+  if (!/^[a-zA-Z0-9_-]{3,64}$/.test(keyId) || !/^\\d{10}$/.test(timestamp) || !/^[a-f0-9-]{32,36}$/i.test(nonce)) return null;
+  const issuedAt = Number(timestamp);
+  const now = Math.floor(Date.now() / 1000);
+  if (!Number.isSafeInteger(issuedAt) || Math.abs(now - issuedAt) > API_SIGNATURE_WINDOW_SECONDS) return null;
+  let keyMap: Record<string, string>;
+  try { keyMap = JSON.parse(env.TLCE_API_KEYS_JSON) as Record<string, string>; } catch { return null; }
+  const encodedSecret = keyMap[keyId];
+  if (typeof encodedSecret !== "string") return null;
+  let secret: Uint8Array;
+  try { secret = decodeBase64Url(encodedSecret); } catch { return null; }
+  if (secret.byteLength < 32) return null;
+  const body = await request.clone().arrayBuffer();
+  if (body.byteLength > 64 * 1024) return null;
+  const bodyHash = bytesToHex(await crypto.subtle.digest("SHA-256", body));
+  const canonical = [request.method.toUpperCase(), new URL(request.url).pathname, timestamp, nonce, bodyHash].join("\\n");
+  const cryptoKey = await crypto.subtle.importKey("raw", secret, { name: "HMAC", hash: "SHA-256" }, false, ["sign"]);
+  const expected = bytesToHex(await crypto.subtle.sign("HMAC", cryptoKey, new TextEncoder().encode(canonical)));
+  if (!/^[a-f0-9]{64}$/i.test(supplied) || !safeEqual(expected, supplied.toLowerCase())) return null;
+  // Durable Object transaction makes nonce consumption atomic across Worker isolates.
+  const replayId = env.RATE_LIMITER.idFromName("api-key:" + keyId);
+  const replayResponse = await env.RATE_LIMITER.get(replayId).fetch(new Request("https://rate-limit.internal/nonce", {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify({ nonce, expiresAt: now + API_NONCE_WINDOW_SECONDS }),
+  }));
+  if (!replayResponse.ok || (await replayResponse.json() as { allowed?: boolean }).allowed !== true) return null;
+  return "api-key:" + keyId;
+}
+\nasync function requireIdentity(request: Request, env: Env): Promise<{ subject: string } | { response: Response }> {
   if (!env.CF_ACCESS_TEAM_DOMAIN || !env.CF_ACCESS_AUD) {
     return { response: json({ error: "Identity provider is not configured" }, 503) };
   }
   const assertion = request.headers.get("cf-access-jwt-assertion");
-  if (!assertion) return { response: json({ error: "Authentication required" }, 401) };
-  const subject = await verifyAccessJwt(assertion, env);
-  if (!subject) return { response: json({ error: "Invalid identity assertion" }, 401) };
+  let subject: string | null = null;
+  if (assertion) subject = await verifyAccessJwt(assertion, env);
+  else {
+    try { subject = await verifyApiSignature(request, env); } catch { subject = null; }
+  }
+  if (!subject) return { response: json({ error: "Authentication required" }, 401) };
   try {
     if (!await consumeRateLimit(env, subject)) return { response: json({ error: "Rate limit exceeded" }, 429) };
   } catch {
@@ -158,7 +210,7 @@ async function runAi(prompt: string, env: Env): Promise<string> {
           { role: "user", content: prompt },
         ],
       }),
-      new Promise<never>((_, reject) => setTimeout(() => reject(new Error("Workers AI timeout")), 20_000)),
+      new Promise<never>((_, reject) => setTimeout(() => reject(new Error("Workers AI timeout")), 7_000)),
     ]) as { response?: string };
     if (typeof result?.response !== "string" || !result.response) throw new Error("Workers AI returned no text");
     return result.response;
@@ -176,7 +228,7 @@ async function runAi(prompt: string, env: Env): Promise<string> {
         ],
         temperature: 0.2,
       }),
-      signal: AbortSignal.timeout(20_000),
+      signal: AbortSignal.timeout(7_000),
     });
     if (!response.ok) throw new Error("Groq request failed");
     const data = await response.json() as { choices?: Array<{ message?: { content?: string } }> };
@@ -204,6 +256,25 @@ async function runAi(prompt: string, env: Env): Promise<string> {
   }
   throw new Error("Unsupported AI provider");
 }
+async function runAiWithFallback(prompt: string, env: Env): Promise<{ provider: string; answer: string }> {
+  const configured = (env.AI_FALLBACK_PROVIDERS ?? "workers-ai,groq,gemini")
+    .split(",").map((value) => value.trim().toLowerCase()).filter(Boolean);
+  const primary = (env.AI_PROVIDER ?? "workers-ai").toLowerCase();
+  const order = [primary, ...configured.filter((provider) => provider !== primary)];
+  const attempted = new Set<string>();
+  for (const provider of order) {
+    if (attempted.has(provider)) continue;
+    attempted.add(provider);
+    try {
+      const answer = await runAi(prompt, { ...env, AI_PROVIDER: provider });
+      return { provider, answer };
+    } catch {
+      // Provider details are intentionally not returned to the browser.
+    }
+  }
+  throw new Error("All configured AI providers failed");
+}
+
 function detectAllowedFile(bytes: Uint8Array): { mime: string; extension: string } | null {
   if (bytes.length >= 8 && bytes[0] === 0x89 && bytes[1] === 0x50 && bytes[2] === 0x4e && bytes[3] === 0x47 &&
       bytes[4] === 0x0d && bytes[5] === 0x0a && bytes[6] === 0x1a && bytes[7] === 0x0a) return { mime: "image/png", extension: "png" };
@@ -340,6 +411,23 @@ export class RateLimiter {
   async fetch(request: Request): Promise<Response> {
     if (request.method !== "POST") return json({ error: "Method not allowed" }, 405);
     const now = Date.now();
+    if (new URL(request.url).pathname === "/nonce") {
+      let body: { nonce?: unknown; expiresAt?: unknown };
+      try { body = await request.json() as typeof body; } catch { return json({ allowed: false }, 400); }
+      if (typeof body.nonce !== "string" || typeof body.expiresAt !== "number" || body.expiresAt <= now / 1000) return json({ allowed: false }, 400);
+      const allowed = await this.state.storage.transaction(async (txn) => {
+        const current = await txn.get<Array<{ nonce: string; expiresAt: number }>>("nonces") ?? [];
+        const live = current.filter((item) => item.expiresAt > now / 1000);
+        if (live.some((item) => item.nonce === body.nonce)) {
+          await txn.put("nonces", live);
+          return false;
+        }
+        live.push({ nonce: body.nonce, expiresAt: Math.min(body.expiresAt as number, now / 1000 + API_NONCE_WINDOW_SECONDS) });
+        await txn.put("nonces", live.slice(-256));
+        return true;
+      });
+      return json({ allowed }, allowed ? 200 : 409);
+    }
     const allowed = await this.state.storage.transaction(async (txn) => {
       const current = await txn.get<RateWindow>("window");
       const window = !current || now - current.startedAt >= WINDOW_MS ? { startedAt: now, count: 0 } : current;
@@ -439,12 +527,16 @@ export default {
           continue;
         }
         const bytes = new Uint8Array(await object.arrayBuffer());
-        if (bytes.byteLength !== object.size || !verifyMagic(bytes, job.contentType ?? "")) {
+        const storedMime = object.customMetadata?.detectedType ?? job.contentType ?? "";
+        if (bytes.byteLength !== object.size || !verifyMagic(bytes, storedMime) ||
+            (job.contentType && job.contentType !== storedMime)) {
           await env.UPLOADS.delete(job.objectKey);
+          console.info(JSON.stringify({ event: "quarantine_validation_rejected", reason: "signature_or_metadata_mismatch" }));
           message.ack();
           continue;
         }
-        // Valid signatures are not an antivirus verdict. Keep the object private in quarantine.
+        // Structural validation is not malware scanning. Never promote based on magic bytes alone.
+        console.info(JSON.stringify({ event: "quarantine_validation_structural_pass", outcome: "pending_trusted_scanner" }));
         message.ack();
       } catch { message.retry({ delaySeconds: 60 }); }
     }
