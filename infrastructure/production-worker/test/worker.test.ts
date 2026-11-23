@@ -162,7 +162,7 @@ test("HMAC API signature is scoped, body-bound and replay protected", async () =
   const bodyText = JSON.stringify({ contentType: "image/png", size: 8 });
   const bodyHashBuffer = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(bodyText).buffer as ArrayBuffer);
   const bodyHash = Array.from(new Uint8Array(bodyHashBuffer), (byte) => byte.toString(16).padStart(2, "0")).join("");
-  const canonical = ["POST", url.pathname + url.search, timestamp, nonce, bodyHash].join("\\n");
+  const canonical = ["POST", url.pathname + url.search, timestamp, nonce, bodyHash].join("\n");
   const key = await crypto.subtle.importKey("raw", new Uint8Array(secretBytes).buffer as ArrayBuffer, { name: "HMAC", hash: "SHA-256" }, false, ["sign"]);
   const signatureBuffer = await crypto.subtle.sign("HMAC", key, new TextEncoder().encode(canonical).buffer as ArrayBuffer);
   const signature = Array.from(new Uint8Array(signatureBuffer), (byte) => byte.toString(16).padStart(2, "0")).join("");
