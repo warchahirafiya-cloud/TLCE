@@ -141,6 +141,9 @@ const API_NONCE_WINDOW_SECONDS = 600;
 function bytesToHex(bytes: ArrayBuffer): string {
   return Array.from(new Uint8Array(bytes), (byte) => byte.toString(16).padStart(2, "0")).join("");
 }
+function toArrayBuffer(bytes: Uint8Array): ArrayBuffer {
+  return new Uint8Array(bytes).buffer as ArrayBuffer;
+}
 function safeEqual(a: string, b: string): boolean {
   if (a.length !== b.length) return false;
   let diff = 0;
@@ -196,10 +199,10 @@ async function verifyApiSignature(request: Request, env: Env): Promise<string | 
   if (secret.byteLength < 32) return null;
   const body = await readBodyBounded(request, 64 * 1024);
   if (!body) return null;
-  const bodyHash = bytesToHex(await crypto.subtle.digest("SHA-256", body));
+  const bodyHash = bytesToHex(await crypto.subtle.digest("SHA-256", toArrayBuffer(body)));
   const canonical = [request.method.toUpperCase(), requestUrl.pathname + requestUrl.search, timestamp, nonce, bodyHash].join("\n");
-  const cryptoKey = await crypto.subtle.importKey("raw", secret, { name: "HMAC", hash: "SHA-256" }, false, ["sign"]);
-  const expected = bytesToHex(await crypto.subtle.sign("HMAC", cryptoKey, new TextEncoder().encode(canonical)));
+  const cryptoKey = await crypto.subtle.importKey("raw", toArrayBuffer(secret), { name: "HMAC", hash: "SHA-256" }, false, ["sign"]);
+  const expected = bytesToHex(await crypto.subtle.sign("HMAC", cryptoKey, toArrayBuffer(new TextEncoder().encode(canonical))));
   if (!/^[a-f0-9]{64}$/i.test(supplied) || !safeEqual(expected, supplied.toLowerCase())) return null;
   // Durable Object transaction makes nonce consumption atomic across Worker isolates.
   const replayId = env.RATE_LIMITER.idFromName("api-key:" + keyId);
@@ -457,14 +460,16 @@ export class RateLimiter {
       let body: { nonce?: unknown; expiresAt?: unknown };
       try { body = await request.json() as typeof body; } catch { return json({ allowed: false }, 400); }
       if (typeof body.nonce !== "string" || typeof body.expiresAt !== "number" || body.expiresAt <= now / 1000) return json({ allowed: false }, 400);
+      const nonce = body.nonce;
+      const expiresAt = body.expiresAt;
       const allowed = await this.state.storage.transaction(async (txn) => {
         const current = await txn.get<Array<{ nonce: string; expiresAt: number }>>("nonces") ?? [];
         const live = current.filter((item) => item.expiresAt > now / 1000);
-        if (live.some((item) => item.nonce === body.nonce)) {
+        if (live.some((item) => item.nonce === nonce)) {
           await txn.put("nonces", live);
           return false;
         }
-        live.push({ nonce: body.nonce, expiresAt: Math.min(body.expiresAt as number, now / 1000 + API_NONCE_WINDOW_SECONDS) });
+        live.push({ nonce, expiresAt: Math.min(expiresAt, now / 1000 + API_NONCE_WINDOW_SECONDS) });
         await txn.put("nonces", live.slice(-256));
         return true;
       });
