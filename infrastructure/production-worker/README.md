@@ -1,52 +1,80 @@
-# TLCE Production Integration Worker
+# TLCE Serverless Integration Worker
 
-This is the first deployable server-side runtime for TLCE. It exposes:
-- `GET /health`: non-sensitive liveness status.
-- `GET /api/search?q=...`: authenticated hybrid search using DuckDuckGo/Wikipedia and optional Brave.
+Cloudflare-first runtime for the TLCE public site. The static GitHub Pages frontend never receives provider credentials.
 
-## Security
-- Search requests require a valid Cloudflare Access JWT in `Cf-Access-Jwt-Assertion`.
-- JWT signature, issuer, audience, expiry and subject are validated using the Cloudflare Access JWKS.
-- Per-subject rate limiting is enforced by a SQLite-backed Durable Object (20 requests/minute).
-- Browser CORS is restricted to `https://tlce.store`.
-- Provider keys are server-side Worker secrets only.
-- Health output deliberately reveals no configuration or credential state.
-- If Access identity or rate limiting is not configured, search fails closed.
+## Routes
 
-## Zero-cost-first deployment
+- `GET /health` — non-sensitive liveness.
+- `GET /api/search?q=...` — Cloudflare Access authenticated search.
+- `POST /api/ai/chat` — Cloudflare Access authenticated LLM proxy.
+- `POST /api/files/upload` — authenticated upload to private R2 quarantine. Returns `202`; this is **not** a malware-clean verdict.
+- Cron: every six hours, optionally dispatches a configured automation webhook.
 
-The intended starting point is the Cloudflare Workers Free plan. Cloudflare currently includes SQLite-backed Durable Objects on Free, subject to daily request, CPU and storage quotas. Exceeding free quotas causes requests/operations to be rejected rather than requiring an automatic upgrade. Do not enable Workers Paid or add paid products without separate approval.
+All protected routes use the existing Cloudflare Access JWT verification and Durable Object rate limiter (20 requests/minute/subject). CORS remains restricted to `https://tlce.store`.
 
-### Stage 1 — Deploy a safe Worker
+## AI providers
 
-1. Create/sign in to a Cloudflare account and keep Workers on the Free plan.
-2. Create a Cloudflare API token scoped to the account with permission to deploy Workers scripts and Durable Object bindings.
-3. Add GitHub repository Actions secrets:
-   - `CLOUDFLARE_API_TOKEN`
-   - `CLOUDFLARE_ACCOUNT_ID`
-4. Run the `Deploy TLCE Integration Worker` workflow manually.
-5. The Worker is created on its `workers.dev` hostname. The public `/health` endpoint works; protected search deliberately returns 503 until Access is configured.
+Default: Cloudflare Workers AI through the `AI` binding. The Free plan currently includes a daily free Neurons allocation; requests fail when quota is exhausted. See Cloudflare's current pricing before enabling paid usage.
 
-### Stage 2 — Enable identity protection
+Optional providers (choose one by setting `AI_PROVIDER`):
+- `workers-ai` — default, no provider API key.
+- `groq` — set `GROQ_API_KEY` as a Worker secret.
+- `gemini` — set `GEMINI_API_KEY` as a Worker secret.
 
-1. In Cloudflare Dashboard, open Workers & Pages and select `tlce-integration-api`.
-2. Open Settings > Domains & Routes (or the Access tab) and enable Cloudflare Access for the Worker's production `workers.dev` URL. Choose an Allow policy limited to the user's intended email identity.
-3. Open the Worker's Access application and copy its audience tag. Find the account's Access team domain (for example, `your-team.cloudflareaccess.com`).
-4. Add GitHub Actions repository secrets:
-   - `CF_ACCESS_TEAM_DOMAIN`: tenant hostname only, without `https://`.
-   - `CF_ACCESS_AUD`: the Worker's Access application audience tag.
-5. Rerun `Deploy TLCE Integration Worker`. The workflow stores these as Worker secrets and redeploys.
+Do not send sensitive or confidential prompts to third-party providers unless the data-processing implications have been reviewed. Provider selection is an operator setting, not a browser-controlled parameter. No automatic cross-provider fallback is performed.
 
-### Optional search provider
+## R2 upload quarantine — important limitation
 
-Only if separately approved, add `BRAVE_SEARCH_API_KEY` as a GitHub Actions repository secret. DuckDuckGo and Wikipedia adapters require no provider key. Do not add any key to frontend code or the repository.
+Create a **private** R2 bucket named `tlce-private-uploads` and bind it as `UPLOADS`. Do not enable public bucket access or expose an R2.dev domain.
 
-## Domain and frontend
+The endpoint:
+1. Requires a valid Cloudflare Access JWT.
+2. Enforces a 5 MiB maximum and accepts only PNG/JPEG/PDF signatures.
+3. Generates a random object key and stores the object under `quarantine/`.
+4. Sets `application/octet-stream` and metadata `status=quarantined`, owner hash and SHA-256.
 
-The first deployment uses the `workers.dev` hostname and does not require changing Namecheap DNS or nameservers. Cloudflare recommends a custom domain or route for business-critical production; attaching `api.tlce.store` later requires an active Cloudflare zone and a separate DNS decision. Do not change existing DNS as part of this setup.
+There is deliberately no download/release endpoint. MIME/signature checks are **not antivirus scanning**. A file remains untrusted and unavailable until a real AV scanner has inspected it and a separately authorized release workflow is implemented.
 
-Do not connect the frontend until the deployed Worker URL and Cloudflare Access browser authentication/CORS behavior are verified. The current site is static GitHub Pages and cannot safely store provider secrets.
+Practical options:
+- For a production-grade edge upload inspection feature, Cloudflare WAF Malicious Uploads Detection is an Enterprise paid add-on.
+- For a low-cost design, keep R2 private and quarantine-only until a trusted external scanning service is selected and its privacy/retention/API terms are approved. Do not upload private user files to public malware-analysis services by default.
+- R2 Event Notifications can later route object-create events to a Cloudflare Queue consumer for asynchronous scanning. The scanner still needs to be an actual AV service; the queue itself does not scan.
 
-## Deliberate scope boundary
+## Automation without n8n
 
-LLM7 is not enabled by this Worker yet. Its provider endpoint, model identifier, account credentials, supported authentication contract and billing status must be verified before a production proxy is exposed. This avoids sending user prompts to an unverified endpoint or incurring unapproved charges.
+Use the Worker's Cron Trigger for simple periodic tasks and authenticated HTTP routes for event/webhook triggers. The included six-hour cron is inert unless both `AUTOMATION_WEBHOOK_URL` and `AUTOMATION_WEBHOOK_SECRET` are configured as Worker environment values/secrets. It sends only the cron name and scheduled timestamp.
+
+For multi-step retries, branching, human approvals, or complex visual workflows, n8n Cloud or a separately hosted n8n instance remains an optional later integration. Do not run n8n inside this Worker.
+
+## Configure secrets
+
+Set these through Wrangler secrets or the Cloudflare dashboard; never commit them:
+
+```sh
+npx wrangler secret put CF_ACCESS_TEAM_DOMAIN
+npx wrangler secret put CF_ACCESS_AUD
+# Optional, only for the selected provider:
+npx wrangler secret put GROQ_API_KEY
+npx wrangler secret put GEMINI_API_KEY
+# Optional scheduled webhook:
+npx wrangler secret put AUTOMATION_WEBHOOK_SECRET
+```
+
+The existing GitHub Actions deployment workflow may also provision the Access secrets. Do not create duplicate secret sources without checking the workflow first.
+
+## Local validation and deployment
+
+```sh
+npx wrangler dev
+npx wrangler deploy
+```
+
+Before deployment:
+1. Create the private R2 bucket `tlce-private-uploads`.
+2. Confirm the Worker AI binding is enabled for the account.
+3. Configure Cloudflare Access on the Worker hostname and verify the browser authentication flow.
+4. Add only the secret for the chosen AI provider.
+5. Test invalid JWT, rate limit, oversized upload, disallowed file type, and provider failure.
+6. Verify R2 objects are not publicly accessible.
+
+Deployment is not performed by this change. Keep the Worker on the Free plan; do not enable paid products without separate approval.
