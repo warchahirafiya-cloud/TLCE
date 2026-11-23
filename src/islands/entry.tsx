@@ -1,7 +1,11 @@
 import { registerIsland, mountIsland, mountRegisteredIslands, unmountIsland } from "./registry";
 import { RuntimeBadge } from "./components/RuntimeBadge";
+import { SecureUploadIsland } from "./components/SecureUploadIsland";
+import { AIChatIsland } from "./components/AIChatIsland";
 
 registerIsland("runtime-badge", RuntimeBadge);
+registerIsland("secure-upload", SecureUploadIsland);
+registerIsland("ai-chat", AIChatIsland);
 
 const bridge = Object.freeze({
   mount: mountIsland,
