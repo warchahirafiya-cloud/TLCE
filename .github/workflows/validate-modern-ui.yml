@@ -1,6 +1,19 @@
 name: Validate Vite and Tailwind static UI
 
 on:
+  push:
+    branches: [feat/modern-ui-vite-tailwind4]
+    paths:
+      - "apps/web/**"
+      - "apps/parent/**"
+      - "runtime/engine/src/**"
+      - "package.json"
+      - "vite.config.ts"
+      - "tsconfig.frontend.json"
+      - "src/**"
+      - "scripts/assemble-pages.mjs"
+      - "scripts/test/**"
+      - ".github/workflows/validate-modern-ui.yml"
   pull_request:
     branches: [fix/parent-home-questpulse-routing, main]
     paths:
