@@ -298,16 +298,30 @@ async function uploadToQuarantine(request: Request, env: Env, subject: string): 
   const key = `quarantine/${id}.${detected.extension}`;
   const digest = await crypto.subtle.digest("SHA-256", bytes);
   const sha256 = Array.from(new Uint8Array(digest), (byte) => byte.toString(16).padStart(2, "0")).join("");
+  const ownerHash = await hashSubject(subject);
   const stored = await env.UPLOADS.put(key, bytes.buffer as ArrayBuffer, {
     httpMetadata: { contentType: "application/octet-stream" },
     customMetadata: {
       status: "quarantined",
       uploadedAt: new Date().toISOString(),
-      ownerHash: await hashSubject(subject),
+      ownerHash,
       sha256,
       detectedType: detected.mime,
     },
   });
+  try {
+    await env.UPLOAD_JOBS.send({
+      type: "inspect-quarantine-object",
+      objectKey: key,
+      ownerHash,
+      contentType: detected.mime,
+      expectedSize: bytes.byteLength,
+      queuedAt: new Date().toISOString(),
+    });
+  } catch {
+    await env.UPLOADS.delete(key);
+    return json({ error: "Could not enqueue file inspection; upload was discarded" }, 503);
+  }
   return json({
     uploadId: id,
     status: "quarantined",
@@ -419,7 +433,7 @@ export default {
         const job = message.body;
         if (job.type !== "inspect-quarantine-object" || !job.objectKey || !job.ownerHash || !env.UPLOADS) { message.ack(); continue; }
         const object = await env.UPLOADS.get(job.objectKey);
-        if (!object || object.size !== job.expectedSize || object.size > MAX_UPLOAD_BYTES || object.customMetadata?.ownerHash !== job.ownerHash || object.customMetadata?.status !== "quarantined") {
+        if (!object || object.size !== job.expectedSize || object.size > MAX_UPLOAD_BYTES || (object.customMetadata?.ownerHash ?? object.customMetadata?.ownerhash) !== job.ownerHash || object.customMetadata?.status !== "quarantined") {
           if (object) await env.UPLOADS.delete(job.objectKey);
           message.ack();
           continue;
