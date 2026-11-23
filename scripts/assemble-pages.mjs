@@ -64,7 +64,7 @@ async function injectIslandBridge(directory) {
     }
     if (!item.isFile() || !item.name.endsWith(".html")) continue;
 
-    const relativeAsset = path.relative(path.dirname(fullPath), path.join(outputRoot, "_ui", islandAsset))
+    const relativeAsset = path.relative(path.dirname(fullPath), path.join(outputRoot, "ui", islandAsset))
       .split(path.sep).join("/");
     const scriptPath = relativeAsset.startsWith(".") ? relativeAsset : `./${relativeAsset}`;
     let html = await readFile(fullPath, "utf8");
