@@ -18,7 +18,7 @@ Default: Cloudflare Workers AI through the `AI` binding. The Free plan currently
 
 Optional providers (choose one by setting `AI_PROVIDER`):
 - `workers-ai` — default, no provider API key.
-- `groq` — set `GROQ_API_KEY` as a Worker secret.
+- `groq` — uses `openai/gpt-oss-120b`; set `GROQ_API_KEY` as a Worker secret.
 - `gemini` — set `GEMINI_API_KEY` as a Worker secret.
 
 Do not send sensitive or confidential prompts to third-party providers unless the data-processing implications have been reviewed. Provider selection is an operator setting, not a browser-controlled parameter. No automatic cross-provider fallback is performed.
