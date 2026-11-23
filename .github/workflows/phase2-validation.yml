@@ -1,0 +1,63 @@
+name: TLCE Phase 2 Validation
+
+on:
+  push:
+    branches:
+      - feat/tlce-lazy-islands-phase2
+  pull_request:
+    branches:
+      - feat/questpulse-secure-upload-local-preview
+      - feat/tlce-lazy-islands-phase2
+
+permissions:
+  contents: read
+
+concurrency:
+  group: tlce-phase2-validation-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  validate:
+    name: Node 22 / npm validation
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Generate npm lockfile from package.json
+        run: npm install --package-lock-only --ignore-scripts
+
+      - name: Install exact locked dependencies
+        run: npm ci
+
+      - name: QuestPulse tests
+        run: npm run test:questpulse
+
+      - name: Frontend TypeScript check
+        run: npm run typecheck:frontend
+
+      - name: Static UI tests
+        run: npm run test:static-ui
+
+      - name: Build islands
+        run: npm run build:islands
+
+      - name: Build static site
+        run: npm run build:static
+
+      - name: Upload npm-generated lockfile and build evidence
+        if: always() && hashFiles('package-lock.json') != ''
+        uses: actions/upload-artifact@v4
+        with:
+          name: tlce-phase2-npm-validation-${{ github.run_id }}
+          path: |
+            package-lock.json
+            dist/
+          if-no-files-found: warn
+          retention-days: 7
