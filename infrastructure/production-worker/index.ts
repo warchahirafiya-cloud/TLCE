@@ -137,7 +137,7 @@ async function runAi(prompt: string, env: Env): Promise<string> {
   const provider = (env.AI_PROVIDER ?? "workers-ai").toLowerCase();
   if (provider === "workers-ai") {
     if (!env.AI) throw new Error("Workers AI binding is not configured");
-    const result = await env.AI.run(env.AI_MODEL ?? "@cf/meta/llama-3.1-8b-instruct", {
+    const result = await env.AI.run(env.AI_MODEL ?? "@cf/meta/llama-3.3-70b-instruct-fp8-fast", {
       messages: [
         { role: "system", content: "You are the TLCE assistant. Be accurate, concise, and clearly state uncertainty." },
         { role: "user", content: prompt },
@@ -152,7 +152,7 @@ async function runAi(prompt: string, env: Env): Promise<string> {
       method: "POST",
       headers: { authorization: `Bearer ${env.GROQ_API_KEY}`, "content-type": "application/json" },
       body: JSON.stringify({
-        model: "llama-3.3-70b-versatile",
+        model: "openai/gpt-oss-120b",
         messages: [
           { role: "system", content: "You are the TLCE assistant. Be accurate, concise, and clearly state uncertainty." },
           { role: "user", content: prompt },
