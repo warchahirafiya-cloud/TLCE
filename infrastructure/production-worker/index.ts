@@ -54,7 +54,8 @@ const WINDOW_MS = 60_000;
 const MAX_REQUESTS = 20;
 const MAX_QUERY_LENGTH = 240;
 const MAX_PROMPT_LENGTH = 8_000;
-const MAX_UPLOAD_BYTES = 5 * 1024 * 1024;\nconst QUARANTINE_RETENTION_MS = 7 * 24 * 60 * 60 * 1000;
+const MAX_UPLOAD_BYTES = 5 * 1024 * 1024;
+const QUARANTINE_RETENTION_MS = 7 * 24 * 60 * 60 * 1000;
 let cachedJwks: { expiresAt: number; keys: AccessJwk[] } | undefined;
 
 function json(body: unknown, status = 200, extra: Record<string, string> = {}): Response {
@@ -279,7 +280,8 @@ async function completeUpload(body: { objectKey?: unknown }, env: Env, subject: 
   });
   return json({ status: "quarantined", scanStatus: "pending_validation", objectKey: body.objectKey }, 202);
 }
-\nasync function uploadToQuarantine(request: Request, env: Env, subject: string): Promise<Response> {
+
+async function uploadToQuarantine(request: Request, env: Env, subject: string): Promise<Response> {
   if (!env.UPLOADS) return json({ error: "File storage is not configured" }, 503);
   const declaredLength = Number(request.headers.get("content-length") ?? "0");
   if (!Number.isFinite(declaredLength) || declaredLength <= 0 || declaredLength > MAX_UPLOAD_BYTES) {
@@ -382,7 +384,23 @@ export default {
       }
     }
 
-    if (url.pathname === "/api/files/presign" && request.method === "POST") {\n      const identity = await requireIdentity(request, env);\n      if ("response" in identity) return jsonFromResponse(identity.response, cors);\n      let body: { contentType?: unknown; size?: unknown };\n      try { body = await request.json() as typeof body; } catch { return json({ error: "Invalid JSON body" }, 400, cors); }\n      try { return withCors(await createUploadUrl(body, env, identity.subject), cors); } catch { return json({ error: "Could not create upload URL" }, 502, cors); }\n    }\n\n    if (url.pathname === "/api/files/complete" && request.method === "POST") {\n      const identity = await requireIdentity(request, env);\n      if ("response" in identity) return jsonFromResponse(identity.response, cors);\n      let body: { objectKey?: unknown };\n      try { body = await request.json() as typeof body; } catch { return json({ error: "Invalid JSON body" }, 400, cors); }\n      try { return withCors(await completeUpload(body, env, identity.subject), cors); } catch { return json({ error: "Upload completion failed" }, 502, cors); }\n    }\n\n    if (url.pathname === "/api/files/upload" && request.method === "POST") {
+    if (url.pathname === "/api/files/presign" && request.method === "POST") {
+      const identity = await requireIdentity(request, env);
+      if ("response" in identity) return jsonFromResponse(identity.response, cors);
+      let body: { contentType?: unknown; size?: unknown };
+      try { body = await request.json() as typeof body; } catch { return json({ error: "Invalid JSON body" }, 400, cors); }
+      try { return withCors(await createUploadUrl(body, env, identity.subject), cors); } catch { return json({ error: "Could not create upload URL" }, 502, cors); }
+    }
+
+    if (url.pathname === "/api/files/complete" && request.method === "POST") {
+      const identity = await requireIdentity(request, env);
+      if ("response" in identity) return jsonFromResponse(identity.response, cors);
+      let body: { objectKey?: unknown };
+      try { body = await request.json() as typeof body; } catch { return json({ error: "Invalid JSON body" }, 400, cors); }
+      try { return withCors(await completeUpload(body, env, identity.subject), cors); } catch { return json({ error: "Upload completion failed" }, 502, cors); }
+    }
+
+    if (url.pathname === "/api/files/upload" && request.method === "POST") {
       const identity = await requireIdentity(request, env);
       if ("response" in identity) return jsonFromResponse(identity.response, cors);
       try { return await uploadToQuarantine(request, env, identity.subject).then((response) => withCors(response, cors)); }
@@ -392,16 +410,51 @@ export default {
     return json({ error: "Not found" }, 404, cors);
   },
 
+  async queue(batch: QueueBatchLike<{ type?: string; objectKey?: string; ownerHash?: string; contentType?: string; expectedSize?: number }>, env: Env): Promise<void> {
+    for (const message of batch.messages) {
+      try {
+        const job = message.body;
+        if (job.type !== "inspect-quarantine-object" || !job.objectKey || !job.ownerHash || !env.UPLOADS) { message.ack(); continue; }
+        const object = await env.UPLOADS.get(job.objectKey);
+        if (!object || object.size !== job.expectedSize || object.size > MAX_UPLOAD_BYTES) {
+          if (object) await env.UPLOADS.delete(job.objectKey);
+          message.ack();
+          continue;
+        }
+        const bytes = new Uint8Array(await object.arrayBuffer());
+        if (bytes.byteLength !== object.size || !verifyMagic(bytes, job.contentType ?? "")) {
+          await env.UPLOADS.delete(job.objectKey);
+          message.ack();
+          continue;
+        }
+        // Valid signatures are not an antivirus verdict. Keep the object private in quarantine.
+        message.ack();
+      } catch { message.retry({ delaySeconds: 60 }); }
+    }
+  },
+
   async scheduled(controller: { cron: string; scheduledTime: number }, env: Env, ctx: { waitUntil(promise: Promise<unknown>): void }): Promise<void> {
-    if (!env.AUTOMATION_WEBHOOK_URL || !env.AUTOMATION_WEBHOOK_SECRET) return;
-    ctx.waitUntil(fetch(env.AUTOMATION_WEBHOOK_URL, {
-      method: "POST",
-      headers: { authorization: `Bearer ${env.AUTOMATION_WEBHOOK_SECRET}`, "content-type": "application/json" },
-      body: JSON.stringify({ source: "tlce-cron", cron: controller.cron, scheduledTime: controller.scheduledTime }),
-      signal: AbortSignal.timeout(10_000),
-    }).then((response) => {
-      if (!response.ok) throw new Error("Automation webhook failed");
-    }));
+    if (env.UPLOADS && controller.cron === "0 */6 * * *") {
+      ctx.waitUntil((async () => {
+        const cutoff = Date.now() - QUARANTINE_RETENTION_MS;
+        let cursor: string | undefined;
+        do {
+          const page = await env.UPLOADS!.list({ prefix: "quarantine/", limit: 1000, cursor });
+          await Promise.all(page.objects.filter((item) => item.uploaded.getTime() < cutoff).map((item) => env.UPLOADS!.delete(item.key)));
+          cursor = page.truncated ? page.cursor : undefined;
+        } while (cursor);
+      })());
+    }
+    if (env.AUTOMATION_WEBHOOK_URL && env.AUTOMATION_WEBHOOK_SECRET) {
+      ctx.waitUntil(fetch(env.AUTOMATION_WEBHOOK_URL, {
+        method: "POST",
+        headers: { authorization: `Bearer ${env.AUTOMATION_WEBHOOK_SECRET}`, "content-type": "application/json" },
+        body: JSON.stringify({ source: "tlce-cron", cron: controller.cron, scheduledTime: controller.scheduledTime }),
+        signal: AbortSignal.timeout(10_000),
+      }).then((response) => {
+        if (!response.ok) throw new Error("Automation webhook failed");
+      }));
+    }
   },
 };
 function jsonFromResponse(response: Response, extra: Record<string, string>): Response {
