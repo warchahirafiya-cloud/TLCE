@@ -56,6 +56,8 @@ Set these through Wrangler secrets or the Cloudflare dashboard; never commit the
 ```sh
 npx wrangler secret put CF_ACCESS_TEAM_DOMAIN
 npx wrangler secret put CF_ACCESS_AUD
+# Optional server-to-server HMAC key map; JSON value, never commit it:
+npx wrangler secret put TLCE_API_KEYS_JSON
 # Optional, only for the selected provider:
 npx wrangler secret put GROQ_API_KEY
 npx wrangler secret put GEMINI_API_KEY
