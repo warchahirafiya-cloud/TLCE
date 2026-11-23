@@ -28,7 +28,7 @@ The existing HMAC-SHA256 implementation is intentionally separate from browser s
 - Each key must decode from base64url to at least 32 random bytes.
 - Signatures bind method, path/query, timestamp, unique nonce and SHA-256 digest of the exact request body.
 - Timestamp skew is limited to five minutes.
-- Nonces are consumed atomically through the dedicated `NonceTracker` Durable Object namespace. Each nonce uses its own storage key and a TTL bounded by the request's accepted replay window; there is no bounded list that can evict a still-live nonce under high request volume. `RateLimiter` is a separate Durable Object used only for per-principal request counters.
+- Nonces are consumed atomically through the dedicated `NonceTracker` Durable Object namespace. Each nonce uses its own storage key and an explicit `expiresAt` record; Cloudflare Durable Object storage does not expose a KV-style `expirationTtl` option. A Durable Object alarm removes expired nonce records, while the transaction rejects any still-live replay. `RateLimiter` is a separate Durable Object used only for per-principal request counters.
 - HMAC callers are scoped to `POST /api/files/presign` and `POST /api/files/complete`; HMAC does not grant access to AI chat, search or proxy upload.
 - HMAC-authenticated requests are also rate-limited by principal.
 
@@ -62,3 +62,8 @@ No role identities were invented for this project. An application-level RBAC lay
 The Queue consumer validates the object key namespace, expected size, owner metadata, quarantine status, and file magic bytes for PNG, JPEG, and PDF. It deletes objects that fail these checks and acknowledges structurally valid objects while leaving them quarantined.
 
 **This is structural validation, not antivirus/malware scanning.** A structurally valid file is not promoted or made downloadable. A trusted malware scanner integration and an explicit release workflow are still required before any object can leave quarantine. The current Queue consumer intentionally does not claim that a file is malware-free.
+
+
+## Cloudflare runtime typing
+
+The Worker uses the official `@cloudflare/workers-types` declarations for `DurableObjectState`, `DurableObjectStorage`, `DurableObjectNamespace`, `R2Bucket`, `Queue`, `MessageBatch`, and `Ai`. Handwritten lookalike interfaces for these platform APIs are intentionally avoided so TypeScript checks calls against Cloudflare's published runtime contracts. In particular, Durable Object storage expiry is represented in application data and cleaned by an alarm; it is not passed as an unsupported `expirationTtl` option.
