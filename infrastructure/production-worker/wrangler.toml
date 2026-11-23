@@ -6,11 +6,42 @@ preview_urls = false
 
 [vars]
 TLCE_ORIGIN = "https://tlce.store"
+AI_PROVIDER = "workers-ai"
+AI_MODEL = "@cf/meta/llama-3.3-70b-instruct-fp8-fast"
+AI_FALLBACK_PROVIDERS = "workers-ai,groq,gemini"
+
+[ai]
+binding = "AI"
+
+[[r2_buckets]]
+binding = "UPLOADS"
+bucket_name = "tlce-private-uploads"
 
 [[durable_objects.bindings]]
 name = "RATE_LIMITER"
 class_name = "RateLimiter"
 
+[[durable_objects.bindings]]
+name = "NONCE_TRACKER"
+class_name = "NonceTracker"
+
 [[migrations]]
 tag = "v1"
 new_sqlite_classes = ["RateLimiter"]
+
+[[migrations]]
+tag = "v2"
+new_sqlite_classes = ["NonceTracker"]
+
+[triggers]
+crons = ["0 */6 * * *"]
+
+[[queues.producers]]
+binding = "UPLOAD_JOBS"
+queue = "tlce-file-inspection"
+
+[[queues.consumers]]
+queue = "tlce-file-inspection"
+max_batch_size = 10
+max_batch_timeout = 5
+max_retries = 3
