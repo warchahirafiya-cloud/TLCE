@@ -79,3 +79,68 @@ Before deployment:
 6. Verify R2 objects are not publicly accessible.
 
 Deployment is not performed by this change. Keep the Worker on the Free plan; do not enable paid products without separate approval.
+
+
+## Direct-to-R2 presigned upload
+
+Two upload modes are available:
+
+- `POST /api/files/presign` creates a 5-minute, single-object S3-compatible R2 presigned PUT URL. The client uploads directly to the private R2 bucket using the exact signed headers returned by the API, then calls `POST /api/files/complete` with the returned `objectKey`.
+- `POST /api/files/upload` is the strict Worker-proxy path. It checks Content-Length, actual received byte length, allowed MIME signatures (PNG/JPEG/PDF), and only then writes the object to R2 and enqueues inspection. Use this path when you require content validation before storage.
+
+**Important size boundary:** the presign endpoint validates the size declared by the client before issuing a URL, but a normal presigned S3 PUT URL does not impose a hard byte-range policy. The completion endpoint checks the actual R2 object size and deletes oversized objects. For strict pre-storage size enforcement, use the Worker-proxy endpoint. In both paths, the object remains private and quarantined.
+
+Presign request:
+```http
+POST /api/files/presign
+Content-Type: application/json
+
+{"contentType":"image/png","size":120000}
+```
+
+The response includes `uploadUrl`, `objectKey`, and the exact `requiredHeaders`. Browser upload:
+```js
+const grant = await fetch("/api/files/presign", {
+  method: "POST",
+  credentials: "include",
+  headers: { "content-type": "application/json" },
+  body: JSON.stringify({ contentType: file.type, size: file.size })
+}).then(r => r.json());
+
+const uploaded = await fetch(grant.uploadUrl, {
+  method: "PUT",
+  headers: grant.requiredHeaders,
+  body: file
+});
+if (!uploaded.ok) throw new Error("R2 upload failed");
+
+await fetch("/api/files/complete", {
+  method: "POST",
+  credentials: "include",
+  headers: { "content-type": "application/json" },
+  body: JSON.stringify({ objectKey: grant.objectKey })
+});
+```
+
+Configure R2 CORS from `r2-cors.json` (allow only `https://tlce.store`; do not use wildcard origins). The R2 bucket must remain private with no public development URL or custom public domain.
+
+## Queue processing and quarantine retention
+
+Create the queue `tlce-file-inspection` before deploying the updated Worker. The `UPLOAD_JOBS` producer is bound in `wrangler.toml`; the consumer:
+- checks the object exists, has the expected size and ownership/status metadata;
+- reads the content and checks its magic bytes against the claimed MIME;
+- deletes malformed, oversized, or inconsistent objects;
+- acknowledges structurally valid files but **leaves them quarantined**. This queue consumer is not an antivirus engine and never promotes a file to production.
+
+The six-hour Cron Trigger deletes objects under `quarantine/` older than seven days. This is a retention safety net, not a substitute for a malware scanner or a clean verdict.
+
+## R2 credentials
+
+Create an R2 S3 API token scoped to the single quarantine bucket with only the permissions required for presigned PUT. Store credentials as Worker secrets:
+```sh
+npx wrangler secret put R2_ACCOUNT_ID
+npx wrangler secret put R2_ACCESS_KEY_ID
+npx wrangler secret put R2_SECRET_ACCESS_KEY
+npx wrangler secret put R2_BUCKET_NAME
+```
+Never commit R2 credentials. Prefer separate credentials for a future production bucket. The current code intentionally has no production-bucket binding and no release route.
