@@ -7,7 +7,10 @@ Cloudflare-first runtime for the TLCE public site. The static GitHub Pages front
 - `GET /health` — non-sensitive liveness.
 - `GET /api/search?q=...` — Cloudflare Access authenticated search.
 - `POST /api/ai/chat` — Cloudflare Access authenticated LLM proxy.
-- `POST /api/files/upload` — authenticated upload to private R2 quarantine. Returns `202`; this is **not** a malware-clean verdict.
+- `POST /api/files/presign` — authenticated short-lived direct-to-R2 upload grant.
+- `POST /api/files/complete` — validates uploaded object metadata/size and enqueues quarantine processing.
+- `POST /api/files/upload` — strict Worker-proxy upload with byte-signature checks before R2 storage.
+- Queue consumer validates size, ownership metadata and magic bytes; it never marks a file malware-clean or releases it.
 - Cron: every six hours, optionally dispatches a configured automation webhook.
 
 All protected routes use the existing Cloudflare Access JWT verification and Durable Object rate limiter (20 requests/minute/subject). CORS remains restricted to `https://tlce.store`.
