@@ -123,15 +123,12 @@ export function TLCEPlatformUI({ apiBaseUrl, className }: Props) {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ prompt: cleanPrompt }),
       });
-      const payload = await readJson<{ response?: unknown; text?: string; error?: string }>(response);
-      const result = payload.response ?? payload.text ?? payload;
-      if (typeof result === "string") {
+      const payload = await readJson<{ answer?: string; provider?: string; error?: string }>(response);
+      const result = payload.answer ?? "";
+      if (typeof result === "string" && result.length > 0) {
         setAnswer(result);
-      } else if (result && typeof result === "object" && "response" in result &&
-                 typeof (result as { response?: unknown }).response === "string") {
-        setAnswer((result as { response: string }).response);
       } else {
-        setAnswer(JSON.stringify(result, null, 2));
+        throw new Error("لم يُرجع المساعد إجابة نصية.");
       }
     } catch (error) {
       setAiError(error instanceof Error ? error.message : "تعذر الاتصال بالمساعد الذكي.");
