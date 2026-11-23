@@ -146,6 +146,11 @@ jobs:
           }
           assert.ok(!csp.includes("'unsafe-inline'"), "Deployed CSP must not allow unsafe inline execution");
 
+          const islandScriptPath = html.match(/src="([^"]*ui\\/assets\\/tlce-islands-[^"]+\\.js)"/)?.[1];
+          assert.ok(islandScriptPath, "The deployed parent page must load the Vite island bridge");
+          await get(islandScriptPath, /javascript/i);
+          await get("ui/assets/tlce-islands.css", /text\\/css/i);
+
           const questpulsePage = await get("questpulse/", /text\/html/i);
           const questpulseHtml = await questpulsePage.text();
           assert.match(questpulseHtml, /QuestPulse/);
