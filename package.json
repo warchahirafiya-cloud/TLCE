@@ -15,7 +15,8 @@
     "test:static-ui": "node --test scripts/test/static-build.test.mjs",
     "test:questpulse": "tsx --test modules/questpulse/test/*.test.ts",
     "test:revenue": "tsx --test core/revenue/test/*.test.ts",
-    "test:payments": "tsx --test core/payments/test/*.test.ts"
+    "test:payments": "tsx --test core/payments/test/*.test.ts",
+    "dev:ui": "tailwindcss -i src/islands/tailwind.css -o src/islands/tlce-islands.css --minify && vite --host 0.0.0.0"
   },
   "devDependencies": {
     "@cloudflare/workers-types": "5.20261123.1",
