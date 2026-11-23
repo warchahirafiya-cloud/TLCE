@@ -2,7 +2,10 @@ const encoder = new TextEncoder();
 const AWS_REGION = "auto";
 const SERVICE = "s3";
 
-function bufferSource(bytes: Uint8Array): ArrayBuffer {\n  return new Uint8Array(bytes).buffer as ArrayBuffer;\n}\nfunction hex(bytes: ArrayBuffer): string {
+function bufferSource(bytes: Uint8Array): ArrayBuffer {
+  return new Uint8Array(bytes).buffer as ArrayBuffer;
+}
+function hex(bytes: ArrayBuffer): string {
   return Array.from(new Uint8Array(bytes), (value) => value.toString(16).padStart(2, "0")).join("");
 }
 function encode(value: string): string {
