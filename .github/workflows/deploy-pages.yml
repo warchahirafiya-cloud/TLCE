@@ -15,6 +15,11 @@ on:
       - "packages/contracts/src/**"
       - "tsconfig.browser.json"
       - "package.json"
+      - "vite.config.ts"
+      - "tsconfig.frontend.json"
+      - "src/**"
+      - "scripts/assemble-pages.mjs"
+      - "scripts/test/**"
       - ".github/workflows/deploy-pages.yml"
       - ".github/workflows/deploy-questpulse-pages.yml"
   workflow_dispatch:
@@ -42,7 +47,7 @@ jobs:
           node-version: 22
           package-manager-cache: false
 
-      - name: Validate website and build runtime
+      - name: Validate website and run the full build
         run: |
           node --check apps/web/questpulse-catalogue.mjs
           node --check apps/web/questpulse.js
@@ -51,41 +56,27 @@ jobs:
           node --check apps/web/store/catalogue.mjs
           node --check apps/parent/bootstrap.js
           node --test apps/web/test/*.test.mjs apps/parent/test/*.test.mjs
-          npm install
+          npm install --no-audit --no-fund
           npm run typecheck
-          npm run test:revenue
-          npm run test:payments
-          npm run build:browser
+          npm test
           node --input-type=module -e "import fs from 'node:fs'; for (const file of ['apps/web/data/offers.json','apps/web/data/guides.json','apps/web/store/data/apps.json','docs/architecture/TLCE-STORE-submission.schema.json','docs/architecture/TLCE-REVENUE-event.schema.json']) JSON.parse(fs.readFileSync(file,'utf8'));"
 
       - name: Configure GitHub Pages
         id: pages
         uses: actions/configure-pages@45bfe0192ca1faeb007ade9deae92b16b8254a0d
 
-      - name: Assemble TLCE parent and QuestPulse site
-        run: |
-          mkdir -p site/web site/runtime site/store site/questpulse
-          cp -R apps/web/. site/web/
-          cp -R apps/web/store/. site/store/
-          cp -R apps/web/questpulse/. site/questpulse/
-          sed -i 's|href="../styles.css"|href="../web/styles.css"|g; s|src="../questpulse.js"|src="../web/questpulse.js"|g' site/questpulse/index.html
-          test -s site/questpulse/index.html
-          grep -q '../web/styles.css' site/questpulse/index.html
-          grep -q '../web/questpulse.js' site/questpulse/index.html
-          cp apps/web/favicon.svg site/favicon.svg
-          cp apps/parent/index.html apps/parent/404.html apps/parent/bootstrap.js apps/parent/styles.css site/
-          cp -R dist/browser/runtime site/
-          BASE_PATH="${{ steps.pages.outputs.base_path }}"
-          if [ -n "$BASE_PATH" ]; then BASE_PATH="/${BASE_PATH#/}"; fi
-          BASE_HREF="${BASE_PATH%/}/"
-          sed -i "s|__TLCE_BASE_HREF__|$BASE_HREF|g" site/index.html site/404.html
+      - name: Build static Pages artifact with Vite and Tailwind
+        env:
+          TLCE_BASE_PATH: ${{ steps.pages.outputs.base_path }}
+        run: npm run build:static && npm run test:static-ui
 
       - name: Upload website artifact
         uses: actions/upload-pages-artifact@fc324d3547104276b827a68afc52ff2a11cc49c9
         with:
-          path: site
+          path: dist/pages
 
   deploy:
+    if: github.ref == 'refs/heads/main'
     needs: build
     environment:
       name: github-pages
@@ -154,6 +145,11 @@ jobs:
             assert.ok(csp.includes(directive), `Deployed CSP must include ${directive}`);
           }
           assert.ok(!csp.includes("'unsafe-inline'"), "Deployed CSP must not allow unsafe inline execution");
+
+          const islandScriptPath = html.match(/src="([^"]*ui\\/assets\\/tlce-islands-[^"]+\\.js)"/)?.[1];
+          assert.ok(islandScriptPath, "The deployed parent page must load the Vite island bridge");
+          await get(islandScriptPath, /javascript/i);
+          await get("ui/assets/tlce-islands.css", /text\\/css/i);
 
           const questpulsePage = await get("questpulse/", /text\/html/i);
           const questpulseHtml = await questpulsePage.text();

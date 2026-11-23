@@ -4,18 +4,28 @@
   "version": "0.1.0",
   "type": "module",
   "scripts": {
-    "typecheck": "tsc --noEmit && npm run typecheck:worker",
+    "typecheck": "tsc --noEmit && npm run typecheck:worker && npm run typecheck:frontend",
+    "typecheck:worker": "tsc --noEmit -p infrastructure/production-worker/tsconfig.json",
+    "typecheck:frontend": "tsc --noEmit -p tsconfig.frontend.json",
     "test": "tsx --test runtime/engine/test/*.test.ts core/identity/test/*.test.ts infrastructure/api-gateway/test/*.test.ts infrastructure/serverless-edge/test/*.test.ts infrastructure/serverless-edge/llm7-chat/*.test.ts infrastructure/search/test/*.test.ts infrastructure/production-worker/test/*.test.ts infrastructure/integration-core/test/*.test.ts core/audit/test/*.test.ts core/revenue/test/*.test.ts modules/questpulse/test/*.test.ts core/payments/test/*.test.ts",
     "build:browser": "tsc -p tsconfig.browser.json",
+    "build:islands": "vite build",
+    "build:tailwind": "tailwindcss -i src/islands/tailwind.css -o dist/ui-build/assets/tlce-islands.css --minify",
+    "build:static": "npm run build:browser && npm run build:islands && npm run build:tailwind && node scripts/assemble-pages.mjs",
+    "test:static-ui": "node --test scripts/test/static-build.test.mjs",
     "test:questpulse": "tsx --test modules/questpulse/test/*.test.ts",
     "test:revenue": "tsx --test core/revenue/test/*.test.ts",
     "test:payments": "tsx --test core/payments/test/*.test.ts",
-    "typecheck:worker": "tsc --noEmit -p infrastructure/production-worker/tsconfig.json"
+    "dev:ui": "tailwindcss -i src/islands/tailwind.css -o src/islands/tlce-islands.css --minify && vite --host 0.0.0.0"
   },
   "devDependencies": {
+    "@cloudflare/workers-types": "5.20261123.1",
+    "@tailwindcss/cli": "4.3.5",
     "@types/node": "^22.0.0",
+    "preact": "11.2.0",
+    "tailwindcss": "4.3.5",
     "tsx": "^4.19.0",
     "typescript": "^5.7.0",
-    "@cloudflare/workers-types": "5.20261123.1"
+    "vite": "8.3.8"
   }
 }

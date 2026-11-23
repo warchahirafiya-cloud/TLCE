@@ -50,9 +50,12 @@ test("parent router restores the static homepage after leaving a mounted module"
 
 test("Pages build publishes QuestPulse at its canonical directory route", async () => {
   const workflow = await readFile(new URL("../../../.github/workflows/deploy-pages.yml", import.meta.url), "utf8");
-  assert.match(workflow, /mkdir -p[^\n]*site\/questpulse/);
-  assert.match(workflow, /cp -R apps\/web\/questpulse\/\. site\/questpulse\//);
+  assert.match(workflow, /npm run build:static/);
+  assert.match(workflow, /path: dist\/pages/);
   assert.match(workflow, /get\("questpulse\/",/);
+  const assembler = await readFile(new URL("../../../scripts/assemble-pages.mjs", import.meta.url), "utf8");
+  assert.match(assembler, /apps\/web\/questpulse/);
+  assert.match(assembler, /questpulse\/index\.html/);
   const webWorkflow = await readFile(new URL("../../../.github/workflows/questpulse-web.yml", import.meta.url), "utf8");
   assert.match(webWorkflow, /Assemble and validate Pages artifact/);
 });
