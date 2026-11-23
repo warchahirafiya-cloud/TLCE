@@ -11,3 +11,8 @@
 - No upload release route exists. Do not expose or process quarantined files as trusted until an AV scanner and an independently authorized release gate are implemented.
 - Automation webhooks are disabled unless explicitly configured; their bearer secret is stored only as a Worker secret.
 - Provider errors are reduced to generic client-facing responses. Health output reveals no configuration or credential state.
+
+- Presigned PUT URLs expire within five minutes and bind the object key, MIME type, owner hash and quarantine status.
+- Presigned PUT cannot impose a strict byte-range policy; the completion handler checks actual R2 size and deletes oversize objects. Use the Worker-proxy upload route for strict size enforcement before storage.
+- Queue validation checks magic bytes and object metadata only; it is not antivirus scanning. Valid files remain quarantined, and no production promotion exists.
+- A six-hour Cron Trigger removes quarantine objects older than seven days.
