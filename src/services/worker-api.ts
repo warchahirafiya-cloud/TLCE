@@ -131,7 +131,9 @@ export function completePresignedUpload(objectKey: string): Promise<QuarantineUp
 export async function uploadFileViaPresignedUrl(file: File): Promise<QuarantineUploadResponse> {
   const session = await createUploadPresign(file);
   const signedUrl = new URL(session.uploadUrl);
-  if (signedUrl.protocol !== "https:") throw new Error("R2 presigned URL must use HTTPS");
+  if (signedUrl.protocol !== "https:" || !signedUrl.hostname.endsWith(".r2.cloudflarestorage.com")) {
+    throw new Error("R2 presigned URL must use the Cloudflare R2 HTTPS endpoint");
+  }
 
   const putResponse = await fetch(signedUrl, {
     method: session.method,
