@@ -182,10 +182,10 @@ async function verifyApiSignature(request: Request, env: Env): Promise<string | 
   return "api-key:" + keyId;
 }
 \nasync function requireIdentity(request: Request, env: Env): Promise<{ subject: string } | { response: Response }> {
-  if (!env.CF_ACCESS_TEAM_DOMAIN || !env.CF_ACCESS_AUD) {
+  const assertion = request.headers.get("cf-access-jwt-assertion");
+  if (assertion && (!env.CF_ACCESS_TEAM_DOMAIN || !env.CF_ACCESS_AUD)) {
     return { response: json({ error: "Identity provider is not configured" }, 503) };
   }
-  const assertion = request.headers.get("cf-access-jwt-assertion");
   let subject: string | null = null;
   if (assertion) subject = await verifyAccessJwt(assertion, env);
   else {
@@ -519,7 +519,8 @@ export default {
     for (const message of batch.messages) {
       try {
         const job = message.body;
-        if (job.type !== "inspect-quarantine-object" || !job.objectKey || !job.ownerHash || !env.UPLOADS) { message.ack(); continue; }
+        if (job.type !== "inspect-quarantine-object" || !job.objectKey || !job.ownerHash || !env.UPLOADS ||
+            !job.objectKey.startsWith("quarantine/") || job.objectKey.includes("..")) { message.ack(); continue; }
         const object = await env.UPLOADS.get(job.objectKey);
         if (!object || object.size !== job.expectedSize || object.size > MAX_UPLOAD_BYTES || (object.customMetadata?.ownerHash ?? object.customMetadata?.ownerhash) !== job.ownerHash || object.customMetadata?.status !== "quarantined") {
           if (object) await env.UPLOADS.delete(job.objectKey);
