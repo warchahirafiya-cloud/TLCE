@@ -6,7 +6,7 @@ interface AiBinding {
 }
 interface R2BucketLike {
   head(key: string): Promise<{ size: number; uploaded: Date; httpMetadata?: { contentType?: string }; customMetadata?: Record<string, string> } | null>;
-  get(key: string): Promise<{ size: number; arrayBuffer(): Promise<ArrayBuffer> } | null>;
+  get(key: string): Promise<{ size: number; arrayBuffer(): Promise<ArrayBuffer>; customMetadata?: Record<string, string> } | null>;
   delete(key: string): Promise<void>;
   list(options?: { prefix?: string; limit?: number; cursor?: string }): Promise<{ objects: Array<{ key: string; uploaded: Date }>; truncated: boolean; cursor?: string }>;
   put(key: string, value: ArrayBuffer, options?: {
@@ -416,7 +416,7 @@ export default {
         const job = message.body;
         if (job.type !== "inspect-quarantine-object" || !job.objectKey || !job.ownerHash || !env.UPLOADS) { message.ack(); continue; }
         const object = await env.UPLOADS.get(job.objectKey);
-        if (!object || object.size !== job.expectedSize || object.size > MAX_UPLOAD_BYTES) {
+        if (!object || object.size !== job.expectedSize || object.size > MAX_UPLOAD_BYTES || object.customMetadata?.ownerHash !== job.ownerHash || object.customMetadata?.status !== "quarantined") {
           if (object) await env.UPLOADS.delete(job.objectKey);
           message.ack();
           continue;
