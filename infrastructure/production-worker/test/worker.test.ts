@@ -172,7 +172,7 @@ test("HMAC API signature is scoped, body-bound and replay protected", async () =
     TLCE_API_KEYS_JSON: JSON.stringify({ [keyId]: secret }),
     RATE_LIMITER: { idFromName: () => "nonce-store", get: () => ({ fetch: (request: Request) => limiter.fetch(request) }) },
   };
-  const makeRequest = () => new Request(url, {
+  const makeRequest = (body = bodyText) => new Request(url, {
     method: "POST",
     headers: {
       "content-type": "application/json",
@@ -181,8 +181,9 @@ test("HMAC API signature is scoped, body-bound and replay protected", async () =
       "x-tlce-nonce": nonce,
       "x-tlce-signature": signature,
     },
-    body: bodyText,
+    body,
   });
+  assert.equal(await verifyApiSignature(makeRequest(bodyText + " "), signedEnv as never), null);
   assert.equal(await verifyApiSignature(makeRequest(), signedEnv as never), "api-key:test-service");
   assert.equal(await verifyApiSignature(makeRequest(), signedEnv as never), null);
   const wrongRoute = new Request("https://worker.example/api/ai/chat", {
