@@ -36,7 +36,7 @@ test("static artifact retains TLCE, QuestPulse and Store routes", async () => {
   const questpulse = await readFile(path.join(root, "questpulse/index.html"), "utf8");
   const store = await readFile(path.join(root, "store/index.html"), "utf8");
   assert.match(parent, /href="\.\/questpulse\//);
-  assert.match(parent, /__TLCE_BASE_HREF__/ === null ? /); // placeholder assertion replaced below
+  assert.doesNotMatch(parent, /__TLCE_BASE_HREF__/);
   assert.match(questpulse, /\.\.\/web\/styles\.css/);
   assert.match(questpulse, /\.\.\/web\/questpulse\.js/);
   assert.match(store, /TLCE STORE/);
