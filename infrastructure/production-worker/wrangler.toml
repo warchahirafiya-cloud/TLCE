@@ -26,3 +26,13 @@ new_sqlite_classes = ["RateLimiter"]
 
 [triggers]
 crons = ["0 */6 * * *"]
+
+[[queues.producers]]
+binding = "UPLOAD_JOBS"
+queue = "tlce-file-inspection"
+
+[[queues.consumers]]
+queue = "tlce-file-inspection"
+max_batch_size = 10
+max_batch_timeout = 5
+max_retries = 3
