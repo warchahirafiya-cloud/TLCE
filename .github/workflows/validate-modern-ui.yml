@@ -2,18 +2,22 @@ name: Validate Vite and Tailwind static UI
 
 on:
   push:
-    branches: [feat/modern-ui-vite-tailwind4]
+    branches:
+      - feat/modern-ui-vite-tailwind4
+      - feat/questpulse-secure-upload-local-preview
     paths:
       - "apps/web/**"
       - "apps/parent/**"
       - "runtime/engine/src/**"
       - "package.json"
+      - "package-lock.json"
       - "vite.config.ts"
       - "tsconfig.frontend.json"
       - "src/**"
       - "scripts/assemble-pages.mjs"
       - "scripts/test/**"
       - ".github/workflows/validate-modern-ui.yml"
+      - "modules/questpulse/**"
   pull_request:
     branches: [fix/parent-home-questpulse-routing, main]
     paths:
@@ -21,11 +25,13 @@ on:
       - "apps/parent/**"
       - "runtime/engine/src/**"
       - "package.json"
+      - "package-lock.json"
       - "vite.config.ts"
       - "tsconfig.frontend.json"
       - "src/**"
       - "scripts/assemble-pages.mjs"
       - "scripts/test/**"
+      - "modules/questpulse/**"
       - ".github/workflows/validate-modern-ui.yml"
   workflow_dispatch:
 
@@ -45,11 +51,14 @@ jobs:
           node-version: 22
           package-manager-cache: false
 
-      - name: Install dependencies
-        run: npm install --no-audit --no-fund
+      - name: Install dependencies (clean lockfile install)
+        run: npm ci --no-audit --no-fund
 
       - name: Typecheck
         run: npm run typecheck
+
+      - name: QuestPulse tests
+        run: npm run test:questpulse
 
       - name: Run existing test suites
         run: |
