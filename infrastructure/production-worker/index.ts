@@ -39,6 +39,7 @@ interface Env {
   AUTOMATION_WEBHOOK_URL?: string;
   AUTOMATION_WEBHOOK_SECRET?: string;
   RATE_LIMITER: DurableObjectNamespaceLike;
+  NONCE_TRACKER: DurableObjectNamespaceLike;
 }
 interface DurableObjectNamespaceLike {
   idFromName(name: string): unknown;
@@ -225,9 +226,9 @@ export async function verifyApiSignature(request: Request, env: Env): Promise<st
   const cryptoKey = await crypto.subtle.importKey("raw", toArrayBuffer(secret), { name: "HMAC", hash: "SHA-256" }, false, ["sign"]);
   const expected = bytesToHex(await crypto.subtle.sign("HMAC", cryptoKey, toArrayBuffer(new TextEncoder().encode(canonical))));
   if (!/^[a-f0-9]{64}$/i.test(supplied) || !safeEqual(expected, supplied.toLowerCase())) return null;
-  // Durable Object transaction makes nonce consumption atomic across Worker isolates.
-  const replayId = env.RATE_LIMITER.idFromName("api-key:" + keyId);
-  const replayResponse = await env.RATE_LIMITER.get(replayId).fetch(new Request("https://rate-limit.internal/nonce", {
+  // A dedicated Durable Object namespace isolates replay state from rate-limit counters.
+  const replayId = env.NONCE_TRACKER.idFromName("api-key:" + keyId);
+  const replayResponse = await env.NONCE_TRACKER.get(replayId).fetch(new Request("https://nonce-tracker.internal/consume", {
     method: "POST",
     headers: { "content-type": "application/json" },
     body: JSON.stringify({ nonce, expiresAt: now + API_NONCE_WINDOW_SECONDS }),
@@ -475,31 +476,60 @@ async function hashSubject(subject: string): Promise<string> {
   return Array.from(new Uint8Array(digest), (byte) => byte.toString(16).padStart(2, "0")).join("");
 }
 
+export class NonceTracker {
+  constructor(private readonly state: DurableObjectStateLike) {}
+
+  async fetch(request: Request): Promise<Response> {
+    if (request.method !== "POST" || new URL(request.url).pathname !== "/consume") {
+      return json({ error: "Not found" }, 404);
+    }
+
+    let body: { nonce?: unknown; expiresAt?: unknown };
+    try {
+      body = await request.json() as typeof body;
+    } catch {
+      return json({ allowed: false }, 400);
+    }
+
+    const nowSeconds = Math.floor(Date.now() / 1000);
+    if (
+      typeof body.nonce !== "string" ||
+      !/^[a-f0-9-]{32,36}$/i.test(body.nonce) ||
+      typeof body.expiresAt !== "number" ||
+      !Number.isSafeInteger(body.expiresAt) ||
+      body.expiresAt <= nowSeconds ||
+      body.expiresAt > nowSeconds + API_NONCE_WINDOW_SECONDS
+    ) {
+      return json({ allowed: false }, 400);
+    }
+
+    // One durable key per nonce. The transaction is atomic across isolates,
+    // and TTL is tied to the accepted replay window.
+    const ttl = Math.max(1, Math.ceil(body.expiresAt - nowSeconds));
+    const allowed = await this.state.storage.transaction(async (txn) => {
+      const nonceKey = `nonce:${body.nonce}`;
+      if (await txn.get<boolean>(nonceKey)) return false;
+      await txn.put(nonceKey, true, { expirationTtl: ttl });
+      return true;
+    });
+
+    return json({ allowed }, allowed ? 200 : 409);
+  }
+}
+
 export class RateLimiter {
   constructor(private readonly state: DurableObjectStateLike) {}
+
   async fetch(request: Request): Promise<Response> {
-    if (request.method !== "POST") return json({ error: "Method not allowed" }, 405);
-    const now = Date.now();
-    if (new URL(request.url).pathname === "/nonce") {
-      let body: { nonce?: unknown; expiresAt?: unknown };
-      try { body = await request.json() as typeof body; } catch { return json({ allowed: false }, 400); }
-      if (typeof body.nonce !== "string" || typeof body.expiresAt !== "number" || body.expiresAt <= now / 1000) return json({ allowed: false }, 400);
-      const nonce = body.nonce;
-      const expiresAt = body.expiresAt;
-      // A distinct storage key per nonce avoids bounded-list eviction, which could
-      // otherwise make a still-live nonce replayable under high request volume.
-      const allowed = await this.state.storage.transaction(async (txn) => {
-        const nonceKey = `nonce:${nonce}`;
-        const alreadyConsumed = await txn.get<boolean>(nonceKey);
-        if (alreadyConsumed) return false;
-        await txn.put(nonceKey, true, { expirationTtl: API_NONCE_WINDOW_SECONDS });
-        return true;
-      });
-      return json({ allowed }, allowed ? 200 : 409);
+    if (request.method !== "POST" || new URL(request.url).pathname !== "/consume") {
+      return json({ error: "Not found" }, 404);
     }
+    const now = Date.now();
     const allowed = await this.state.storage.transaction(async (txn) => {
       const current = await txn.get<RateWindow>("window");
-      const window = !current || now - current.startedAt >= WINDOW_MS ? { startedAt: now, count: 0 } : current;
+      const window = !current || now - current.startedAt >= WINDOW_MS
+        ? { startedAt: now, count: 0 }
+        : current;
       if (window.count >= MAX_REQUESTS) return false;
       window.count += 1;
       await txn.put("window", window);
