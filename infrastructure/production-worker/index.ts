@@ -567,6 +567,7 @@ export default {
         const object = await env.UPLOADS.get(job.objectKey);
         if (!object || object.size !== job.expectedSize || object.size < 1 || object.size > MAX_UPLOAD_BYTES || (object.customMetadata?.ownerHash ?? object.customMetadata?.ownerhash) !== job.ownerHash || object.customMetadata?.status !== "quarantined") {
           if (object) await env.UPLOADS.delete(job.objectKey);
+          console.info(JSON.stringify({ event: "quarantine_validation_rejected", reason: "missing_object_or_metadata_policy_mismatch" }));
           message.ack();
           continue;
         }
@@ -582,7 +583,7 @@ export default {
         // Structural validation is not malware scanning. Never promote based on magic bytes alone.
         console.info(JSON.stringify({ event: "quarantine_validation_structural_pass", outcome: "pending_trusted_scanner" }));
         message.ack();
-      } catch { message.retry({ delaySeconds: 60 }); }
+      } catch {\n        console.warn(JSON.stringify({ event: "quarantine_validation_retry", reason: "processing_error" }));\n        message.retry({ delaySeconds: 60 });\n      }
     }
   },
 
