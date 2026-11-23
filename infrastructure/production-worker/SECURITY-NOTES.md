@@ -16,3 +16,9 @@
 - Presigned PUT cannot impose a strict byte-range policy; the completion handler checks actual R2 size and deletes oversize objects. Use the Worker-proxy upload route for strict size enforcement before storage.
 - Queue validation checks magic bytes and object metadata only; it is not antivirus scanning. Valid files remain quarantined, and no production promotion exists.
 - A six-hour Cron Trigger removes quarantine objects older than seven days.
+
+- Server-to-server HMAC API keys are optional and accepted only when no Cloudflare Access assertion is present; keys are held in the Worker secret `TLCE_API_KEYS_JSON`, never in the frontend.
+- HMAC signatures bind method, pathname, timestamp, nonce and exact request-body SHA-256; timestamps have a five-minute skew window and Durable Object nonce consumption prevents replay.
+- Signed API requests share the same 20/minute principal rate limit. The in-memory Durable Object nonce ledger retains a bounded rolling set; keep the rate limit and nonce window assumptions aligned if either is changed.
+- AI routing tries the configured primary and then unique `AI_FALLBACK_PROVIDERS` entries, with bounded per-provider attempts. Workers AI deadline racing does not cancel the underlying binding operation.
+- Queue outcomes are written only to sanitized operational logs. Structural pass is explicitly not a clean/malware verdict; rejected objects are deleted, valid objects remain private in quarantine.
