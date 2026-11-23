@@ -307,7 +307,7 @@ export default {
     return json({ error: "Not found" }, 404, cors);
   },
 
-  async scheduled(controller: ScheduledController, env: Env, ctx: ExecutionContext): Promise<void> {
+  async scheduled(controller: { cron: string; scheduledTime: number }, env: Env, ctx: { waitUntil(promise: Promise<unknown>): void }): Promise<void> {
     if (!env.AUTOMATION_WEBHOOK_URL || !env.AUTOMATION_WEBHOOK_SECRET) return;
     ctx.waitUntil(fetch(env.AUTOMATION_WEBHOOK_URL, {
       method: "POST",
