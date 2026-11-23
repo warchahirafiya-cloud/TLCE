@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import worker, { RateLimiter, allowedMime, detectAllowedFile, runAiWithFallback, verifyMagic } from "../index.js";
+import worker, { RateLimiter, allowedMime, detectAllowedFile, runAiWithFallback, verifyApiSignature, verifyMagic } from "../index.js";
 
 const env = {
   TLCE_ORIGIN: "https://tlce.store",
