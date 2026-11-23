@@ -1,0 +1,13 @@
+[
+  {
+    "AllowedOrigins": ["https://tlce.store"],
+    "AllowedMethods": ["PUT", "HEAD"],
+    "AllowedHeaders": [
+      "content-type",
+      "x-amz-meta-ownerhash",
+      "x-amz-meta-status"
+    ],
+    "ExposeHeaders": ["ETag"],
+    "MaxAgeSeconds": 3600
+  }
+]

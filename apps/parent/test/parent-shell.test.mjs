@@ -7,7 +7,7 @@ test("TLCE parent shell exposes the runtime mount point and browser entry", asyn
   assert.match(html, /id="tlce-module-root"/);
   assert.match(html, /<base href="__TLCE_BASE_HREF__">/);
   assert.match(html, /src="\.\/bootstrap\.js"/);
-  assert.match(html, /data-route="\/questpulse"/);
+  assert.match(html, /href="\.\/questpulse\//);
 });
 
 test("parent bootstrap creates the host and route composition root", async () => {
@@ -29,4 +29,30 @@ test("GitHub Pages fallback can restore a deep QuestPulse route", async () => {
   assert.match(fallback, /<base href="__TLCE_BASE_HREF__">/);
   assert.match(fallback, /src="\.\/bootstrap\.js"/);
   assert.match(fallback, /id="tlce-module-root"/);
+});
+
+
+test("TLCE parent homepage contains useful ecosystem content and canonical module links", async () => {
+  const html = await readFile(new URL("../index.html", import.meta.url), "utf8");
+  assert.match(html, /class="home-shell"/);
+  assert.match(html, /منظومة رقمية/);
+  assert.match(html, /href="\.\/questpulse\//);
+  assert.match(html, /href="\.\/store\//);
+  assert.doesNotMatch(html, /intentionally empty and reserved for publishing/);
+});
+
+test("parent router restores the static homepage after leaving a mounted module", async () => {
+  const bootstrap = await readFile(new URL("../bootstrap.js", import.meta.url), "utf8");
+  assert.match(bootstrap, /const homeMarkup = root\.innerHTML/);
+  assert.match(bootstrap, /function restoreHome\(\)/);
+  assert.match(bootstrap, /restoreHome\(\);/);
+});
+
+test("Pages build publishes QuestPulse at its canonical directory route", async () => {
+  const workflow = await readFile(new URL("../../../.github/workflows/deploy-pages.yml", import.meta.url), "utf8");
+  assert.match(workflow, /mkdir -p[^\n]*site\/questpulse/);
+  assert.match(workflow, /cp -R apps\/web\/questpulse\/\. site\/questpulse\//);
+  assert.match(workflow, /get\("questpulse\/",/);
+  const webWorkflow = await readFile(new URL("../../../.github/workflows/questpulse-web.yml", import.meta.url), "utf8");
+  assert.match(webWorkflow, /Assemble and validate Pages artifact/);
 });

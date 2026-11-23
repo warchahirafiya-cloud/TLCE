@@ -17,5 +17,8 @@
     "packages/**/*.ts",
     "infrastructure/**/*.ts",
     "modules/**/*.ts"
+  ],
+  "exclude": [
+    "infrastructure/production-worker/**/*.ts"
   ]
 }

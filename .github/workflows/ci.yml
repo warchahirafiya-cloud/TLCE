@@ -5,9 +5,11 @@ on:
     branches:
       - main
       - feature/**
+      - feat/serverless-ai-automation-file-quarantine
   pull_request:
     branches:
       - main
+      - fix/parent-home-questpulse-routing
 
 permissions:
   contents: read

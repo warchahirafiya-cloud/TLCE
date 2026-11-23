@@ -1,52 +1,207 @@
-# TLCE Production Integration Worker
+# TLCE Serverless Integration Worker
 
-This is the first deployable server-side runtime for TLCE. It exposes:
-- `GET /health`: non-sensitive liveness status.
-- `GET /api/search?q=...`: authenticated hybrid search using DuckDuckGo/Wikipedia and optional Brave.
+Cloudflare-first runtime for the TLCE public site. The static GitHub Pages frontend never receives provider credentials.
 
-## Security
-- Search requests require a valid Cloudflare Access JWT in `Cf-Access-Jwt-Assertion`.
-- JWT signature, issuer, audience, expiry and subject are validated using the Cloudflare Access JWKS.
-- Per-subject rate limiting is enforced by a SQLite-backed Durable Object (20 requests/minute).
-- Browser CORS is restricted to `https://tlce.store`.
-- Provider keys are server-side Worker secrets only.
-- Health output deliberately reveals no configuration or credential state.
-- If Access identity or rate limiting is not configured, search fails closed.
+## Routes
 
-## Zero-cost-first deployment
+- `GET /health` — non-sensitive liveness.
+- `GET /api/search?q=...` — Cloudflare Access authenticated search.
+- `POST /api/ai/chat` — Cloudflare Access authenticated LLM proxy.
+- `POST /api/files/presign` — authenticated short-lived direct-to-R2 upload grant.
+- `POST /api/files/complete` — validates uploaded object metadata/size and enqueues quarantine processing.
+- `POST /api/files/upload` — strict Worker-proxy upload with byte-signature checks before R2 storage.
+- Queue consumer validates size, ownership metadata and magic bytes; it never marks a file malware-clean or releases it.
+- Cron: every six hours, optionally dispatches a configured automation webhook.
 
-The intended starting point is the Cloudflare Workers Free plan. Cloudflare currently includes SQLite-backed Durable Objects on Free, subject to daily request, CPU and storage quotas. Exceeding free quotas causes requests/operations to be rejected rather than requiring an automatic upgrade. Do not enable Workers Paid or add paid products without separate approval.
+All protected routes use the existing Cloudflare Access JWT verification and Durable Object rate limiter (20 requests/minute/subject). CORS remains restricted to `https://tlce.store`.
 
-### Stage 1 — Deploy a safe Worker
+## AI providers
 
-1. Create/sign in to a Cloudflare account and keep Workers on the Free plan.
-2. Create a Cloudflare API token scoped to the account with permission to deploy Workers scripts and Durable Object bindings.
-3. Add GitHub repository Actions secrets:
-   - `CLOUDFLARE_API_TOKEN`
-   - `CLOUDFLARE_ACCOUNT_ID`
-4. Run the `Deploy TLCE Integration Worker` workflow manually.
-5. The Worker is created on its `workers.dev` hostname. The public `/health` endpoint works; protected search deliberately returns 503 until Access is configured.
+Default: Cloudflare Workers AI through the `AI` binding. The Free plan currently includes a daily free Neurons allocation; requests fail when quota is exhausted. See Cloudflare's current pricing before enabling paid usage.
 
-### Stage 2 — Enable identity protection
+Optional providers (choose one by setting `AI_PROVIDER`):
+- `workers-ai` — default, no provider API key.
+- `groq` — uses `openai/gpt-oss-120b`; set `GROQ_API_KEY` as a Worker secret.
+- `gemini` — set `GEMINI_API_KEY` as a Worker secret.
 
-1. In Cloudflare Dashboard, open Workers & Pages and select `tlce-integration-api`.
-2. Open Settings > Domains & Routes (or the Access tab) and enable Cloudflare Access for the Worker's production `workers.dev` URL. Choose an Allow policy limited to the user's intended email identity.
-3. Open the Worker's Access application and copy its audience tag. Find the account's Access team domain (for example, `your-team.cloudflareaccess.com`).
-4. Add GitHub Actions repository secrets:
-   - `CF_ACCESS_TEAM_DOMAIN`: tenant hostname only, without `https://`.
-   - `CF_ACCESS_AUD`: the Worker's Access application audience tag.
-5. Rerun `Deploy TLCE Integration Worker`. The workflow stores these as Worker secrets and redeploys.
+Do not send sensitive or confidential prompts to third-party providers unless the data-processing implications have been reviewed. Provider selection is an operator setting, not a browser-controlled parameter. No automatic cross-provider fallback is performed.
 
-### Optional search provider
+## R2 upload quarantine — important limitation
 
-Only if separately approved, add `BRAVE_SEARCH_API_KEY` as a GitHub Actions repository secret. DuckDuckGo and Wikipedia adapters require no provider key. Do not add any key to frontend code or the repository.
+Create a **private** R2 bucket named `tlce-private-uploads` and bind it as `UPLOADS`. Do not enable public bucket access or expose an R2.dev domain.
 
-## Domain and frontend
+The endpoint:
+1. Requires a valid Cloudflare Access JWT.
+2. Enforces a 5 MiB maximum and accepts only PNG/JPEG/PDF signatures.
+3. Generates a random object key and stores the object under `quarantine/`.
+4. Sets `application/octet-stream` and metadata `status=quarantined`, owner hash and SHA-256.
 
-The first deployment uses the `workers.dev` hostname and does not require changing Namecheap DNS or nameservers. Cloudflare recommends a custom domain or route for business-critical production; attaching `api.tlce.store` later requires an active Cloudflare zone and a separate DNS decision. Do not change existing DNS as part of this setup.
+There is deliberately no download/release endpoint. MIME/signature checks are **not antivirus scanning**. A file remains untrusted and unavailable until a real AV scanner has inspected it and a separately authorized release workflow is implemented.
 
-Do not connect the frontend until the deployed Worker URL and Cloudflare Access browser authentication/CORS behavior are verified. The current site is static GitHub Pages and cannot safely store provider secrets.
+Practical options:
+- For a production-grade edge upload inspection feature, Cloudflare WAF Malicious Uploads Detection is an Enterprise paid add-on.
+- For a low-cost design, keep R2 private and quarantine-only until a trusted external scanning service is selected and its privacy/retention/API terms are approved. Do not upload private user files to public malware-analysis services by default.
+- R2 Event Notifications can later route object-create events to a Cloudflare Queue consumer for asynchronous scanning. The scanner still needs to be an actual AV service; the queue itself does not scan.
 
-## Deliberate scope boundary
+## Automation without n8n
 
-LLM7 is not enabled by this Worker yet. Its provider endpoint, model identifier, account credentials, supported authentication contract and billing status must be verified before a production proxy is exposed. This avoids sending user prompts to an unverified endpoint or incurring unapproved charges.
+Use the Worker's Cron Trigger for simple periodic tasks and authenticated HTTP routes for event/webhook triggers. The included six-hour cron is inert unless both `AUTOMATION_WEBHOOK_URL` and `AUTOMATION_WEBHOOK_SECRET` are configured as Worker environment values/secrets. It sends only the cron name and scheduled timestamp.
+
+For multi-step retries, branching, human approvals, or complex visual workflows, n8n Cloud or a separately hosted n8n instance remains an optional later integration. Do not run n8n inside this Worker.
+
+## Configure secrets
+
+Set these through Wrangler secrets or the Cloudflare dashboard; never commit them:
+
+```sh
+npx wrangler secret put CF_ACCESS_TEAM_DOMAIN
+npx wrangler secret put CF_ACCESS_AUD
+# Optional server-to-server HMAC key map; JSON value, never commit it:
+npx wrangler secret put TLCE_API_KEYS_JSON
+# Optional, only for the selected provider:
+npx wrangler secret put GROQ_API_KEY
+npx wrangler secret put GEMINI_API_KEY
+# Optional scheduled webhook (both are required to activate the cron dispatch):
+npx wrangler secret put AUTOMATION_WEBHOOK_URL
+npx wrangler secret put AUTOMATION_WEBHOOK_SECRET
+```
+
+The existing GitHub Actions deployment workflow may also provision the Access secrets. Do not create duplicate secret sources without checking the workflow first.
+
+## Local validation and deployment
+
+```sh
+npx wrangler dev
+npx wrangler deploy
+```
+
+Before deployment:
+1. Create the private R2 bucket `tlce-private-uploads`.
+2. Confirm the Worker AI binding is enabled for the account.
+3. Configure Cloudflare Access on the Worker hostname and verify the browser authentication flow.
+4. Add only the secret for the chosen AI provider.
+5. Test invalid JWT, rate limit, oversized upload, disallowed file type, and provider failure.
+6. Verify R2 objects are not publicly accessible.
+
+Deployment is not performed by this change. Keep the Worker on the Free plan; do not enable paid products without separate approval.
+
+
+## Direct-to-R2 presigned upload
+
+Two upload modes are available:
+
+- `POST /api/files/presign` creates a 5-minute, single-object S3-compatible R2 presigned PUT URL. The client uploads directly to the private R2 bucket using the exact signed headers returned by the API, then calls `POST /api/files/complete` with the returned `objectKey`.
+- `POST /api/files/upload` is the strict Worker-proxy path. It checks Content-Length, actual received byte length, allowed MIME signatures (PNG/JPEG/PDF), and only then writes the object to R2 and enqueues inspection. Use this path when you require content validation before storage.
+
+**Important size boundary:** the presign endpoint validates the size declared by the client before issuing a URL, but a normal presigned S3 PUT URL does not impose a hard byte-range policy. The completion endpoint checks the actual R2 object size and deletes oversized objects. For strict pre-storage size enforcement, use the Worker-proxy endpoint. In both paths, the object remains private and quarantined.
+
+Presign request:
+```http
+POST /api/files/presign
+Content-Type: application/json
+
+{"contentType":"image/png","size":120000}
+```
+
+The response includes `uploadUrl`, `objectKey`, and the exact `requiredHeaders`. Browser upload:
+```js
+const grant = await fetch("/api/files/presign", {
+  method: "POST",
+  credentials: "include",
+  headers: { "content-type": "application/json" },
+  body: JSON.stringify({ contentType: file.type, size: file.size })
+}).then(r => r.json());
+
+const uploaded = await fetch(grant.uploadUrl, {
+  method: "PUT",
+  headers: grant.requiredHeaders,
+  body: file
+});
+if (!uploaded.ok) throw new Error("R2 upload failed");
+
+await fetch("/api/files/complete", {
+  method: "POST",
+  credentials: "include",
+  headers: { "content-type": "application/json" },
+  body: JSON.stringify({ objectKey: grant.objectKey })
+});
+```
+
+Configure R2 CORS from `r2-cors.json` (allow only `https://tlce.store`; do not use wildcard origins). The R2 bucket must remain private with no public development URL or custom public domain.
+
+## Queue processing and quarantine retention
+
+Create the queue `tlce-file-inspection` before deploying the updated Worker. The `UPLOAD_JOBS` producer is bound in `wrangler.toml`; the consumer:
+- checks the object exists, has the expected size and ownership/status metadata;
+- reads the content and checks its magic bytes against the claimed MIME;
+- deletes malformed, oversized, or inconsistent objects;
+- acknowledges structurally valid files but **leaves them quarantined**. This queue consumer is not an antivirus engine and never promotes a file to production.
+
+The six-hour Cron Trigger deletes objects under `quarantine/` older than seven days. This is a retention safety net, not a substitute for a malware scanner or a clean verdict.
+
+## R2 credentials
+
+Create an R2 S3 API token scoped to the single quarantine bucket with only the permissions required for presigned PUT. Store credentials as Worker secrets:
+```sh
+npx wrangler secret put R2_ACCOUNT_ID
+npx wrangler secret put R2_ACCESS_KEY_ID
+npx wrangler secret put R2_SECRET_ACCESS_KEY
+npx wrangler secret put R2_BUCKET_NAME
+```
+Never commit R2 credentials. Prefer separate credentials for a future production bucket. The current code intentionally has no production-bucket binding and no release route.
+
+
+## Server-to-server API key authentication
+
+Cloudflare Access JWT remains the preferred browser-facing identity mechanism. For trusted server-to-server callers only, protected routes also accept an HMAC-signed request when no Access assertion is supplied. **Never put this key material in GitHub Pages, browser JavaScript, mobile bundles, or public repositories.**
+
+Generate each key secret as at least 32 random bytes encoded with base64url (for example, Node.js `crypto.randomBytes(32).toString("base64url")`). Store `TLCE_API_KEYS_JSON` as a Worker secret containing a JSON map from key ID to that secret, for example structurally:
+
+```json
+{"automation-prod":"<base64url-encoded-32-byte-secret>"}
+```
+
+The request must include:
+- `x-tlce-key-id`
+- `x-tlce-timestamp` (Unix seconds; maximum clock skew 5 minutes)
+- `x-tlce-nonce` (unique random UUID)
+- `x-tlce-signature` (lowercase/uppercase hex HMAC-SHA256)
+
+The signed canonical string is the uppercase HTTP method, URL pathname plus query string, timestamp, nonce, and SHA-256 hex digest of the exact request body, joined by newline characters. API-key authentication is deliberately scoped to `POST /api/files/presign` and `POST /api/files/complete`; it cannot call the AI, search, or proxy-upload routes. HMAC uses the decoded per-key secret. Nonces are consumed atomically by the existing Durable Object and requests then pass through the same 20/minute per-principal limiter. Rotate keys by adding a new key ID, migrating callers, then removing the old ID from the secret. API keys do not replace user identity or authorization policy for browser users.
+
+## AI provider fallback
+
+`AI_PROVIDER` chooses the primary provider. `AI_FALLBACK_PROVIDERS` is a comma-separated server-side ordered fallback list; default: `workers-ai,groq,gemini`. The primary is tried first, followed by unique fallback entries. Each provider attempt is bounded to approximately 7 seconds; external fetches use abortable request timeouts. Workers AI binding calls are raced against a deadline, but the underlying model invocation may continue because the binding does not expose request cancellation. Provider credentials remain Worker secrets. If all providers fail, the browser receives one generic unavailable response.
+
+Fallback can incur usage charges with configured external providers. Keep only providers that have passed privacy, terms, budget and operational review in the fallback list.
+
+Server-side TypeScript signing example (run only in a trusted backend, never in the browser):
+
+```ts
+const encoder = new TextEncoder();
+const hex = (buffer: ArrayBuffer) =>
+  Array.from(new Uint8Array(buffer), (b) => b.toString(16).padStart(2, "0")).join("");
+const fromBase64Url = (value: string) => {
+  const normalized = value.replace(/-/g, "+").replace(/_/g, "/");
+  const binary = atob(normalized.padEnd(Math.ceil(normalized.length / 4) * 4, "="));
+  return Uint8Array.from(binary, (char) => char.charCodeAt(0));
+};
+
+async function signedHeaders(url: URL, method: string, bodyText: string, keyId: string, secretB64Url: string) {
+  const timestamp = String(Math.floor(Date.now() / 1000));
+  const nonce = crypto.randomUUID();
+  const bodyHash = hex(await crypto.subtle.digest("SHA-256", encoder.encode(bodyText)));
+  const canonical = [method.toUpperCase(), url.pathname + url.search, timestamp, nonce, bodyHash].join("\n");
+  const key = await crypto.subtle.importKey("raw", fromBase64Url(secretB64Url), { name: "HMAC", hash: "SHA-256" }, false, ["sign"]);
+  const signature = hex(await crypto.subtle.sign("HMAC", key, encoder.encode(canonical)));
+  return {
+    "content-type": "application/json",
+    "x-tlce-key-id": keyId,
+    "x-tlce-timestamp": timestamp,
+    "x-tlce-nonce": nonce,
+    "x-tlce-signature": signature,
+  };
+}
+```
+
+Pass the exact same `bodyText` string to `fetch` as the request body; changing whitespace or JSON serialization changes the body digest and invalidates the signature. Keep the secret only in the backend secret manager.
