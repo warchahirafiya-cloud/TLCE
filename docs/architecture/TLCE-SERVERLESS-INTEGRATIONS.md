@@ -49,3 +49,12 @@ Cloudflare WAF Malicious Uploads Detection is a managed option but is Enterprise
 The authenticated API issues short-lived R2 presigned PUT grants bound to a random quarantine key, MIME type, owner hash and quarantine status. A completion call verifies actual object size and metadata before sending a Queue message. The consumer validates ownership metadata, size and magic bytes, deletes malformed objects, and leaves structurally valid objects quarantined. A six-hour Cron Trigger deletes quarantine objects older than seven days. No malware-clean verdict or production promotion is implemented; this remains blocked on an approved antivirus scanner and a separately reviewed release workflow.
 
 For strict validation before any object is written to R2, use the Worker-proxy upload route, which validates actual request bytes and magic numbers before storage. Presigned direct PUT is an efficiency path and enforces declared size at grant time plus actual size at completion, not at the R2 ingress boundary.
+
+
+## API gateway hardening and AI resilience (draft implementation)
+
+- Cloudflare Access JWT remains the browser identity mechanism. A separate optional HMAC credential path is available only for trusted server-to-server calls to `POST /api/files/presign` and `POST /api/files/complete`; it is intentionally unavailable to public Pages JavaScript and other API routes.
+- HMAC requests bind method, pathname + query, timestamp, nonce and exact body digest. Five-minute clock skew, atomic Durable Object nonce consumption and the existing 20 requests/minute per-principal limit reduce replay and abuse risk.
+- AI routing tries the configured primary provider followed by the unique ordered fallback list. The default order is Workers AI, Groq, then Gemini. Each attempt has a seven-second deadline; external fetches are abortable, while a Workers AI binding race cannot cancel the underlying invocation.
+- Queue validation enforces object ownership/status/size and claimed MIME-to-magic-byte agreement. Rejected objects are deleted and sanitized operational events are emitted. Structurally valid objects remain private in `quarantine/`; no production promotion or malware-clean verdict is implemented.
+- This is source-only work on the draft development branch. Secrets, Durable Object/R2/Queue resources, Cloudflare settings and production deployments remain unconfigured and unchanged.
