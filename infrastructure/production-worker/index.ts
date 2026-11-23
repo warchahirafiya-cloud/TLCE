@@ -46,12 +46,21 @@ interface DurableObjectNamespaceLike {
 }
 interface DurableObjectStorageLike {
   get<T>(key: string): Promise<T | undefined>;
-  put<T>(key: string, value: T): Promise<void>;
-  transaction<T>(closure: (txn: { get<T>(key: string): Promise<T | undefined>; put<T>(key: string, value: T): Promise<void> }) => Promise<T>): Promise<T>;
+  put<T>(key: string, value: T, options?: { expirationTtl?: number }): Promise<void>;
+  transaction<T>(closure: (txn: {
+    get<T>(key: string): Promise<T | undefined>;
+    put<T>(key: string, value: T, options?: { expirationTtl?: number }): Promise<void>;
+  }) => Promise<T>): Promise<T>;
 }
 interface DurableObjectStateLike { storage: DurableObjectStorageLike; }
 interface RateWindow { startedAt: number; count: number; }
 interface AccessJwk extends JsonWebKey { kid?: string; kty?: string; }
+interface AccessIdentity {
+  subject: string;
+  email: string | null;
+  name: string | null;
+  issuer: string;
+}
 
 const WINDOW_MS = 60_000;
 const MAX_REQUESTS = 20;
@@ -104,7 +113,7 @@ async function getJwks(teamDomain: string): Promise<AccessJwk[]> {
   cachedJwks = { keys: payload.keys, expiresAt: Date.now() + 5 * 60_000 };
   return payload.keys;
 }
-async function verifyAccessJwt(token: string, env: Env): Promise<string | null> {
+async function verifyAccessJwt(token: string, env: Env): Promise<AccessIdentity | null> {
   try {
     const parts = token.split(".");
     if (parts.length !== 3) return null;
@@ -117,13 +126,25 @@ async function verifyAccessJwt(token: string, env: Env): Promise<string | null> 
     if (claims.iss !== `https://${env.CF_ACCESS_TEAM_DOMAIN}`) return null;
     const audiences = Array.isArray(claims.aud) ? claims.aud : [claims.aud];
     if (!audiences.includes(env.CF_ACCESS_AUD) || typeof claims.sub !== "string" || !claims.sub) return null;
+    if (typeof claims.iat === "number" && claims.iat > now + 30) return null;
     const jwks = await getJwks(env.CF_ACCESS_TEAM_DOMAIN);
     const jwk = jwks.find((key) => key.kid === header.kid && key.kty === "RSA");
     if (!jwk) return null;
     const key = await crypto.subtle.importKey("jwk", jwk, { name: "RSASSA-PKCS1-v1_5", hash: "SHA-256" }, false, ["verify"]);
     const signingInput = new TextEncoder().encode(`${parts[0]}.${parts[1]}`).buffer as ArrayBuffer;
     const signature = decodeBase64Url(parts[2]!).slice().buffer as ArrayBuffer;
-    return await crypto.subtle.verify("RSASSA-PKCS1-v1_5", key, signature, signingInput) ? claims.sub : null;
+    const valid = await crypto.subtle.verify("RSASSA-PKCS1-v1_5", key, signature, signingInput);
+    if (!valid) return null;
+    // Only claims covered by the verified Access JWT are exposed to application code.
+    const email = typeof claims.email === "string" && claims.email.length <= 320 ? claims.email : null;
+    const nameClaim = typeof claims.name === "string" ? claims.name : claims.common_name;
+    const name = typeof nameClaim === "string" && nameClaim.length <= 200 ? nameClaim : null;
+    return {
+      subject: claims.sub,
+      email,
+      name,
+      issuer: String(claims.iss),
+    };
   } catch {
     return null;
   }
@@ -215,23 +236,26 @@ export async function verifyApiSignature(request: Request, env: Env): Promise<st
   return "api-key:" + keyId;
 }
 
-async function requireIdentity(request: Request, env: Env): Promise<{ subject: string } | { response: Response }> {
+async function requireIdentity(request: Request, env: Env): Promise<AccessIdentity | { subject: string; email: null; name: null; issuer: "hmac" } | { response: Response }> {
   const assertion = request.headers.get("cf-access-jwt-assertion");
   if (assertion && (!env.CF_ACCESS_TEAM_DOMAIN || !env.CF_ACCESS_AUD)) {
     return { response: json({ error: "Identity provider is not configured" }, 503) };
   }
-  let subject: string | null = null;
-  if (assertion) subject = await verifyAccessJwt(assertion, env);
+  let identity: AccessIdentity | null = null;
+  if (assertion) identity = await verifyAccessJwt(assertion, env);
   else {
-    try { subject = await verifyApiSignature(request, env); } catch { subject = null; }
+    try {
+      const hmacPrincipal = await verifyApiSignature(request, env);
+      if (hmacPrincipal) identity = { subject: hmacPrincipal, email: null, name: null, issuer: "hmac" };
+    } catch { identity = null; }
   }
-  if (!subject) return { response: json({ error: "Authentication required" }, 401) };
+  if (!identity) return { response: json({ error: "Authentication required" }, 401) };
   try {
-    if (!await consumeRateLimit(env, subject)) return { response: json({ error: "Rate limit exceeded" }, 429) };
+    if (!await consumeRateLimit(env, identity.subject)) return { response: json({ error: "Rate limit exceeded" }, 429) };
   } catch {
     return { response: json({ error: "Rate limit service unavailable" }, 503) };
   }
-  return { subject };
+  return identity;
 }
 async function withTimeout<T>(operation: Promise<T>, timeoutMs: number): Promise<T> {
   let timer: ReturnType<typeof setTimeout> | undefined;
@@ -462,15 +486,13 @@ export class RateLimiter {
       if (typeof body.nonce !== "string" || typeof body.expiresAt !== "number" || body.expiresAt <= now / 1000) return json({ allowed: false }, 400);
       const nonce = body.nonce;
       const expiresAt = body.expiresAt;
+      // A distinct storage key per nonce avoids bounded-list eviction, which could
+      // otherwise make a still-live nonce replayable under high request volume.
       const allowed = await this.state.storage.transaction(async (txn) => {
-        const current = await txn.get<Array<{ nonce: string; expiresAt: number }>>("nonces") ?? [];
-        const live = current.filter((item) => item.expiresAt > now / 1000);
-        if (live.some((item) => item.nonce === nonce)) {
-          await txn.put("nonces", live);
-          return false;
-        }
-        live.push({ nonce, expiresAt: Math.min(expiresAt, now / 1000 + API_NONCE_WINDOW_SECONDS) });
-        await txn.put("nonces", live.slice(-256));
+        const nonceKey = `nonce:${nonce}`;
+        const alreadyConsumed = await txn.get<boolean>(nonceKey);
+        if (alreadyConsumed) return false;
+        await txn.put(nonceKey, true, { expirationTtl: API_NONCE_WINDOW_SECONDS });
         return true;
       });
       return json({ allowed }, allowed ? 200 : 409);
