@@ -1,4 +1,3 @@
-/// <reference types="@cloudflare/workers-types" />
 import { searchWeb } from "../search/search-engine.js";
 import { createR2PresignedPut } from "./r2-presign.js";
 
@@ -8,6 +7,7 @@ interface QuarantineJob {
   ownerHash?: string;
   contentType?: string;
   expectedSize?: number;
+  queuedAt?: string;
 }
 interface Env {
   R2_ACCOUNT_ID?: string;
