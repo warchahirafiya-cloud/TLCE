@@ -16,6 +16,7 @@ assert.ok(islandAsset.startsWith("assets/"), "Unexpected island asset output pat
 
 await rm(outputRoot, { recursive: true, force: true });
 await mkdir(outputRoot, { recursive: true });
+await writeFile(path.join(outputRoot, ".nojekyll"), "");
 
 async function copy(source, destination) {
   await cp(path.join(repositoryRoot, source), path.join(outputRoot, destination), {
