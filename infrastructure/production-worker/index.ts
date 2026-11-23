@@ -34,7 +34,7 @@ interface Env {
   NONCE_TRACKER: DurableObjectNamespace;
 }
 interface RateWindow { startedAt: number; count: number; }
-interface AccessJwk extends JsonWebKey { kid?: string; kty?: string; }
+interface AccessJwk extends JsonWebKey { kid?: string; }
 interface AccessIdentity {
   subject: string;
   email: string | null;
