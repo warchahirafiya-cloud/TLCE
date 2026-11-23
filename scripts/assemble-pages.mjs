@@ -33,7 +33,7 @@ await copy("apps/parent/bootstrap.js", "bootstrap.js");
 await copy("apps/parent/styles.css", "styles.css");
 await copy("apps/web/favicon.svg", "favicon.svg");
 await copy("dist/browser/runtime", "runtime");
-await copy("dist/ui-build/assets", "_ui/assets");
+await copy("dist/ui-build/assets", "ui/assets");
 
 const questpulsePath = path.join(outputRoot, "questpulse", "index.html");
 let questpulseHtml = await readFile(questpulsePath, "utf8");
@@ -87,8 +87,8 @@ const required = [
   "web/questpulse.js",
   "web/styles.css",
   "runtime/engine/src/index.js",
-  `_ui/${islandAsset}`,
-  "_ui/assets/tlce-islands.css",
+  `ui/${islandAsset}`,
+  "ui/assets/tlce-islands.css",
 ];
 for (const relative of required) {
   const fullPath = path.join(outputRoot, relative);
