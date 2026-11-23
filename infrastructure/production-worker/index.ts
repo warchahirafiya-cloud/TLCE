@@ -1,15 +1,28 @@
 import { searchWeb } from "../search/search-engine.js";
+import { createR2PresignedPut } from "./r2-presign.js";
 
 interface AiBinding {
   run(model: string, input: { messages: Array<{ role: "system" | "user"; content: string }> }): Promise<unknown>;
 }
 interface R2BucketLike {
+  head(key: string): Promise<{ size: number; uploaded: Date; httpMetadata?: { contentType?: string }; customMetadata?: Record<string, string> } | null>;
+  get(key: string): Promise<{ size: number; arrayBuffer(): Promise<ArrayBuffer> } | null>;
+  delete(key: string): Promise<void>;
+  list(options?: { prefix?: string; limit?: number; cursor?: string }): Promise<{ objects: Array<{ key: string; uploaded: Date }>; truncated: boolean; cursor?: string }>;
   put(key: string, value: ArrayBuffer, options?: {
     httpMetadata?: { contentType?: string };
     customMetadata?: Record<string, string>;
   }): Promise<{ etag: string }>;
 }
+interface QueueProducerLike { send(message: unknown): Promise<void>; }
+interface QueueMessageLike<T> { body: T; ack(): void; retry(options?: { delaySeconds?: number }): void; }
+interface QueueBatchLike<T> { messages: QueueMessageLike<T>[]; }
 interface Env {
+  R2_ACCOUNT_ID?: string;
+  R2_ACCESS_KEY_ID?: string;
+  R2_SECRET_ACCESS_KEY?: string;
+  R2_BUCKET_NAME?: string;
+  UPLOAD_JOBS?: QueueProducerLike;
   TLCE_ORIGIN: string;
   CF_ACCESS_TEAM_DOMAIN: string;
   CF_ACCESS_AUD: string;
@@ -41,7 +54,7 @@ const WINDOW_MS = 60_000;
 const MAX_REQUESTS = 20;
 const MAX_QUERY_LENGTH = 240;
 const MAX_PROMPT_LENGTH = 8_000;
-const MAX_UPLOAD_BYTES = 5 * 1024 * 1024;
+const MAX_UPLOAD_BYTES = 5 * 1024 * 1024;\nconst QUARANTINE_RETENTION_MS = 7 * 24 * 60 * 60 * 1000;
 let cachedJwks: { expiresAt: number; keys: AccessJwk[] } | undefined;
 
 function json(body: unknown, status = 200, extra: Record<string, string> = {}): Response {
@@ -194,7 +207,79 @@ function detectAllowedFile(bytes: Uint8Array): { mime: string; extension: string
   if (bytes.length >= 5 && bytes[0] === 0x25 && bytes[1] === 0x50 && bytes[2] === 0x44 && bytes[3] === 0x46 && bytes[4] === 0x2d) return { mime: "application/pdf", extension: "pdf" };
   return null;
 }
-async function uploadToQuarantine(request: Request, env: Env, subject: string): Promise<Response> {
+
+function allowedMime(value: unknown): { mime: string; extension: string } | null {
+  if (value === "image/png") return { mime: "image/png", extension: "png" };
+  if (value === "image/jpeg") return { mime: "image/jpeg", extension: "jpg" };
+  if (value === "application/pdf") return { mime: "application/pdf", extension: "pdf" };
+  return null;
+}
+function verifyMagic(bytes: Uint8Array, mime: string): boolean {
+  if (mime === "image/png") return bytes.length >= 8 && [0x89,0x50,0x4e,0x47,0x0d,0x0a,0x1a,0x0a].every((v,i)=>bytes[i]===v);
+  if (mime === "image/jpeg") return bytes.length >= 3 && bytes[0]===0xff && bytes[1]===0xd8 && bytes[2]===0xff;
+  if (mime === "application/pdf") return bytes.length >= 5 && bytes[0]===0x25 && bytes[1]===0x50 && bytes[2]===0x44 && bytes[3]===0x46 && bytes[4]===0x2d;
+  return false;
+}
+async function createUploadUrl(body: { contentType?: unknown; size?: unknown }, env: Env, subject: string): Promise<Response> {
+  const mime = allowedMime(body.contentType);
+  if (!mime) return json({ error: "Unsupported content type" }, 415);
+  if (typeof body.size !== "number" || !Number.isSafeInteger(body.size) || body.size < 1 || body.size > MAX_UPLOAD_BYTES) {
+    return json({ error: "File size must be between 1 byte and 5 MiB" }, 413);
+  }
+  if (!env.R2_ACCOUNT_ID || !env.R2_ACCESS_KEY_ID || !env.R2_SECRET_ACCESS_KEY || !env.R2_BUCKET_NAME) {
+    return json({ error: "R2 signing is not configured" }, 503);
+  }
+  const ownerHash = await hashSubject(subject);
+  const key = `quarantine/${ownerHash}/${crypto.randomUUID()}.${mime.extension}`;
+  const uploadUrl = await createR2PresignedPut({
+    accountId: env.R2_ACCOUNT_ID,
+    accessKeyId: env.R2_ACCESS_KEY_ID,
+    secretAccessKey: env.R2_SECRET_ACCESS_KEY,
+    bucket: env.R2_BUCKET_NAME,
+    key,
+    contentType: mime.mime,
+    ownerHash,
+    expiresSeconds: 300,
+  });
+  return json({
+    uploadUrl,
+    method: "PUT",
+    objectKey: key,
+    expiresInSeconds: 300,
+    requiredHeaders: {
+      "Content-Type": mime.mime,
+      "x-amz-meta-ownerhash": ownerHash,
+      "x-amz-meta-status": "quarantined",
+    },
+    maxBytes: MAX_UPLOAD_BYTES,
+    status: "quarantine_upload_authorized",
+  }, 201);
+}
+async function completeUpload(body: { objectKey?: unknown }, env: Env, subject: string): Promise<Response> {
+  if (!env.UPLOADS || !env.UPLOAD_JOBS) return json({ error: "Upload processing is not configured" }, 503);
+  const ownerHash = await hashSubject(subject);
+  if (typeof body.objectKey !== "string" || !body.objectKey.startsWith(`quarantine/${ownerHash}/`) || body.objectKey.includes("..")) {
+    return json({ error: "Invalid quarantine object key" }, 400);
+  }
+  const object = await env.UPLOADS.head(body.objectKey);
+  if (!object) return json({ error: "Uploaded object not found" }, 404);
+  const mime = allowedMime(object.httpMetadata?.contentType);
+  if (object.size < 1 || object.size > MAX_UPLOAD_BYTES || !mime ||
+      object.customMetadata?.ownerhash !== ownerHash || object.customMetadata?.status !== "quarantined") {
+    await env.UPLOADS.delete(body.objectKey);
+    return json({ error: "Upload rejected by quarantine policy" }, 415);
+  }
+  await env.UPLOAD_JOBS.send({
+    type: "inspect-quarantine-object",
+    objectKey: body.objectKey,
+    ownerHash,
+    contentType: mime.mime,
+    expectedSize: object.size,
+    queuedAt: new Date().toISOString(),
+  });
+  return json({ status: "quarantined", scanStatus: "pending_validation", objectKey: body.objectKey }, 202);
+}
+\nasync function uploadToQuarantine(request: Request, env: Env, subject: string): Promise<Response> {
   if (!env.UPLOADS) return json({ error: "File storage is not configured" }, 503);
   const declaredLength = Number(request.headers.get("content-length") ?? "0");
   if (!Number.isFinite(declaredLength) || declaredLength <= 0 || declaredLength > MAX_UPLOAD_BYTES) {
@@ -297,7 +382,7 @@ export default {
       }
     }
 
-    if (url.pathname === "/api/files/upload" && request.method === "POST") {
+    if (url.pathname === "/api/files/presign" && request.method === "POST") {\n      const identity = await requireIdentity(request, env);\n      if ("response" in identity) return jsonFromResponse(identity.response, cors);\n      let body: { contentType?: unknown; size?: unknown };\n      try { body = await request.json() as typeof body; } catch { return json({ error: "Invalid JSON body" }, 400, cors); }\n      try { return withCors(await createUploadUrl(body, env, identity.subject), cors); } catch { return json({ error: "Could not create upload URL" }, 502, cors); }\n    }\n\n    if (url.pathname === "/api/files/complete" && request.method === "POST") {\n      const identity = await requireIdentity(request, env);\n      if ("response" in identity) return jsonFromResponse(identity.response, cors);\n      let body: { objectKey?: unknown };\n      try { body = await request.json() as typeof body; } catch { return json({ error: "Invalid JSON body" }, 400, cors); }\n      try { return withCors(await completeUpload(body, env, identity.subject), cors); } catch { return json({ error: "Upload completion failed" }, 502, cors); }\n    }\n\n    if (url.pathname === "/api/files/upload" && request.method === "POST") {
       const identity = await requireIdentity(request, env);
       if ("response" in identity) return jsonFromResponse(identity.response, cors);
       try { return await uploadToQuarantine(request, env, identity.subject).then((response) => withCors(response, cors)); }
