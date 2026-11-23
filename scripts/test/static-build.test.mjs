@@ -53,7 +53,7 @@ test("all HTML routes receive a same-origin island bridge entry", async () => {
 });
 
 test("Tailwind CSS is emitted as a same-origin asset for Shadow DOM islands", async () => {
-  const css = await readFile(path.join(root, "_ui/assets/tlce-islands.css"), "utf8");
+  const css = await readFile(path.join(root, "ui/assets/tlce-islands.css"), "utf8");
   assert.match(css, /--color-tlce-accent/);
   assert.match(css, /\.inline-flex/);
 });
