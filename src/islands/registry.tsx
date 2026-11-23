@@ -41,7 +41,8 @@ function readIslandProps(host: HTMLElement): IslandProps {
 function disposeRecord(host: HTMLElement, record: MountRecord): void {
   if (record.cancelled) return;
   record.cancelled = true;
-  record.observer?.unobserve(host);
+  record.observer?.disconnect();
+  record.observer = undefined;
   record.cleanup?.();
   if (mountByHost.get(host) === record) mountByHost.delete(host);
   host.removeAttribute("aria-busy");
@@ -60,11 +61,14 @@ async function loadAndMount(
   host.dataset.tlceIslandStatus = "loading";
   host.setAttribute("aria-busy", "true");
 
+  let shadow: ShadowRoot | null = null;
+  let mountPoint: HTMLDivElement | null = null;
+
   try {
     const component = await loader();
     if (record.cancelled || mountByHost.get(host) !== record) return;
 
-    const shadow = host.shadowRoot ?? host.attachShadow({ mode: "open" });
+    shadow = host.shadowRoot ?? host.attachShadow({ mode: "open" });
     shadow.replaceChildren();
 
     // Keep the existing same-origin stylesheet boundary and Shadow DOM isolation.
@@ -73,7 +77,7 @@ async function loadAndMount(
     stylesheet.href = stylesheetUrl;
     stylesheet.dataset.tlceIslandStyles = "true";
 
-    const mountPoint = document.createElement("div");
+    mountPoint = document.createElement("div");
     mountPoint.className = "min-h-full";
     shadow.append(stylesheet, mountPoint);
     render(h(component, props), mountPoint);
@@ -86,6 +90,12 @@ async function loadAndMount(
     host.removeAttribute("aria-busy");
   } catch (error) {
     if (record.cancelled || mountByHost.get(host) !== record) return;
+    try {
+      if (mountPoint) render(null, mountPoint);
+    } catch {
+      // Preserve the original loader/render error while still clearing the host.
+    }
+    shadow?.replaceChildren();
     host.dataset.tlceIslandStatus = "error";
     host.removeAttribute("aria-busy");
     mountByHost.delete(host);
