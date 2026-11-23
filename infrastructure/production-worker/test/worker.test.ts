@@ -150,3 +150,51 @@ test("AI provider fallback uses Groq when Workers AI fails", async () => {
     globalThis.fetch = originalFetch;
   }
 });
+
+
+test("HMAC API signature is scoped, body-bound and replay protected", async () => {
+  const secretBytes = Uint8Array.from({ length: 32 }, (_, index) => index + 1);
+  const secret = Buffer.from(secretBytes).toString("base64url");
+  const keyId = "test-service";
+  const timestamp = String(Math.floor(Date.now() / 1000));
+  const nonce = "c6ef3e53-6b28-45af-8b1a-b5a1d5ad7c42";
+  const url = new URL("https://worker.example/api/files/presign?kind=avatar");
+  const bodyText = JSON.stringify({ contentType: "image/png", size: 8 });
+  const bodyHashBuffer = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(bodyText).buffer as ArrayBuffer);
+  const bodyHash = Array.from(new Uint8Array(bodyHashBuffer), (byte) => byte.toString(16).padStart(2, "0")).join("");
+  const canonical = ["POST", url.pathname + url.search, timestamp, nonce, bodyHash].join("\\n");
+  const key = await crypto.subtle.importKey("raw", new Uint8Array(secretBytes).buffer as ArrayBuffer, { name: "HMAC", hash: "SHA-256" }, false, ["sign"]);
+  const signatureBuffer = await crypto.subtle.sign("HMAC", key, new TextEncoder().encode(canonical).buffer as ArrayBuffer);
+  const signature = Array.from(new Uint8Array(signatureBuffer), (byte) => byte.toString(16).padStart(2, "0")).join("");
+
+  const limiter = new RateLimiter({ storage: new MemoryStorage() } as never);
+  const signedEnv = {
+    TLCE_API_KEYS_JSON: JSON.stringify({ [keyId]: secret }),
+    RATE_LIMITER: { idFromName: () => "nonce-store", get: () => ({ fetch: (request: Request) => limiter.fetch(request) }) },
+  };
+  const makeRequest = () => new Request(url, {
+    method: "POST",
+    headers: {
+      "content-type": "application/json",
+      "x-tlce-key-id": keyId,
+      "x-tlce-timestamp": timestamp,
+      "x-tlce-nonce": nonce,
+      "x-tlce-signature": signature,
+    },
+    body: bodyText,
+  });
+  assert.equal(await verifyApiSignature(makeRequest(), signedEnv as never), "api-key:test-service");
+  assert.equal(await verifyApiSignature(makeRequest(), signedEnv as never), null);
+  const wrongRoute = new Request("https://worker.example/api/ai/chat", {
+    method: "POST",
+    headers: {
+      "content-type": "application/json",
+      "x-tlce-key-id": keyId,
+      "x-tlce-timestamp": timestamp,
+      "x-tlce-nonce": "c6ef3e53-6b28-45af-8b1a-b5a1d5ad7c43",
+      "x-tlce-signature": signature,
+    },
+    body: bodyText,
+  });
+  assert.equal(await verifyApiSignature(wrongRoute, signedEnv as never), null);
+});
