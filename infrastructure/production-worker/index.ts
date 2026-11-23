@@ -153,7 +153,7 @@ async function verifyApiSignature(request: Request, env: Env): Promise<string | 
   const nonce = request.headers.get("x-tlce-nonce");
   const supplied = request.headers.get("x-tlce-signature");
   if (!keyId || !timestamp || !nonce || !supplied || !env.TLCE_API_KEYS_JSON) return null;
-  if (!/^[a-zA-Z0-9_-]{3,64}$/.test(keyId) || !/^\\d{10}$/.test(timestamp) || !/^[a-f0-9-]{32,36}$/i.test(nonce)) return null;
+  if (!/^[a-zA-Z0-9_-]{3,64}$/.test(keyId) || !/^\d{10}$/.test(timestamp) || !/^[a-f0-9-]{32,36}$/i.test(nonce)) return null;
   const issuedAt = Number(timestamp);
   const now = Math.floor(Date.now() / 1000);
   if (!Number.isSafeInteger(issuedAt) || Math.abs(now - issuedAt) > API_SIGNATURE_WINDOW_SECONDS) return null;
@@ -167,7 +167,7 @@ async function verifyApiSignature(request: Request, env: Env): Promise<string | 
   const body = await request.clone().arrayBuffer();
   if (body.byteLength > 64 * 1024) return null;
   const bodyHash = bytesToHex(await crypto.subtle.digest("SHA-256", body));
-  const canonical = [request.method.toUpperCase(), new URL(request.url).pathname, timestamp, nonce, bodyHash].join("\\n");
+  const canonical = [request.method.toUpperCase(), new URL(request.url).pathname, timestamp, nonce, bodyHash].join("\n");
   const cryptoKey = await crypto.subtle.importKey("raw", secret, { name: "HMAC", hash: "SHA-256" }, false, ["sign"]);
   const expected = bytesToHex(await crypto.subtle.sign("HMAC", cryptoKey, new TextEncoder().encode(canonical)));
   if (!/^[a-f0-9]{64}$/i.test(supplied) || !safeEqual(expected, supplied.toLowerCase())) return null;
@@ -181,7 +181,8 @@ async function verifyApiSignature(request: Request, env: Env): Promise<string | 
   if (!replayResponse.ok || (await replayResponse.json() as { allowed?: boolean }).allowed !== true) return null;
   return "api-key:" + keyId;
 }
-\nasync function requireIdentity(request: Request, env: Env): Promise<{ subject: string } | { response: Response }> {
+
+async function requireIdentity(request: Request, env: Env): Promise<{ subject: string } | { response: Response }> {
   const assertion = request.headers.get("cf-access-jwt-assertion");
   if (assertion && (!env.CF_ACCESS_TEAM_DOMAIN || !env.CF_ACCESS_AUD)) {
     return { response: json({ error: "Identity provider is not configured" }, 503) };
