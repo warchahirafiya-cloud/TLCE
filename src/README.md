@@ -14,7 +14,7 @@ The existing page sources remain in `apps/parent/` and `apps/web/`. They are cop
 
 The bridge is built from `src/islands/entry.tsx`. Components register by name and mount only into explicit `[data-tlce-island]` hosts. Each island gets a Shadow DOM root and a same-origin Tailwind stylesheet link. This keeps Tailwind preflight and utility styles from changing the legacy page CSS and remains compatible with the current `style-src 'self'` CSP.
 
-A local preview is available at `/src/islands/dev.html` when running Vite's development server.
+Run `npm run dev:ui` and open `/src/islands/dev.html` for a local island preview. This command compiles the Tailwind stylesheet into an ignored development-only file before starting Vite.
 
 ## Worker API client
 
