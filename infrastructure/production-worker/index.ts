@@ -1,33 +1,25 @@
+/// <reference types="@cloudflare/workers-types" />
 import { searchWeb } from "../search/search-engine.js";
 import { createR2PresignedPut } from "./r2-presign.js";
 
-interface AiBinding {
-  run(model: string, input: { messages: Array<{ role: "system" | "user"; content: string }> }): Promise<unknown>;
+interface QuarantineJob {
+  type?: string;
+  objectKey?: string;
+  ownerHash?: string;
+  contentType?: string;
+  expectedSize?: number;
 }
-interface R2BucketLike {
-  head(key: string): Promise<{ size: number; uploaded: Date; httpMetadata?: { contentType?: string }; customMetadata?: Record<string, string> } | null>;
-  get(key: string): Promise<{ size: number; arrayBuffer(): Promise<ArrayBuffer>; customMetadata?: Record<string, string> } | null>;
-  delete(key: string): Promise<void>;
-  list(options?: { prefix?: string; limit?: number; cursor?: string }): Promise<{ objects: Array<{ key: string; uploaded: Date }>; truncated: boolean; cursor?: string }>;
-  put(key: string, value: ArrayBuffer, options?: {
-    httpMetadata?: { contentType?: string };
-    customMetadata?: Record<string, string>;
-  }): Promise<{ etag: string }>;
-}
-interface QueueProducerLike { send(message: unknown): Promise<void>; }
-interface QueueMessageLike<T> { body: T; ack(): void; retry(options?: { delaySeconds?: number }): void; }
-interface QueueBatchLike<T> { messages: QueueMessageLike<T>[]; }
 interface Env {
   R2_ACCOUNT_ID?: string;
   R2_ACCESS_KEY_ID?: string;
   R2_SECRET_ACCESS_KEY?: string;
   R2_BUCKET_NAME?: string;
-  UPLOAD_JOBS?: QueueProducerLike;
+  UPLOAD_JOBS?: Queue<QuarantineJob>;
   TLCE_ORIGIN: string;
   CF_ACCESS_TEAM_DOMAIN: string;
   CF_ACCESS_AUD: string;
   BRAVE_SEARCH_API_KEY?: string;
-  AI?: AiBinding;
+  AI?: Ai;
   AI_PROVIDER?: string;
   AI_MODEL?: string;
   GROQ_API_KEY?: string;
@@ -35,25 +27,12 @@ interface Env {
   /** JSON map of server-to-server key IDs to base64url-encoded 32-byte HMAC secrets. Never expose to Pages. */
   TLCE_API_KEYS_JSON?: string;
   AI_FALLBACK_PROVIDERS?: string;
-  UPLOADS?: R2BucketLike;
+  UPLOADS?: R2Bucket;
   AUTOMATION_WEBHOOK_URL?: string;
   AUTOMATION_WEBHOOK_SECRET?: string;
-  RATE_LIMITER: DurableObjectNamespaceLike;
-  NONCE_TRACKER: DurableObjectNamespaceLike;
+  RATE_LIMITER: DurableObjectNamespace;
+  NONCE_TRACKER: DurableObjectNamespace;
 }
-interface DurableObjectNamespaceLike {
-  idFromName(name: string): unknown;
-  get(id: unknown): { fetch(request: Request): Promise<Response> };
-}
-interface DurableObjectStorageLike {
-  get<T>(key: string): Promise<T | undefined>;
-  put<T>(key: string, value: T, options?: { expirationTtl?: number }): Promise<void>;
-  transaction<T>(closure: (txn: {
-    get<T>(key: string): Promise<T | undefined>;
-    put<T>(key: string, value: T, options?: { expirationTtl?: number }): Promise<void>;
-  }) => Promise<T>): Promise<T>;
-}
-interface DurableObjectStateLike { storage: DurableObjectStorageLike; }
 interface RateWindow { startedAt: number; count: number; }
 interface AccessJwk extends JsonWebKey { kid?: string; kty?: string; }
 interface AccessIdentity {
@@ -476,8 +455,10 @@ async function hashSubject(subject: string): Promise<string> {
   return Array.from(new Uint8Array(digest), (byte) => byte.toString(16).padStart(2, "0")).join("");
 }
 
+interface NonceRecord { expiresAt: number; }
+
 export class NonceTracker {
-  constructor(private readonly state: DurableObjectStateLike) {}
+  constructor(private readonly state: DurableObjectState) {}
 
   async fetch(request: Request): Promise<Response> {
     if (request.method !== "POST" || new URL(request.url).pathname !== "/consume") {
@@ -503,22 +484,43 @@ export class NonceTracker {
       return json({ allowed: false }, 400);
     }
 
-    // One durable key per nonce. The transaction is atomic across isolates,
-    // and TTL is tied to the accepted replay window.
-    const ttl = Math.max(1, Math.ceil(body.expiresAt - nowSeconds));
+    // Durable Object storage has no expirationTtl option. Store an explicit
+    // expiry and atomically replace only records whose replay window elapsed.
+    const nonceKey = `nonce:${body.nonce}`;
     const allowed = await this.state.storage.transaction(async (txn) => {
-      const nonceKey = `nonce:${body.nonce}`;
-      if (await txn.get<boolean>(nonceKey)) return false;
-      await txn.put(nonceKey, true, { expirationTtl: ttl });
+      const existing = await txn.get<NonceRecord>(nonceKey);
+      if (existing && existing.expiresAt > nowSeconds) return false;
+      await txn.put(nonceKey, { expiresAt: body.expiresAt });
       return true;
     });
 
+    if (allowed) {
+      const currentAlarm = await this.state.storage.getAlarm();
+      const expiresAtMs = body.expiresAt * 1000;
+      if (currentAlarm === null || currentAlarm > expiresAtMs) {
+        await this.state.storage.setAlarm(expiresAtMs);
+      }
+    }
     return json({ allowed }, allowed ? 200 : 409);
+  }
+
+  async alarm(): Promise<void> {
+    const nowSeconds = Math.floor(Date.now() / 1000);
+    const entries = await this.state.storage.list<NonceRecord>({ prefix: "nonce:" });
+    let nextExpiry: number | undefined;
+    for (const [key, record] of entries) {
+      if (record.expiresAt <= nowSeconds) {
+        await this.state.storage.delete(key);
+      } else if (nextExpiry === undefined || record.expiresAt < nextExpiry) {
+        nextExpiry = record.expiresAt;
+      }
+    }
+    if (nextExpiry !== undefined) await this.state.storage.setAlarm(nextExpiry * 1000);
   }
 }
 
 export class RateLimiter {
-  constructor(private readonly state: DurableObjectStateLike) {}
+  constructor(private readonly state: DurableObjectState) {}
 
   async fetch(request: Request): Promise<Response> {
     if (request.method !== "POST" || new URL(request.url).pathname !== "/consume") {
@@ -614,7 +616,7 @@ export default {
     return json({ error: "Not found" }, 404, cors);
   },
 
-  async queue(batch: QueueBatchLike<{ type?: string; objectKey?: string; ownerHash?: string; contentType?: string; expectedSize?: number }>, env: Env): Promise<void> {
+  async queue(batch: MessageBatch<QuarantineJob>, env: Env): Promise<void> {
     for (const message of batch.messages) {
       try {
         const job = message.body;
