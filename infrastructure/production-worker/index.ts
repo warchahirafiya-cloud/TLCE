@@ -249,7 +249,7 @@ async function runAi(prompt: string, env: Env): Promise<string> {
         contents: [{ role: "user", parts: [{ text: prompt }] }],
         generationConfig: { temperature: 0.2, maxOutputTokens: 1200 },
       }),
-      signal: AbortSignal.timeout(20_000),
+      signal: AbortSignal.timeout(7_000),
     });
     if (!response.ok) throw new Error("Gemini request failed");
     const data = await response.json() as { candidates?: Array<{ content?: { parts?: Array<{ text?: string }> } }> };
@@ -522,7 +522,8 @@ export default {
     for (const message of batch.messages) {
       try {
         const job = message.body;
-        if (job.type !== "inspect-quarantine-object" || !job.objectKey || !job.ownerHash || !env.UPLOADS ||
+        if (!env.UPLOADS) { message.retry({ delaySeconds: 60 }); continue; }
+        if (job.type !== "inspect-quarantine-object" || !job.objectKey || !job.ownerHash ||
             !job.objectKey.startsWith("quarantine/") || job.objectKey.includes("..")) { message.ack(); continue; }
         const object = await env.UPLOADS.get(job.objectKey);
         if (!object || object.size !== job.expectedSize || object.size < 1 || object.size > MAX_UPLOAD_BYTES || (object.customMetadata?.ownerHash ?? object.customMetadata?.ownerhash) !== job.ownerHash || object.customMetadata?.status !== "quarantined") {
