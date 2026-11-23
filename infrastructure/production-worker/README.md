@@ -153,7 +153,7 @@ Never commit R2 credentials. Prefer separate credentials for a future production
 
 Cloudflare Access JWT remains the preferred browser-facing identity mechanism. For trusted server-to-server callers only, protected routes also accept an HMAC-signed request when no Access assertion is supplied. **Never put this key material in GitHub Pages, browser JavaScript, mobile bundles, or public repositories.**
 
-Store `TLCE_API_KEYS_JSON` as a Worker secret containing a JSON map from key ID to a base64url-encoded random secret of at least 32 bytes, for example structurally:
+Generate each key secret as at least 32 random bytes encoded with base64url (for example, Node.js `crypto.randomBytes(32).toString("base64url")`). Store `TLCE_API_KEYS_JSON` as a Worker secret containing a JSON map from key ID to that secret, for example structurally:
 
 ```json
 {"automation-prod":"<base64url-encoded-32-byte-secret>"}
