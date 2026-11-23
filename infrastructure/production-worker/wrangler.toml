@@ -7,7 +7,7 @@ preview_urls = false
 [vars]
 TLCE_ORIGIN = "https://tlce.store"
 AI_PROVIDER = "workers-ai"
-AI_MODEL = "@cf/meta/llama-3.3-70b-instruct-fp8-fast"
+AI_MODEL = "@cf/meta/llama-3.3-70b-instruct-fp8-fast"\nAI_FALLBACK_PROVIDERS = "workers-ai,groq,gemini"
 
 [ai]
 binding = "AI"
