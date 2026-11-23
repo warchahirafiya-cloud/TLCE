@@ -13,7 +13,7 @@ export default defineConfig({
     manifest: true,
     target: "es2022",
     cssCodeSplit: false,
-    rollupOptions: {
+    rolldownOptions: {
       input: resolve(process.cwd(), "src/islands/entry.tsx"),
       output: {
         entryFileNames: "assets/tlce-islands-[hash].js",
