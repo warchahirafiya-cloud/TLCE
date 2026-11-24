@@ -273,3 +273,33 @@ button:disabled { cursor: not-allowed; opacity: .58; }
   }
   ::view-transition-old(root),::view-transition-new(root) { animation: none; }
 }
+
+/* Reusable primitives from the supplied design system. */
+.container {
+  width: min(100% - 2rem, var(--max-width));
+  margin-inline: auto;
+}
+.card {
+  padding: var(--space-md);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  background: var(--color-surface);
+  transition: transform var(--transition), box-shadow var(--transition), border-color var(--transition);
+}
+.card:hover {
+  transform: translateY(-4px);
+  border-color: var(--color-primary);
+  box-shadow: var(--tlce-shadow-card);
+}
+.grid {
+  display: grid;
+  gap: var(--space-md);
+  grid-template-columns: repeat(auto-fit, minmax(min(260px, 100%), 1fr));
+}
+@media (prefers-reduced-motion: no-preference) {
+  .reveal { animation: fadeUp .6s ease both; }
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(16px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+}
