@@ -1,0 +1,44 @@
+name: TLCE Remote Checks
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - feat/tlce-lazy-islands-phase2
+
+permissions:
+  contents: read
+
+concurrency:
+  group: tlce-remote-checks-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  validate:
+    name: Static UI and QuestPulse validation
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Install locked dependencies
+        run: npm ci
+
+      - name: TypeScript typecheck
+        run: npx tsc --noEmit
+
+      - name: Build static application
+        run: npm run build:static
+
+      - name: Test static UI
+        run: npm run test:static-ui
+
+      - name: Test QuestPulse
+        run: npm run test:questpulse
