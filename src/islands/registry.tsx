@@ -68,8 +68,9 @@ async function loadAndMount(
     const component = await loader();
     if (record.cancelled || mountByHost.get(host) !== record) return;
 
-    shadow = host.shadowRoot ?? host.attachShadow({ mode: "open" });
-    shadow.replaceChildren();
+    const shadowRoot: ShadowRoot = host.shadowRoot ?? host.attachShadow({ mode: "open" });
+    shadow = shadowRoot;
+    shadowRoot.replaceChildren();
 
     // Keep the existing same-origin stylesheet boundary and Shadow DOM isolation.
     const stylesheet = document.createElement("link");
@@ -77,14 +78,15 @@ async function loadAndMount(
     stylesheet.href = stylesheetUrl;
     stylesheet.dataset.tlceIslandStyles = "true";
 
-    mountPoint = document.createElement("div");
-    mountPoint.className = "min-h-full";
-    shadow.append(stylesheet, mountPoint);
-    render(h(component, props), mountPoint);
+    const mountContainer: HTMLDivElement = document.createElement("div");
+    mountContainer.className = "min-h-full";
+    mountPoint = mountContainer;
+    shadowRoot.append(stylesheet, mountContainer);
+    render(h(component, props), mountContainer);
 
     record.cleanup = () => {
-      render(null, mountPoint);
-      shadow.replaceChildren();
+      render(null, mountContainer);
+      shadowRoot.replaceChildren();
     };
     host.dataset.tlceIslandStatus = "mounted";
     host.removeAttribute("aria-busy");
