@@ -1,0 +1,43 @@
+name: TLCE Remote Checks
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - automation/tlce-remote-checks
+
+permissions:
+  contents: read
+
+concurrency:
+  group: tlce-remote-checks-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  validate:
+    name: Typecheck, tests, and browser build
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      # The repository currently has no committed lockfile. Use npm install
+      # for this diagnostic workflow; do not claim npm ci reproducibility.
+      - name: Install dependencies
+        run: npm install --no-audit --no-fund
+
+      - name: TypeScript typecheck
+        run: npm run typecheck
+
+      - name: Run test suite
+        run: npm test
+
+      - name: Build browser application
+        run: npm run build:browser
