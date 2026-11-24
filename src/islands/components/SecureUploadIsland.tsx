@@ -102,7 +102,7 @@ export function SecureUploadIsland() {
 
       <label class="grid min-h-44 cursor-pointer place-items-center gap-3 rounded-xl border-2 border-dashed border-tlce-accent/50 bg-tlce-ink/70 p-5 text-center transition hover:border-tlce-glow focus-within:ring-2 focus-within:ring-tlce-glow"
         onDragOver={(event) => event.preventDefault()}
-        onDrop={(event) => { event.preventDefault(); selectFile(event.dataTransfer.files?.[0] ?? null); }}>
+        onDrop={(event) => {\n          event.preventDefault();\n          const files = event.dataTransfer?.files;\n          if (!files || files.length === 0) return;\n          selectFile(files[0] ?? null);\n        }}>
         <input class="sr-only" type="file" accept=".png,.jpg,.jpeg,.pdf,image/png,image/jpeg,application/pdf" disabled={status === "processing"}
           onChange={(event) => {
             const input = event.currentTarget;
