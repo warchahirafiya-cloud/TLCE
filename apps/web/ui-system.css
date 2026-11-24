@@ -27,6 +27,11 @@
   --cyan: var(--tlce-accent);
   --violet: var(--tlce-accent-strong);
   --green: var(--tlce-success);
+  --accent: var(--tlce-accent);
+  --accent-soft: rgb(223 189 125 / 12%);
+  --surface: var(--tlce-surface);
+  --surface-2: var(--tlce-surface-raised);
+  --max: var(--tlce-content-width);
   font-family: "IBM Plex Sans Arabic", "Noto Sans Arabic", system-ui, -apple-system, "Segoe UI", Tahoma, sans-serif;
   font-synthesis: none;
   text-rendering: optimizeLegibility;
