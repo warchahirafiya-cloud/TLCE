@@ -16,7 +16,8 @@
     "test:questpulse": "tsx --test modules/questpulse/test/*.test.ts",
     "test:revenue": "tsx --test core/revenue/test/*.test.ts",
     "test:payments": "tsx --test core/payments/test/*.test.ts",
-    "dev:ui": "tailwindcss -i src/islands/tailwind.css -o src/islands/tlce-islands.css --minify && vite --host 0.0.0.0"
+    "dev:ui": "tailwindcss -i src/islands/tailwind.css -o src/islands/tlce-islands.css --minify && vite --host 0.0.0.0",
+    "lint:oxc": "oxlint src/islands"
   },
   "devDependencies": {
     "@cloudflare/workers-types": "5.20261123.1",
@@ -27,6 +28,7 @@
     "tsx": "^4.19.0",
     "typescript": "^5.7.0",
     "vite": "8.3.8",
-    "jsdom": "^26.1.0"
+    "jsdom": "^26.1.0",
+    "oxlint": "1.95.0"
   }
 }
