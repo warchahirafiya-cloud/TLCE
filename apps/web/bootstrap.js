@@ -63,8 +63,6 @@ if (root) {
     }
     swipeStart = null;
   }, { passive: true });
-}
-
 
   // Shadow-root scoped spotlight tracking; delegated for dynamically rendered cards.
   scope.addEventListener("pointermove", (event) => {
@@ -75,3 +73,5 @@ if (root) {
     element.style.setProperty("--mx", `${event.clientX - rect.left}px`);
     element.style.setProperty("--my", `${event.clientY - rect.top}px`);
   }, { passive: true });
+
+}
