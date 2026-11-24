@@ -119,3 +119,14 @@ document.addEventListener("click", (event) => {
 router.start().catch(() => {
   status.textContent = "فشل تشغيل محرك TLCE";
 });
+
+
+// Delegate spotlight coordinates without per-element listeners (CSP-safe).
+document.addEventListener("pointermove", (event) => {
+  if (!(event.target instanceof Element)) return;
+  const element = event.target.closest(".spotlight");
+  if (!element) return;
+  const rect = element.getBoundingClientRect();
+  element.style.setProperty("--mx", `${event.clientX - rect.left}px`);
+  element.style.setProperty("--my", `${event.clientY - rect.top}px`);
+}, { passive: true });
