@@ -41,6 +41,10 @@ jobs:
       - name: TypeScript checks
         run: npm run typecheck
 
+      - name: Oxlint island source audit (non-blocking baseline)
+        run: npm run lint:oxc
+        continue-on-error: true
+
       - name: QuestPulse tests
         run: npm run test:questpulse
 
