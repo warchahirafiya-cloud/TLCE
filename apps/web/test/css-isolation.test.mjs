@@ -11,6 +11,7 @@ test("page entrypoints do not load the unscoped shared design-system stylesheet"
   const pages = [
     read("../../parent/index.html"),
     read("../index.html"),
+    read("../questpulse/index.html"),
     read("../store/index.html"),
     read("../store/developers/index.html"),
     read("../store/product/index.html"),
