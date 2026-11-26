@@ -2,7 +2,7 @@
 
 > **Audit rule:** Populate fields only from inspectable repository, CI, deployment, or documentation evidence. Record the evidence URL and check date. Unknown values remain “Unverified”; do not infer operational status from a repository name or a successful CI run.
 >
-> **Permanent audit principle:** A passing CI on governance documents is not evidence of technical readiness. A passing CI on a service repository is not evidence of operational readiness. Readiness is asserted only through the mandatory gates in `ACTIVE-TO-OPERATIONAL.md`, supported by verifiable evidence.
+> **Permanent audit principle:** A passing CI on governance documents is not evidence of technical readiness. A passing CI on a service repository is not evidence of operational readiness. Readiness is asserted only through the mandatory gates in `ACTIVE-TO-OPERATIONAL.md`, supported by verifiable evidence.\n>\n> **Branch-CI ≠ Main-CI:** A successful run on a PR or feature branch is not evidence of `main` health. Record the branch and trigger for every run; do not substitute branch CI for a main-branch result.\n>\n> **Evidence precision:** Distinguish (a) no CI configured, (b) CI configured but not observed on `main`, (c) CI observed on `main` and failing, and (d) CI observed on `main` and passing. Conflating (a) and (b) is a documentation error.
 >
 > **Last updated:** 2026-11-26  
 > **Auditor:** Not assigned
@@ -11,7 +11,7 @@
 
 | # | Initiative | Portfolio status | Repository/repositories | Default branch | Latest CI (run/result) | Build/package evidence | Deployment environment | Live service URL | Documentation path | Verification status | Notes |
 |---|---|---|---|---|---|---|---|---|---|---|---|
-| 1 | TLCE AI LAB | Active initiative | `ai-lab-infrastructure`, `ai-lab-core`; third repository identity unresolved | `main` confirmed on first two | See Evidence Log below; branch-scoped results differ | Unverified | Unverified | Unverified | Repository documentation not yet audited | Partial evidence; technical audit in progress | Separate initiative; do not conflate with parent TLCE repository or TLCE.store. No operational claim. |
+| 1 | TLCE AI LAB | Active initiative | `ai-lab-infrastructure`, `ai-lab-core`, `ai-lab-platform` | `main` confirmed on first two | See Evidence Log below; branch-scoped results differ | Unverified | Unverified | Unverified | Repository documentation not yet audited | Partial evidence; technical audit in progress | Separate initiative; do not conflate with parent TLCE repository or TLCE.store. No operational claim. |
 | 2 | TLCE.store | Active initiative | Unverified in this audit | Unverified | Unverified | Unverified | GitHub Pages history recorded; current deployment evidence to verify | https://tlce.store/ (URL previously confirmed by project owner; current health not checked here) | Unverified | Partially evidenced; audit pending | Do not infer domain-registration or deployment status from the URL alone. |
 | 3 | TLCE-UI-LAB | Active initiative | Unverified | Unverified | Unverified | Unverified | Unverified | Unverified | Unverified | Not audited | Dedicated UI-only workspace; keep separate from TLCE AI LAB. |
 | 4 | QuestPulse | Active initiative / internal TLCE module | Parent/module source mapping to verify | Unverified | Unverified | Unverified | Unverified | Unverified | Unverified | Not audited | QuestPulse is an internal TLCE module, not an independent parent initiative. |
@@ -100,4 +100,21 @@ For each initiative:
 
 | Date | Initiative | Evidence checked | Finding/gap | Auditor |
 |---|---|---|---|---|
-| 2026-11-26 | TLCE AI LAB | Two repository main branches, branch protection flags, and Actions runs | Infrastructure main CI #7 failed and main is unprotected; core main has no CI run and is unprotected; third repo identity unresolved; deployment/docs not verified | Not assigned |
+| 2026-11-26 | TLCE AI LAB | Two repository main branches, branch protection flags, and Actions runs | Infrastructure main CI #7 failed and main is unprotected; core main has no CI run and is unprotected; platform repository identity resolved; platform main has no recorded CI and is unprotected; deployment evidence remains unverified; documentation requires review | Not assigned |
+
+
+## 7. Evidence Log Addendum — repository identity and branch-CI distinctions
+
+**Checked:** 2026-11-26
+
+| Repository | Canonical identity | Default branch head | Main protection | CI on main | CI on other branches | Notes |
+|---|---|---|---|---|---|---|
+| `ai-lab-platform` | Confirmed: `warchahirafiya-cloud/ai-lab-platform` (private) | `bac1e1869ffe96b0706b76b2321a794b24c36edb` | Not protected | 0 runs observed; no `.github/workflows` directory on main | Run #45 SUCCESS on `hardening/platform-ci-sbom-statistical-benchmarks` | README title says `-ai-lab-platform`; canonical GitHub repository name has no leading hyphen. |
+
+Evidence:
+- Repository: https://github.com/warchahirafiya-cloud/ai-lab-platform
+- Main-branch CI query: https://github.com/warchahirafiya-cloud/ai-lab-platform/actions
+- Feature-branch run #45: https://github.com/warchahirafiya-cloud/ai-lab-platform/actions/runs/45826864885
+
+**Classification correction:** The repository identity is resolved, but operational readiness remains unverified. A feature-branch success does not substitute for a main-branch check. The absence of a workflow directory on `main` is evidence that no workflow definition was present at the inspected path and time; do not generalize this into a claim about every possible external CI system.
+
