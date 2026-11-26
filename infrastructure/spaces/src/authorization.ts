@@ -12,29 +12,15 @@ export type GrantPermission = "view" | "comment" | "edit" | "manage" | "download
 
 export interface SpaceAclContext {
   actorId: string | null;
-  space: {
-    id: string;
-    status: "active" | "archived" | "deleted";
-    visibility: SpaceVisibility;
-  };
-  membership?: {
-    spaceId: string;
-    userId: string;
-    role: SpaceRole;
-  } | null;
+  space: { id: string; status: "active" | "archived" | "deleted"; visibility: SpaceVisibility };
+  membership?: { spaceId: string; userId: string; role: SpaceRole } | null;
   item?: {
-    id: string;
-    spaceId: string;
-    createdBy: string;
-    visibility: ItemVisibility;
+    id: string; spaceId: string; createdBy: string; visibility: ItemVisibility;
     status: "draft" | "published" | "archived" | "deleted";
   } | null;
   grants?: ReadonlyArray<{
-    spaceId: string;
-    itemId: string | null;
-    subjectUserId: string;
-    permission: GrantPermission;
-    expiresAt: string | null;
+    spaceId: string; itemId: string | null; subjectUserId: string;
+    permission: GrantPermission; expiresAt: string | null;
   }>;
   /** Injected clock makes expiry decisions deterministic and testable. */
   now?: number;
@@ -43,16 +29,9 @@ export interface SpaceAclContext {
 export interface SpaceAclDecision {
   allowed: boolean;
   reason:
-    | "allowed-role"
-    | "allowed-grant"
-    | "allowed-public"
-    | "missing-principal"
-    | "inactive-space"
-    | "resource-scope-mismatch"
-    | "item-unavailable"
-    | "visibility-denied"
-    | "role-denied"
-    | "grant-denied";
+    | "allowed-role" | "allowed-grant" | "allowed-public" | "missing-principal"
+    | "inactive-space" | "resource-scope-mismatch" | "item-unavailable"
+    | "visibility-denied" | "role-denied" | "grant-denied";
 }
 
 const ROLE_ACTIONS: Record<SpaceRole, ReadonlySet<SpaceAction>> = {
@@ -86,10 +65,7 @@ function deny(reason: SpaceAclDecision["reason"]): SpaceAclDecision {
   return { allowed: false, reason };
 }
 
-function grantAllows(
-  context: SpaceAclContext,
-  action: SpaceAction,
-): boolean {
+function grantAllows(context: SpaceAclContext, action: SpaceAction): boolean {
   if (!context.actorId) return false;
   const itemId = context.item?.id ?? null;
   const now = context.now ?? Date.now();
@@ -104,6 +80,7 @@ function grantAllows(
       case "view": return action === "space:read" || action === "items:read" || action === "assets:read";
       case "comment": return action === "comments:create";
       case "edit": return action === "items:update";
+      // "manage" is content-scoped; it never grants Space or membership administration.
       case "manage": return action === "items:update" || action === "items:delete" || action === "items:publish";
       case "download": return action === "assets:download";
       default: return false;
@@ -115,10 +92,7 @@ function grantAllows(
  * Deterministic policy evaluator only. Callers must authenticate the actor and
  * load membership, grants, Space and item using tenant-scoped server-side queries.
  */
-export function authorizeSpaceAction(
-  context: SpaceAclContext,
-  action: SpaceAction,
-): SpaceAclDecision {
+export function authorizeSpaceAction(context: SpaceAclContext, action: SpaceAction): SpaceAclDecision {
   if (context.space.status !== "active") return deny("inactive-space");
 
   if (context.item) {
@@ -143,21 +117,21 @@ export function authorizeSpaceAction(
     return { allowed: true, reason: "allowed-public" };
   }
 
-  if (context.item?.visibility === "private" && isMember) {
+  if (context.item?.visibility === "private" && isMember && membership) {
     const privileged = membership.role === "owner" || membership.role === "admin";
     const creator = context.item.createdBy === context.actorId;
-    if (!privileged && !creator && !grantAllows(context, action)) {
-      return deny("visibility-denied");
-    }
+    if (!privileged && !creator && !grantAllows(context, action)) return deny("visibility-denied");
   }
 
   if (context.item?.status === "draft" && action === "items:read") {
-    const privileged = isMember && (membership.role === "owner" || membership.role === "admin");
-    const creator = isMember && membership.role === "editor" && context.item.createdBy === context.actorId;
+    const privileged = !!membership && isMember &&
+      (membership.role === "owner" || membership.role === "admin");
+    const creator = !!membership && isMember && membership.role === "editor" &&
+      context.item.createdBy === context.actorId;
     if (!privileged && !creator && !grantAllows(context, action)) return deny("item-unavailable");
   }
 
-  if (isMember && ROLE_ACTIONS[membership.role].has(action)) {
+  if (membership && isMember && ROLE_ACTIONS[membership.role].has(action)) {
     if (membership.role === "editor" &&
         (action === "items:update" || action === "items:delete" || action === "items:publish") &&
         (!context.item || context.item.createdBy !== context.actorId)) {
