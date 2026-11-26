@@ -4,7 +4,8 @@
 **Version:** 0.1  
 **Date:** 2026-11-26  
 **Applies to:** TLCE programs, laboratories, products, research, learning initiatives, and shared services  
-**Governance:** [Institutional Governance Framework](../governance/INSTITUTIONAL-GOVERNANCE-FRAMEWORK.md)
+**Governance:** [Institutional Governance Framework](../governance/INSTITUTIONAL-GOVERNANCE-FRAMEWORK.md)  
+**Portfolio:** [Institutional Portfolio Register](../governance/INSTITUTIONAL-PORTFOLIO-REGISTER.md)
 
 ## 1. Purpose
 
