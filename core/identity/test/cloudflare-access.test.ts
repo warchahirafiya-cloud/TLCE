@@ -129,5 +129,6 @@ test("fails closed when the JWKS endpoint is unavailable or invalid", async () =
 
 test("rejects unsafe team hostnames and missing audiences at construction", () => {
   assert.throws(() => createCloudflareAccessVerifier({ teamDomain: "https://attacker.example", audience: AUD }), /hostname/);
+  assert.throws(() => createCloudflareAccessVerifier({ teamDomain: "attacker.example", audience: AUD }), /hostname/);
   assert.throws(() => createCloudflareAccessVerifier({ teamDomain: TEAM, audience: " " }), /audience/);
 });
