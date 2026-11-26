@@ -49,9 +49,9 @@ P1 `access_grants` are additive, subject-specific grants, not role assignments:
 | Grant | Effect | Boundary |
 |---|---|---|
 | `view` | Read the granted Space/item and its permitted content | Never grants membership administration |
-| `comment` | Create comments in the granted scope | Never grants item or Space editing |
-| `edit` | Update content in the granted scope | Never grants member/role management or Space deletion |
-| `manage` | Manage content (update/delete/publish) in the granted scope | Never grants owner/admin powers or membership/Space administration |
+| `comment` | Read the granted content and create comments in scope | Never grants item or Space editing |
+| `edit` | Read and update content in the granted scope | Never grants member/role management or Space deletion |
+| `manage` | Read and manage content (update/delete/publish) in the granted scope | Never grants owner/admin powers or membership/Space administration |
 | `download` | Download permitted assets in the granted scope | Does not expose quarantine objects or raw R2 keys |
 
 - A grant matches only when `subject_user_id`, `space_id`, and optional `item_id` match the authenticated principal and requested resource.
