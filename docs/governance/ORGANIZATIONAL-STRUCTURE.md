@@ -184,7 +184,7 @@ Meetings are not mandatory where there is no active team; written decision recor
 1. Approve the institutional identity charter and this proposed operating model.
 2. Name accountable owners only when roles, authority, and capacity are clear.
 3. Create one-page charters for active programs, beginning with TLCE AI LAB and TLCE.store.
-4. Maintain a portfolio register with status labels: proposed, active, paused, operational, or retired.
+4. Maintain the [Institutional Portfolio Register](./INSTITUTIONAL-PORTFOLIO-REGISTER.md) with controlled status labels: proposed, active initiative, paused, operational, or retired. Record evidence and approval for every status change.
 5. Establish shared security, privacy, quality, and cost-review checklists.
 6. Review legal structure, jurisdiction, name and trademark availability before external institutional representations.
 7. Publish only verified program capabilities and current maturity.
