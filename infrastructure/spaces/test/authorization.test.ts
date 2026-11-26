@@ -75,6 +75,14 @@ test("expired and malformed grants fail closed", () => {
   assert.equal(allowed(base({ actorId: "user-b", membership: null, grants: [malformed] }), "items:read"), false);
 });
 
+test("item-level actions fail closed when the target item is missing", () => {
+  const grant = { spaceId: "space-a", itemId: null, subjectUserId: "user-b", permission: "manage" as const, expiresAt: null };
+  const userB = base({ actorId: "user-b", membership: null, grants: [grant], item: null });
+  assert.equal(allowed(userB, "items:update"), false);
+  assert.equal(allowed(userB, "comments:create"), false);
+  assert.equal(allowed(userB, "assets:download"), false);
+});
+
 test("grant permissions are narrow and never grant Space administration", () => {
   const grant = { spaceId: "space-a", itemId: null, subjectUserId: "user-b", permission: "manage" as const, expiresAt: null };
   const userB = base({ actorId: "user-b", membership: null, grants: [grant] });
