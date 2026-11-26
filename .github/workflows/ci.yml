@@ -5,6 +5,8 @@ on:
     branches:
       - main
       - feature/**
+      - feat/**
+      - fix/**
   pull_request:
     branches:
       - main
@@ -28,5 +30,7 @@ jobs:
         run: npm run typecheck
       - name: Unit tests
         run: npm test
+      - name: TLCE Spaces schema integrity tests
+        run: python3 -m unittest discover -s infrastructure/spaces/test -p '*_test.py' -v
       - name: Validate production Worker bundle
         run: npx --yes wrangler@4 deploy --dry-run --config infrastructure/production-worker/wrangler.toml
