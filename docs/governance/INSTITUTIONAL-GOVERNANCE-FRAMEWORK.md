@@ -153,7 +153,7 @@ Recommended adoption sequence:
 
 1. review this framework alongside the identity charter and organizational structure;
 2. confirm the current institutional decision authority without implying legal appointment;
-3. create a compact decision log and program portfolio register;
+3. maintain the [Institutional Portfolio Register](./INSTITUTIONAL-PORTFOLIO-REGISTER.md) and a compact decision log;
 4. assign accountable owners only where authority and capacity are real;
 5. define the release, security/privacy, cost, and public-claims approval paths;
 6. review legal form, jurisdiction, contracts, and trademark questions independently before formal external commitments.
