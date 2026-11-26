@@ -109,7 +109,8 @@ CREATE TABLE IF NOT EXISTS space_comments (
   UNIQUE (space_id, item_id, id),
   FOREIGN KEY (space_id, item_id) REFERENCES space_items(space_id, id) ON DELETE CASCADE,
   FOREIGN KEY (space_id, item_id, parent_comment_id)
-    REFERENCES space_comments(space_id, item_id, id) ON DELETE CASCADE
+    REFERENCES space_comments(space_id, item_id, id) ON DELETE CASCADE,
+  CHECK (parent_comment_id IS NULL OR parent_comment_id <> id)
 );
 
 CREATE TABLE IF NOT EXISTS space_ratings (
@@ -130,6 +131,29 @@ AFTER INSERT ON spaces
 BEGIN
   INSERT INTO space_members (id, space_id, user_id, role, added_by)
   VALUES ('owner:' || NEW.id, NEW.id, NEW.owner_id, 'owner', NEW.owner_id);
+END;
+
+-- Keep the canonical owner membership from being removed or reassigned.
+CREATE TRIGGER IF NOT EXISTS space_owner_membership_no_delete
+BEFORE DELETE ON space_members
+WHEN OLD.role = 'owner'
+BEGIN
+  SELECT RAISE(ABORT, 'space owner membership cannot be deleted');
+END;
+
+CREATE TRIGGER IF NOT EXISTS space_owner_membership_no_reassign
+BEFORE UPDATE OF space_id, user_id, role ON space_members
+WHEN OLD.role = 'owner'
+BEGIN
+  SELECT RAISE(ABORT, 'space owner membership cannot be reassigned');
+END;
+
+CREATE TRIGGER IF NOT EXISTS space_members_owner_role_guard
+BEFORE INSERT ON space_members
+WHEN NEW.role = 'owner'
+ AND NOT EXISTS (SELECT 1 FROM spaces WHERE id = NEW.space_id AND owner_id = NEW.user_id)
+BEGIN
+  SELECT RAISE(ABORT, 'only the space owner may hold the owner role');
 END;
 
 -- The owner identity and owner membership cannot silently diverge.
