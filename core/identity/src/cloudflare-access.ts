@@ -52,7 +52,8 @@ function decodeJsonPart(value: string): Record<string, unknown> {
  */
 export function createCloudflareAccessVerifier(options: CloudflareAccessIdentityOptions) {
   const teamDomain = options.teamDomain.toLowerCase();
-  if (!/^[a-z0-9](?:[a-z0-9.-]*[a-z0-9])?$/.test(teamDomain) || teamDomain.includes("..")) {
+  if (!/^[a-z0-9](?:[a-z0-9.-]*[a-z0-9])?$/.test(teamDomain) ||
+      teamDomain.includes("..") || !teamDomain.endsWith(".cloudflareaccess.com")) {
     throw new Error("Cloudflare Access teamDomain must be a hostname without scheme or path");
   }
   if (typeof options.audience !== "string" || !options.audience.trim()) {
@@ -71,6 +72,7 @@ export function createCloudflareAccessVerifier(options: CloudflareAccessIdentity
 
     const response = await fetcher(`${issuer}/cdn-cgi/access/certs`, {
       headers: { accept: "application/json" },
+      signal: AbortSignal.timeout(5000),
     });
     if (!response.ok) throw new Error("Cloudflare Access JWKS request failed");
     const payload: unknown = await response.json();
