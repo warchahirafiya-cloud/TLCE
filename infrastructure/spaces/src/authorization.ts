@@ -83,10 +83,10 @@ function grantAllows(context: SpaceAclContext, action: SpaceAction): boolean {
     }
     switch (grant.permission) {
       case "view": return action === "space:read" || action === "items:read" || action === "assets:read";
-      case "comment": return action === "comments:create";
-      case "edit": return action === "items:update";
+      case "comment": return action === "items:read" || action === "comments:create";
+      case "edit": return action === "items:read" || action === "items:update";
       // "manage" is content-scoped; it never grants Space or membership administration.
-      case "manage": return action === "items:update" || action === "items:delete" || action === "items:publish";
+      case "manage": return action === "items:read" || action === "items:update" || action === "items:delete" || action === "items:publish";
       case "download": return action === "assets:download";
       default: return false;
     }
