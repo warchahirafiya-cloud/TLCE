@@ -61,6 +61,11 @@ const READ_ACTIONS = new Set<SpaceAction>([
   "space:read", "items:read", "assets:read", "assets:download",
 ]);
 
+const ITEM_REQUIRED_ACTIONS = new Set<SpaceAction>([
+  "items:read", "items:update", "items:delete", "items:publish",
+  "comments:create", "comments:moderate", "assets:read", "assets:upload", "assets:download",
+]);
+
 function deny(reason: SpaceAclDecision["reason"]): SpaceAclDecision {
   return { allowed: false, reason };
 }
@@ -94,6 +99,8 @@ function grantAllows(context: SpaceAclContext, action: SpaceAction): boolean {
  */
 export function authorizeSpaceAction(context: SpaceAclContext, action: SpaceAction): SpaceAclDecision {
   if (context.space.status !== "active") return deny("inactive-space");
+
+  if (ITEM_REQUIRED_ACTIONS.has(action) && !context.item) return deny("item-unavailable");
 
   if (context.item) {
     if (context.item.spaceId !== context.space.id) return deny("resource-scope-mismatch");
