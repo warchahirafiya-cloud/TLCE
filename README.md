@@ -1,12 +1,48 @@
-# The Last Cosmic Explosion (TLCE)
+# TLCE — The Global Institution of Excellence
 
-TLCE is the parent platform for a modular, hierarchical application ecosystem. Its runtime engine is an independent platform layer; QuestPulse (Q.P) is an internal product branch/module, not a separate parent application.
+**TLCE** is the parent identity and strategic umbrella for a multidisciplinary institution focused on technology, artificial intelligence, education, research, creativity, and responsible innovation.
 
-Architecture and implementation work is maintained on dedicated feature branches. Start here:
+**Institutional descriptor:** The Global Institution of Excellence  
+**Founding name and historical origin:** The Last Cosmic Explosion  
+**Strategic tagline:** A Vision Beyond Boundaries
+
+“The Last Cosmic Explosion” remains the founding name and historical origin. “The Global Institution of Excellence” describes the broader institutional ambition; it is not a literal expansion of the initials TLCE.
+
+TLCE is being developed as a modular ecosystem of programs, platforms, laboratories, and products. The institutional vision must not be confused with a claim that every program is operational, legally incorporated, accredited, or internationally recognized. Public claims must match verifiable status.
+
+## Strategic domains
+
+- Technology and Artificial Intelligence
+- Education and Knowledge
+- Research and Development
+- Creativity and Digital Industries
+- Innovation and Global Collaboration
+
+## Ecosystem boundaries
+
+- **TLCE.store** is a digital product/platform initiative within the wider ecosystem.
+- **TLCE AI LAB** is an independent AI research and engineering initiative; its repositories and infrastructure remain separate from TLCE.store and TLCE-UI-LAB.
+- **TLCE-UI-LAB** remains a dedicated UI research/prototyping workspace.
+- **QuestPulse** is an internal product module of the TLCE parent platform.
+
+These relationships do not authorize repository consolidation, production deployment, or changes to existing security boundaries.
+
+## Governance
+
+The institutional identity and strategic direction are documented in the [Global Institutional Identity & Strategic Charter](docs/identity/GLOBAL-INSTITUTIONAL-IDENTITY-CHARTER.md). The proposed program hierarchy, mandates, decision rights, and maturity gates are defined in the [Organizational Structure & Program Governance](docs/governance/ORGANIZATIONAL-STRUCTURE.md). The proposed [Institutional Governance Framework](docs/governance/INSTITUTIONAL-GOVERNANCE-FRAMEWORK.md) defines decision and approval controls; the [Quality & Excellence Framework](docs/quality/QUALITY-AND-EXCELLENCE-FRAMEWORK.md) defines evidence and quality gates; and the [Institutional Portfolio Register](docs/governance/INSTITUTIONAL-PORTFOLIO-REGISTER.md) records known initiatives, maturity, accountability gaps, and review actions.
+
+### Governance templates and audit controls
+
+- [Program Charter Template](docs/governance/templates/PROGRAM-CHARTER-TEMPLATE.md)
+- [Active Initiative to Operational Checklist](docs/governance/checklists/ACTIVE-TO-OPERATIONAL.md)
+- [Initiative Technical Source Audit](docs/governance/audits/INITIATIVE-SOURCE-AUDIT.md)
+
+Technical architecture and implementation work remain subject to dedicated feature branches, review, tests, and release gates. The default branch, public production site, DNS, secrets, paid services, and production infrastructure must not be changed without the applicable approval.
+
+## Engineering documentation
+
 - [Architecture](docs/ARCHITECTURE.md)
 - [Build status](docs/BUILD_STATUS.md)
 - [Implementation roadmap](docs/IMPLEMENTATION_ROADMAP.md)
 - [QuestPulse integration contract](docs/QUESTPULSE_INTEGRATION.md)
 - [Advanced serverless and edge design](docs/ADVANCED_SERVERLESS_EDGE.md)
-
-The current feature branch is an engineering foundation, not a production deployment. See the build status and integration contract for verified capabilities and outstanding gates.
