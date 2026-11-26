@@ -122,8 +122,8 @@ export function createCloudflareAccessVerifier(options: CloudflareAccessIdentity
         const publicKey = await crypto.subtle.importKey(
           "jwk", jwk, { name: "RSASSA-PKCS1-v1_5", hash: "SHA-256" }, false, ["verify"],
         );
-        const signingInput = new TextEncoder().encode(`${parts[0]}.${parts[1]}`);
-        const signature = decodeBase64Url(parts[2]!);
+        const signingInput = new TextEncoder().encode(`${parts[0]}.${parts[1]}`).slice().buffer as ArrayBuffer;
+        const signature = decodeBase64Url(parts[2]!).slice().buffer as ArrayBuffer;
         const valid = await crypto.subtle.verify(
           "RSASSA-PKCS1-v1_5", publicKey, signature, signingInput,
         );
