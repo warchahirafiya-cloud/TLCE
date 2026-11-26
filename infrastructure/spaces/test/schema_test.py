@@ -85,6 +85,9 @@ class SpacesSchemaTests(unittest.TestCase):
         self.assertEqual(
             self.db.execute("SELECT COUNT(*) FROM space_items").fetchone()[0], 0
         )
+        self.assertEqual(
+            self.db.execute("SELECT COUNT(*) FROM space_deletion_guard").fetchone()[0], 0
+        )
 
     def test_unique_slug_and_visibility_constraints(self):
         self.create_space()
