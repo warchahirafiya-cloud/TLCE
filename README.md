@@ -29,7 +29,7 @@ These relationships do not authorize repository consolidation, production deploy
 
 ## Governance
 
-The institutional identity and strategic direction are documented in the [Global Institutional Identity & Strategic Charter](docs/identity/GLOBAL-INSTITUTIONAL-IDENTITY-CHARTER.md).
+The institutional identity and strategic direction are documented in the [Global Institutional Identity & Strategic Charter](docs/identity/GLOBAL-INSTITUTIONAL-IDENTITY-CHARTER.md). The proposed program hierarchy, mandates, decision rights, and maturity gates are defined in the [Organizational Structure & Program Governance](docs/governance/ORGANIZATIONAL-STRUCTURE.md).
 
 Technical architecture and implementation work remain subject to dedicated feature branches, review, tests, and release gates. The default branch, public production site, DNS, secrets, paid services, and production infrastructure must not be changed without the applicable approval.
 
