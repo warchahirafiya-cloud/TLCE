@@ -83,6 +83,15 @@ test("item-level actions fail closed when the target item is missing", () => {
   assert.equal(allowed(userB, "assets:download"), false);
 });
 
+test("comment and edit grants include read access to their granted content scope", () => {
+  const commentGrant = { spaceId: "space-a", itemId: "item-a", subjectUserId: "user-b", permission: "comment" as const, expiresAt: null };
+  const editGrant = { ...commentGrant, permission: "edit" as const };
+  assert.equal(allowed(base({ actorId: "user-b", membership: null, grants: [commentGrant] }), "items:read"), true);
+  assert.equal(allowed(base({ actorId: "user-b", membership: null, grants: [commentGrant] }), "comments:create"), true);
+  assert.equal(allowed(base({ actorId: "user-b", membership: null, grants: [editGrant] }), "items:read"), true);
+  assert.equal(allowed(base({ actorId: "user-b", membership: null, grants: [editGrant] }), "items:update"), true);
+});
+
 test("grant permissions are narrow and never grant Space administration", () => {
   const grant = { spaceId: "space-a", itemId: null, subjectUserId: "user-b", permission: "manage" as const, expiresAt: null };
   const userB = base({ actorId: "user-b", membership: null, grants: [grant] });
