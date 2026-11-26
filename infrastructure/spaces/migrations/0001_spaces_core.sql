@@ -32,6 +32,11 @@ CREATE TABLE IF NOT EXISTS space_members (
   UNIQUE (space_id, user_id)
 );
 
+-- Internal transaction marker lets owner protection coexist with parent cascades.
+CREATE TABLE IF NOT EXISTS space_deletion_guard (
+  space_id TEXT PRIMARY KEY NOT NULL
+);
+
 CREATE TABLE IF NOT EXISTS space_items (
   id TEXT PRIMARY KEY NOT NULL,
   space_id TEXT NOT NULL REFERENCES spaces(id) ON DELETE CASCADE,
@@ -133,10 +138,27 @@ BEGIN
   VALUES ('owner:' || NEW.id, NEW.id, NEW.owner_id, 'owner', NEW.owner_id);
 END;
 
--- Keep the canonical owner membership from being removed or reassigned.
+-- Mark parent deletion before SQLite executes ON DELETE CASCADE actions.
+-- The marker is transaction-scoped in effect: both trigger writes roll back on failure.
+CREATE TRIGGER IF NOT EXISTS spaces_mark_deleting
+BEFORE DELETE ON spaces
+BEGIN
+  INSERT OR IGNORE INTO space_deletion_guard (space_id) VALUES (OLD.id);
+END;
+
+CREATE TRIGGER IF NOT EXISTS spaces_clear_deletion_marker
+AFTER DELETE ON spaces
+BEGIN
+  DELETE FROM space_deletion_guard WHERE space_id = OLD.id;
+END;
+
+-- Prevent direct owner-membership removal, but permit the parent space cascade.
 CREATE TRIGGER IF NOT EXISTS space_owner_membership_no_delete
 BEFORE DELETE ON space_members
 WHEN OLD.role = 'owner'
+ AND NOT EXISTS (
+   SELECT 1 FROM space_deletion_guard WHERE space_id = OLD.space_id
+ )
 BEGIN
   SELECT RAISE(ABORT, 'space owner membership cannot be deleted');
 END;
