@@ -54,7 +54,7 @@
 
 - `ai-lab-infrastructure`: main-branch run [#7 — failed](https://github.com/warchahirafiya-cloud/ai-lab-infrastructure/actions/runs/45691786610), on commit `3ef1d88df48aa055cbac04e24f27027bf4b3af2e`. A later workflow run [#10 — success](https://github.com/warchahirafiya-cloud/ai-lab-infrastructure/actions/runs/45826878071) was observed on PR #5 branch `hardening/infrastructure-sbom-artifact`, not on `main`. Do not describe #10 as a green main-branch run.
 - `ai-lab-core`: no Actions runs were recorded for `main` at audit time. A workflow run [#54 — failed](https://github.com/warchahirafiya-cloud/ai-lab-core/actions/runs/45829190567) was observed on PR #9 branch `hardening/core-replay-guard-contract-tests`; it is not a main-branch run.
-- The third repository/branch identity remains unresolved. No source, CI, deployment, or protection evidence is attributed to it.
+- `ai-lab-platform` identity is resolved. Its recorded main head, protection state, workflow-tree observation, and feature-branch CI evidence are detailed in §7.
 
 ### 4.3 Evidence matrix by repository
 
@@ -62,7 +62,7 @@
 |---|---|---|---|---|---|
 | `ai-lab-infrastructure` | ☑ exists; `main` and head commit verified | ☑ workflow observed; main #7 failed; PR #5 #10 passed | ☐ not verified | ☐ not audited | 2/4 — partial evidence |
 | `ai-lab-core` | ☑ exists; `main` and head commit verified | ☐ no CI run on `main`; PR #9 #54 failed | ☐ not verified | ☐ not audited | 1/4 — minimal evidence |
-| Third AI LAB repository | ☐ identity unresolved | ☐ unverified | ☐ unverified | ☐ unverified | 0/4 — unverified |
+| `ai-lab-platform` | ☑ identity and main head verified | ☑ no main run observed; feature-branch run #45 recorded | ☐ not verified | ☐ README/workflow documentation review pending | 2/4 — partial evidence |
 
 ### 4.4 Governance gaps recorded (open blockers)
 
@@ -71,7 +71,7 @@
 | `main` branch not protected | `ai-lab-infrastructure`, `ai-lab-core` | High | Open |
 | CI failure on `main` | `ai-lab-infrastructure` | High | Open |
 | No CI run recorded on `main` | `ai-lab-core` | High | Open |
-| Third repository identity unresolved | Third AI LAB repository | Medium | Open |
+| Platform main CI not observed; workflow directory absent at inspected path | `ai-lab-platform` | High | Open |
 | Deployment path/evidence not verified | All repositories under audit | Medium | Open |
 | Documentation evidence not audited | All repositories under audit | Medium | Open |
 
@@ -118,3 +118,16 @@ Evidence:
 
 **Classification correction:** The repository identity is resolved, but operational readiness remains unverified. A feature-branch success does not substitute for a main-branch check. The absence of a workflow directory on `main` is evidence that no workflow definition was present at the inspected path and time; do not generalize this into a claim about every possible external CI system.
 
+
+
+## 8. Phase 1 planning documents — reference only
+
+**Recorded:** 2026-11-26
+
+The following documents are planning and evidence-capture artifacts. Their deposit does not change the evidence state, configuration, or operational status of any AI LAB repository.
+
+- [Branch Protection Plan](../plans/BRANCH-PROTECTION-PLAN.md)
+- [AI LAB Platform CI Review](AI-LAB-PLATFORM-CI-REVIEW.md)
+- [Deployment Evidence Checklist](../checklists/DEPLOYMENT-EVIDENCE.md)
+
+No branch-protection rule was enabled. No AI LAB workflow or README was modified. No deployment was triggered. The three `ai-lab-*` repositories remain at their previously recorded states pending fresh verification and separate explicit authorization for any change.
