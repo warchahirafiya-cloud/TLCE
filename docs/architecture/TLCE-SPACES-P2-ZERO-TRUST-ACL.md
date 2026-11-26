@@ -81,7 +81,15 @@ Before an internet-facing Spaces route is enabled, the implementation must:
 4. Resolve that external subject to the opaque internal principal ID used by `spaces.owner_id`, `space_members.user_id`, and `access_grants.subject_user_id`.
 5. Build the principal exclusively from verified server-side claims and the trusted identity mapping.
 
-The identity provider and subject-mapping mechanism remain an explicit integration gate. P2 policy code must not invent either.
+**P2b identity choice:** use Cloudflare Access application JWTs as the candidate trusted end-user assertion for the dedicated Spaces Worker. Verify the application token against the configured team issuer and application AUD; require the application-token type and a non-empty user `sub`. Reject service-token identities for end-user Space operations.
+
+Derive the internal opaque principal ID as `cfaccess:<verified issuer>:<verified sub>`. Do not use email as the primary key. Cloudflare documents `sub` as a user ID unique to an email address within an Access account; it changes if the user is removed/re-added or authenticates through a different Access organization. Consequently, a removed/re-added identity is treated as a new principal and must not inherit old memberships automatically. Any recovery or account-linking flow must be an explicit, separately audited operation.
+
+The repository currently verifies Access JWTs only for `GET /api/search`; that existing path is not reused as Spaces enforcement. The dedicated Spaces Worker must have its own verified issuer/AUD configuration. The actual team hostname and Spaces application AUD must be provisioned and verified before deployment.
+
+References:
+- Cloudflare Access JWT validation: https://developers.cloudflare.com/cloudflare-one/access-controls/applications/http-apps/authorization-cookie/validating-json/
+- Cloudflare Access application-token claims and `sub` semantics: https://developers.cloudflare.com/cloudflare-one/access-controls/applications/http-apps/authorization-cookie/application-token/
 
 ## 6. Data-access and route enforcement contract
 
