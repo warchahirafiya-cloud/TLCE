@@ -2,7 +2,11 @@
 
 > **Audit rule:** Populate fields only from inspectable repository, CI, deployment, or documentation evidence. Record the evidence URL and check date. Unknown values remain “Unverified”; do not infer operational status from a repository name or a successful CI run.
 >
-> **Permanent audit principle:** A passing CI on governance documents is not evidence of technical readiness. A passing CI on a service repository is not evidence of operational readiness. Readiness is asserted only through the mandatory gates in `ACTIVE-TO-OPERATIONAL.md`, supported by verifiable evidence.\n>\n> **Branch-CI ≠ Main-CI:** A successful run on a PR or feature branch is not evidence of `main` health. Record the branch and trigger for every run; do not substitute branch CI for a main-branch result.\n>\n> **Evidence precision:** Distinguish (a) no CI configured, (b) CI configured but not observed on `main`, (c) CI observed on `main` and failing, and (d) CI observed on `main` and passing. Conflating (a) and (b) is a documentation error.
+> **Permanent audit principle:** A passing CI on governance documents is not evidence of technical readiness. A passing CI on a service repository is not evidence of operational readiness. Readiness is asserted only through the mandatory gates in `ACTIVE-TO-OPERATIONAL.md`, supported by verifiable evidence.
+>
+> **Branch-CI ≠ Main-CI:** A successful run on a PR or feature branch is not evidence of `main` health. Record the branch and trigger for every run; do not substitute branch CI for a main-branch result.
+>
+> **Evidence precision:** Distinguish (a) no CI configured, (b) CI configured but not observed on `main`, (c) CI observed on `main` and failing, and (d) CI observed on `main` and passing. Conflating (a) and (b) is a documentation error.
 >
 > **Last updated:** 2026-11-26  
 > **Auditor:** Not assigned
@@ -11,7 +15,7 @@
 
 | # | Initiative | Portfolio status | Repository/repositories | Default branch | Latest CI (run/result) | Build/package evidence | Deployment environment | Live service URL | Documentation path | Verification status | Notes |
 |---|---|---|---|---|---|---|---|---|---|---|---|
-| 1 | TLCE AI LAB | Active initiative | `ai-lab-infrastructure`, `ai-lab-core`, `ai-lab-platform` | `main` confirmed on first two | See Evidence Log below; branch-scoped results differ | Unverified | Unverified | Unverified | Repository documentation not yet audited | Partial evidence; technical audit in progress | Separate initiative; do not conflate with parent TLCE repository or TLCE.store. No operational claim. |
+| 1 | TLCE AI LAB | Active initiative | `ai-lab-infrastructure`, `ai-lab-core`, `ai-lab-platform` | `main` confirmed on all three | See Evidence Log below; branch-scoped results differ | Unverified | Unverified | Unverified | Repository documentation not yet audited | Partial evidence; technical audit in progress | Separate initiative; do not conflate with parent TLCE repository or TLCE.store. No operational claim. |
 | 2 | TLCE.store | Active initiative | Unverified in this audit | Unverified | Unverified | Unverified | GitHub Pages history recorded; current deployment evidence to verify | https://tlce.store/ (URL previously confirmed by project owner; current health not checked here) | Unverified | Partially evidenced; audit pending | Do not infer domain-registration or deployment status from the URL alone. |
 | 3 | TLCE-UI-LAB | Active initiative | Unverified | Unverified | Unverified | Unverified | Unverified | Unverified | Unverified | Not audited | Dedicated UI-only workspace; keep separate from TLCE AI LAB. |
 | 4 | QuestPulse | Active initiative / internal TLCE module | Parent/module source mapping to verify | Unverified | Unverified | Unverified | Unverified | Unverified | Unverified | Not audited | QuestPulse is an internal TLCE module, not an independent parent initiative. |
@@ -48,7 +52,7 @@
 |---|---|---|---|---|---|
 | `ai-lab-infrastructure` | `main` | `3ef1d88df48aa055cbac04e24f27027bf4b3af2e` | Run #7 — FAILED on this commit | Not protected (`protected=false`) | Partial; repository and CI evidence observed |
 | `ai-lab-core` | `main` | `15bb181a1948f956fa687c06c696646b81baca47` | No runs recorded for `main` at audit time | Not protected (`protected=false`) | Minimal; repository evidence observed |
-| Third AI LAB repository | Unresolved | Unverified | Unverified | Unverified | None; do not infer repository identity |
+| `ai-lab-platform` | `main` | `bac1e1869ffe96b0706b76b2321a794b24c36edb` | No runs observed; no `.github/workflows` directory on main at inspected path/time | Not protected (`protected=false`) | Partial; repository identity and feature-branch CI evidence verified |
 
 ### 4.2 CI branch-scope clarification
 
