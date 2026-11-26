@@ -83,7 +83,11 @@ Every program should define:
 - evidence and release criteria;
 - review cadence and retirement conditions.
 
-## 9. Adoption and change control
+## 9. Organizational structure and program governance
+
+The proposed operating model, institutional functions, program mandates, decision rights, maturity gates, and minimum program charter are maintained in [Organizational Structure & Program Governance](../governance/ORGANIZATIONAL-STRUCTURE.md). That document describes internal programs and capabilities; it does not create legal entities, appoint officers, or claim that proposed units are staffed or operational.
+
+## 10. Adoption and change control
 
 This charter establishes a proposed identity and strategic direction. It does not supersede technical specifications, repository security policies, product contracts, or applicable law.
 
@@ -92,6 +96,7 @@ Adoption sequence:
 2. Align repository documentation and public-facing copy through separate reviewed changes.
 3. Define program-level governance and ownership.
 4. Validate legal name, trademark, and jurisdictional considerations before formal external claims.
-5. Publish only statements supported by current evidence.
+5. Establish program ownership and maturity status using the organizational governance model.
+6. Publish only statements supported by current evidence.
 
 All implementation changes must remain on dedicated branches and pass the applicable review and CI gates. The default branch, public production site, DNS, secrets, paid services, and production infrastructure remain outside this documentation change.
